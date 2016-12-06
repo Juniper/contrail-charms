@@ -18,10 +18,7 @@ deploy.
 
 Once ready, deploy and relate as follows:
 
-    juju deploy contrail-tsn
-    juju add-relation contrail-tsn:contrail-discovery contrail-configuration:contrail-discovery
-    juju add-relation contrail-tsn:contrail-api contrail-configuration:contrail-api
-    juju add-relation contrail-tsn keystone
+    juju deploy contrail-analytics
 
 Install Sources
 ---------------
