@@ -1,0 +1,2 @@
+contrail-control:
+   log_level: "SYS_ERR"

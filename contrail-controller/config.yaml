@@ -1,0 +1,20 @@
+options:
+  remove-juju-bridge:
+    type: boolean
+    default: true
+    description: |
+      Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
+      Enable this to remove such a bridge if you want to install vhost0 directly
+      on the underlying interface.
+  log_level:
+      type: string
+      default: SYS_NOTICE
+  contrail-api-ip:
+    type: string
+    description: Specify contrail-api ip manually
+  contrail-api-port:
+    type: int
+    description: Specify contrail-api port manually
+  discovery-server-ip:
+    type: string
+    description: Specify discovery server ip manually
