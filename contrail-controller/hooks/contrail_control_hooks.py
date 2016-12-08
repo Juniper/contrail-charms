@@ -6,7 +6,7 @@ from subprocess import (
     check_output
 )
 import sys
-
+from socket import gethostbyname
 import yaml
 
 from charmhelpers.core.hookenv import (
@@ -21,6 +21,10 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.fetch import (
     apt_install,
     apt_upgrade
+)
+
+from contrail_control_utils import (
+  write_control_ctx
 )
 
 PACKAGES = [ "docker.io" ]
@@ -92,6 +96,10 @@ def install():
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     launch_docker_image()
+
+@hooks.hook("contrail-lb-relation-changed")
+def lb_changed():
+    write_control_ctx()
 
 @hooks.hook("update-status")
 def update_status():

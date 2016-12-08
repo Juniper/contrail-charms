@@ -2,7 +2,9 @@ import functools
 import os
 import pwd
 import shutil
-from socket import gethostbyname, gethostname
+from socket import gethostbyname, inet_aton
+import struct
+
 from subprocess import (
     CalledProcessError,
     check_call,
@@ -26,6 +28,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_type,
+    relation_get,
+    unit_get,
     remote_unit
 )
 
@@ -124,3 +128,25 @@ def identity_admin_ctx():
              ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
              if hostname ]
     return ctxs[0] if ctxs else {}
+
+def write_control_ctx():
+    controller_ip_list = []
+    ctx = {}
+    controller_ip_list.append(gethostbyname(unit_get("private-address")))
+    # get all ipaddress of control node instances
+    for rid in relation_ids("control-cluster"):
+        for unit in related_units(rid):
+            ipaddr = gethostbyname(relation_get("private-address", unit, rid))
+            controller_ip_list.append(ipaddr)
+    # sort the ipaddress
+    controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    if relation_get("contrail-lb-vip"):
+        for rid in relation_ids("contrail-lb"):
+            for unit in related_units(rid):
+               #lb_vip = relation_get("contrail-lb-vip", unit, rid)
+               lb_vip = gethostbyname(relation_get("private-address", unit, rid))
+        ctx = {"controller_ip": lb_vip,
+               "analytics_ip": lb_vip,
+               "controller_servers": [controller_ip_list]
+              }
+    render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
