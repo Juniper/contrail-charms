@@ -1,0 +1,88 @@
+contrail-tsn: 
+  cacert: |-
+       Certificate:
+           Data:
+               Version: 1 (0x0)
+               Serial Number: 1 (0x1)
+           Signature Algorithm: md5WithRSAEncryption
+               Issuer: C=US, ST=CA, O=Open vSwitch, OU=switchca, CN=OVS switchca CA Certificate (2016 Oct 21 14:48:13)
+               Validity
+                   Not Before: Oct 21 21:48:13 2016 GMT
+                   Not After : Oct 19 21:48:13 2026 GMT
+           Subject: C=US, ST=CA, O=Open vSwitch, OU=switchca, CN=OVS switchca CA Certificate (2016 Oct 21 14:48:13)
+           Subject Public Key Info:
+               Public Key Algorithm: rsaEncryption
+                   Public-Key: (2048 bit)
+                   Modulus:
+                       00:af:81:de:a9:7e:6e:05:af:53:06:98:46:45:9a:
+                       0a:1a:17:f8:c6:71:3d:dc:65:c3:8b:37:9b:8d:69:
+                       c1:e9:33:aa:6c:c2:bd:e1:21:c8:a6:36:cd:e8:08:
+                       f8:13:1f:ad:0b:73:e0:30:bc:fa:61:ea:5c:8d:b6:
+                       c2:2a:d6:8e:44:3f:c6:f9:22:d7:2c:f1:ce:b5:be:
+                       1d:47:83:12:b5:e0:cc:8f:9a:ae:bc:48:4d:70:cb:
+                       9a:53:0f:29:a2:f8:d0:17:0a:a6:0b:e0:ab:70:c6:
+                       d2:02:4d:70:4e:57:4f:80:11:e2:ca:d7:1f:3a:06:
+                       ec:81:dc:4d:c1:a1:2e:b2:f6:8f:d6:b3:b5:e6:77:
+                       ec:31:11:9d:82:8d:c7:bf:aa:54:f8:4f:cc:c5:ae:
+                       68:d7:3c:c6:5c:b6:bb:f5:45:65:94:cd:e5:c4:8a:
+                       e2:2c:b5:ca:2a:bf:75:3b:00:5a:42:da:6a:28:9d:
+                       66:4a:37:e0:67:0a:89:3c:c1:01:21:b7:67:3e:f7:
+                       f7:84:fd:45:42:e4:28:cd:f0:74:fa:f7:59:8c:df:
+                       ff:0b:95:c1:e2:b7:3e:98:23:8e:8f:cf:5a:38:ed:
+                       51:7e:54:92:38:3e:d6:1a:ad:99:a6:25:05:92:d7:
+                       25:fe:5e:9e:c4:68:74:1c:52:9e:b9:64:7c:0c:e7:
+                       cc:eb
+                     Exponent: 65537 (0x10001)
+       Signature Algorithm: md5WithRSAEncryption
+            8e:37:22:5d:b5:7a:78:ee:85:09:0d:00:bf:ca:aa:f5:d8:91:
+            77:c5:90:23:ba:d3:da:34:0f:9e:ea:e8:6f:37:fc:2b:c0:22:
+            89:23:5c:e9:dc:ce:e1:33:5f:69:35:a3:53:9d:33:1c:cb:bf:
+            91:52:8f:10:36:3e:36:11:79:6d:4c:89:e4:72:8e:bd:3d:f8:
+            1f:d2:16:8e:e6:7c:6c:61:79:b7:57:52:bd:06:03:e7:9a:f7:
+            87:0f:46:c2:21:18:60:c4:9d:e4:15:20:6d:44:b1:db:be:54:
+            44:c0:24:29:58:c9:dc:b6:0d:f7:6f:bf:cf:6f:3f:7f:ed:6e:
+            5e:35:0b:45:2d:34:d7:fb:10:e5:8d:51:bf:81:e8:81:d9:48:
+            52:1d:c3:9b:a4:2c:ef:c8:64:55:3f:ae:98:1d:35:ff:08:20:
+            1b:54:df:12:d0:6b:26:a9:0c:35:99:f4:21:47:9f:fa:0a:22:
+            92:0b:39:07:5b:f4:e4:70:3b:d5:8b:94:90:f3:be:9d:25:dc:
+            70:1d:5e:42:80:f0:68:ae:a1:97:0e:0e:04:e8:2a:ce:f4:f7:
+            8a:ad:d4:af:78:31:cc:bc:ba:83:12:e2:18:e8:21:4a:ec:0f:
+            9b:c1:ec:02:9b:cc:db:f8:c2:42:58:35:bd:c6:53:0e:93:42:
+            ac:15:d7:e2
+        -----BEGIN CERTIFICATE-----
+        MIIDeDCCAmACAQEwDQYJKoZIhvcNAQEEBQAwgYExCzAJBgNVBAYTAlVTMQswCQYD
+        VQQIEwJDQTEVMBMGA1UEChMMT3BlbiB2U3dpdGNoMREwDwYDVQQLEwhzd2l0Y2hj
+        YTE7MDkGA1UEAxMyT1ZTIHN3aXRjaGNhIENBIENlcnRpZmljYXRlICgyMDE2IE9j
+        dCAyMSAxNDo0ODoxMykwHhcNMTYxMDIxMjE0ODEzWhcNMjYxMDE5MjE0ODEzWjCB
+        gTELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRUwEwYDVQQKEwxPcGVuIHZTd2l0
+        Y2gxETAPBgNVBAsTCHN3aXRjaGNhMTswOQYDVQQDEzJPVlMgc3dpdGNoY2EgQ0Eg
+        Q2VydGlmaWNhdGUgKDIwMTYgT2N0IDIxIDE0OjQ4OjEzKTCCASIwDQYJKoZIhvcN
+        AQEBBQADggEPADCCAQoCggEBAK+B3ql+bgWvUwaYRkWaChoX+MZxPdxlw4s3m41p
+        wekzqmzCveEhyKY2zegI+BMfrQtz4DC8+mHqXI22wirWjkQ/xvki1yzxzrW+HUeD
+        ErXgzI+arrxITXDLmlMPKaL40BcKpgvgq3DG0gJNcE5XT4AR4srXHzoG7IHcTcGh
+        LrL2j9azteZ37DERnYKNx7+qVPhPzMWuaNc8xly2u/VFZZTN5cSK4iy1yiq/dTsA
+        WkLaaiidZko34GcKiTzBASG3Zz7394T9RULkKM3wdPr3WYzf/wuVweK3Ppgjjo/P
+        WjjtUX5Ukjg+1hqtmaYlBZLXJf5ensRodBxSnrlkfAznzOsCAwEAATANBgkqhkiG
+        9w0BAQQFAAOCAQEAjjciXbV6eO6FCQ0Av8qq9diRd8WQI7rT2jQPnurobzf8K8Ai
+        iSNc6dzO4TNfaTWjU50zHMu/kVKPEDY+NhF5bUyJ5HKOvT34H9IWjuZ8bGF5t1dS
+        vQYD55r3hw9GwiEYYMSd5BUgbUSx275URMAkKVjJ3LYN92+/z28/f+1uXjULRS00
+        1/sQ5Y1Rv4HogdlIUh3Dm6Qs78hkVT+umB01/wggG1TfEtBrJqkMNZn0IUef+goi
+        kgs5B1v05HA71YuUkPO+nSXccB1eQoDwaK6hlw4OBOgqzvT3iq3Ur3gxzLy6gxLi
+        GOghSuwPm8HsApvM2/jCQlg1vcZTDpNCrBXX4g==
+        -----END CERTIFICATE-----
+  tor-switches: |-
+      [
+       {
+          tor_ip: 193.168.1.3,
+          tor_agent_id: 1,
+          tor_ovs_port: 6632,
+          tor_tunnel_ip: 7.7.7.7,
+          tsn_ip: 192.168.1.29,
+          tor_ovs_protocol: pssl,
+          tor_tsn_name: "ComputeNode3",
+          tor_name: "b3-qfx1",
+          tor_vendor_name: "Juniper",
+          tor_product_name: "QFX5100",
+          tor_agent_http_server_port: 9010
+       }
+      ]
