@@ -1,6 +1,7 @@
 
 #1. Introduction
-####Purpose of the document
+Contrail 4.0 would provide support for Docker containers. The existing contrail components, which run as services on a BMS or VM, would be running within a Docker container in contrail 4.0. 
+This document describes the changes in the Server Manager module in order to support the provisioning of contrail 4.0 Docker containers, which would be running the several contrail service components.
 
 #2. Problem statement
 ####Describe the problem being solved for a new or existing features.
