@@ -1,15 +1,13 @@
 
 #1. Introduction
 Contrail 4.0 would provide support for Docker containers. The existing contrail components, which run as services on a BMS or VM, would be running within a Docker container in contrail 4.0. 
-This document describes the changes in the Server Manager module in order to support the provisioning of contrail 4.0 Docker containers, which would be running the several contrail service components.
+This document describes how to deploy contrail 4.0 Docker containers, which would be running the several contrail service components using contrail-charms
 
 #2. Problem statement
-####Describe the problem being solved for a new or existing features.
-####Use cases
+The rationale behind the decision to containerize the contrail subsystems can be found [here]( https://github.com/Juniper/contrail-docker/blob/master/specs/contrail-docker.md). Contrail-charms 3.x or earlier provides functionality to provision each contrail component in separate lxd containers. With contrail 4.0, the contrail services would be contained in Docker containers. This necessitates change in contrail-charms to support the new mode of contrail deployment and support the deployment of the contrail docker images
 
 #3. Proposed solution
-####Describe the proposed solution.
-
+Contrail Docker containers will be built to include all the packages needed to run the processes within the container. Also included in the containers will be Ansible playbooks to create the configuration files and provision the services within the container. Any provisioning tool to deploy these containers, including server manager, will need to perform 2 simple steps:
 ##3.1 Alternatives considered
 ####Describe pros and cons of alternatives considered.
 
