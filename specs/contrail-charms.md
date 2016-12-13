@@ -43,11 +43,17 @@ Once the contrail-charms have been deployed the user can check the status of the
 Orchestrator:
 
 Juju is the orechestration tool that will be used for deploying the charms.
+
 There will be one charm per contrail docker container image
+
 The 'docker.io' package will be installed as part of the 'install' hook
+
 The docker container images will be stored in the Juju Controller repository as a centrail placeholder uisng the Juju resources feature. The charms will get the resource from the controller and then load and run it. The docker containers will be load and run using the native 'docker load' and 'docker run' command in that machine.
+
 Once the charm is installed all the relations specified in the bundle yaml file will be added and the corresponding hooks excuted. The configurations that is generated in the relation hooks will be written into the corresponding configuration file under '/etc/contrailctl'
+
 The user can supply the configufing using an yaml file and apply the configuration using the command 'juju config <application_name> --file <input_yaml_file>'
+
 Any changes in the configuraion file will be applied to the container by firing the corresponding 'contrailctl config sync' command 
 
 
@@ -70,7 +76,9 @@ Any changes in the configuraion file will be applied to the container by firing 
 
 #9. Testing
 1. Setup the lab environment as described in the Lab solutions guide link given above
+
 2. Deploy the charms using the bundle yaml file
+
 3. Apply configuration to the charms using the 'juju config' command
 
 #10. Documentation Impact
@@ -78,6 +86,7 @@ Any changes in the configuraion file will be applied to the container by firing 
 #11. References
 
 #12. Appendix A
+
 series: trusty
 services:
   contrail-analytics:
