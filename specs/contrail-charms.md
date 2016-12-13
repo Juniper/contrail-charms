@@ -88,7 +88,6 @@ Any changes in the configuraion file will be applied to the container by firing 
 #12. Appendix A (contrail-docker-bundle.yaml)
 
 series: trusty
-
 services:
   contrail-analytics:
     charm: /home/ubuntu/contrail-analytics
