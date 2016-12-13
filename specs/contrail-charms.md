@@ -85,28 +85,33 @@ Any changes in the configuraion file will be applied to the container by firing 
 
 #11. References
 
-#12. Appendix A
+#12. Appendix A (contrail-docker-bundle.yaml)
 
 series: trusty
+
 services:
   contrail-analytics:
     charm: /home/ubuntu/contrail-analytics
     num_units: 3
     to: [ "1", "2", "3" ]
+    
   contrail-analyticsdb:
     charm: /home/ubuntu/contrail-analyticsdb
     num_units: 3
     to: [ "1", "2", "3" ]
+    
   contrail-control:
     charm: /home/ubuntu/contrail-controller
     num_units: 3
     to: [ "1", "2", "3" ]
+    
   contrail-agent:
     charm: /home/ubuntu/contrail-agent
     num_units: 1
     to:
       - '4'
-      contrail-lb:
+      
+   contrail-lb:
     charm: /home/ubuntu/contrail-lb
     num_units: 1
     to:
@@ -115,23 +120,28 @@ services:
 relations:
   - [ "contrail-control", "contrail-lb:contrail-control" ]
   - [ "contrail-analytics", "contrail-lb:contrail-analytics" ]
+  
 machines:
   "1":
     series: trusty
     #constraints: mem=15G root-disk=40G
     constraints: tags=contrail-controller-vm-1
+    
   "2":
     series: trusty
     #constraints: mem=15G root-disk=40G
     constraints: tags=contrail-controller-vm-2
+    
   "3":
     series: trusty
     #constraints: mem=15G root-disk=40G
     constraints: tags=contrail-controller-vm-3
-    "4":
+    
+  "4":
     series: trusty
     #constraints: mem=4G root-disk=20G
     constraints: tags=compute-storage-1
+    
   "5":
     series: trusty
     #constraints: mem=4G root-disk=20G
