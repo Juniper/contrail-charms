@@ -24,7 +24,8 @@ from charmhelpers.fetch import (
 )
 
 from contrail_analyticsdb_utils import (
-    fix_hostname
+    fix_hostname,
+    write_analyticsdb_config
 )
 
 PACKAGES = [ "docker.io" ]
@@ -71,7 +72,7 @@ def launch_docker_image():
                             ])
     output = output.split('\n')[:-1]
     for line in output:
-        if line.split()[0] == "contrail-analyticsdb":
+        if "contrail-analyticsdb" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
         check_call(["/usr/bin/docker",
@@ -95,9 +96,28 @@ def install():
     load_docker_image()
     launch_docker_image()
                 
+@hooks.hook("contrail-control-relation-joined")
+def control_joined():
+   config["control-ready"] = True
+   write_analyticsdb_config()
+
+@hooks.hook("contrail-lb-relation-joined")
+def lb_joined():
+   config["lb-ready"] = True
+   write_analyticsdb_config()
+
+@hooks.hook("contrail-control-relation-departed")
+def control_departed():
+   config["control-ready"] = False
+
+@hooks.hook("contrail-lb-relation-departed")
+def lb_departed():
+   config["lb-ready"] = False
+
 @hooks.hook("update-status")
 def update_status():
   set_status()
+  #status_set("active", "Unit ready")
 
 def main():
     try:

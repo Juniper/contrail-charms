@@ -24,7 +24,7 @@ from charmhelpers.fetch import (
 )
 
 from contrail_control_utils import (
-  write_control_ctx
+  write_control_config
 )
 
 PACKAGES = [ "docker.io" ]
@@ -36,7 +36,7 @@ config = config()
 @hooks.hook("config-changed")
 def config_changed():
     log_level =  config.get("log_level")
-    set_status()
+    #set_status()
     return None
 
 def config_get(key):
@@ -52,7 +52,6 @@ def set_status():
                          "{{.State.Running}}",
                          "contrail-controller"
                          ])
-  print result
   if result:
       status_set("active", "Unit ready")
   else:
@@ -73,7 +72,7 @@ def launch_docker_image():
                             ])
     output = output.split('\n')[:-1]
     for line in output:
-        if line.split()[0] == "contrail-controller":
+        if "contrail-controller" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
         check_call(["/usr/bin/docker",
@@ -84,6 +83,7 @@ def launch_docker_image():
                     "--privileged",
                     "--env='CLOUD_ORCHESTRATOR=kubernetes'", 
                     "--name=contrail-controller",
+                    "--volume=/etc/contrailctl:/etc/contrailctl",
                     "-itd",
                     image_id 
                    ])
@@ -96,14 +96,17 @@ def install():
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     launch_docker_image()
+    config["config-applied"] = False
 
-@hooks.hook("contrail-lb-relation-changed")
-def lb_changed():
-    write_control_ctx()
+@hooks.hook("contrail-control-relation-changed")
+def control_changed():
+    write_control_config()
+    #launch_docker_image()
 
 @hooks.hook("update-status")
 def update_status():
   set_status()
+  #status_set("active", "Unit ready")
                 
 def main():
     try:

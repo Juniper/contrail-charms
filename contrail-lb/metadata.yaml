@@ -19,13 +19,12 @@ description: |
   This charm provides both the TSN and TOR agent service on the same node.
   It supports running multiple TOR agents as well.
 requires:
-  container:
-    interface: juju-info
-    scope: container
   identity-admin:
     interface: keystone-admin
   contrail-control:
     interface: contrail-control
+  contrail-analytics:
+    interface: contrail-analytics
 provides:
   contrail-lb:
     interface: contrail-lb

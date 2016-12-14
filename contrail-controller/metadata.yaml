@@ -25,13 +25,14 @@ provides:
   contrail-control:
     interface: contrail-control
 requires:
-  container:
-    interface: juju-info
-    scope: container
   identity-admin:
     interface: keystone-admin
   contrail-lb:
     interface: contrail-lb
+  contrail-analytics:
+    interface: contrail-analytics
+  contrail-analyticsdb:
+    interface: contrail-analyticsdb
 resources:
   contrail-control:
     type: file

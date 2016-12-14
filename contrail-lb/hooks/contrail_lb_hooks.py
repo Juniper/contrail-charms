@@ -8,7 +8,7 @@ from subprocess import (
 import sys
 
 import yaml
-from socket import gethostbyname, gethostname
+from socket import gethostbyname
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -29,11 +29,17 @@ from charmhelpers.fetch import (
     apt_upgrade
 )
 
+from contrail_lb_utils import (
+  write_lb_config
+)
+
 PACKAGES = [ "docker.io" ]
 
 
 hooks = Hooks()
 config = config()
+
+launched = False
 
 def config_get(key):
     try:
@@ -68,7 +74,7 @@ def launch_docker_image():
                             ])
     output = output.split('\n')[:-1]
     for line in output:
-        if line.split()[0] == "contrail-lb":
+        if "contrail-lb" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
         check_call(["/usr/bin/docker",
@@ -78,6 +84,7 @@ def launch_docker_image():
                     "--cap-add=AUDIT_WRITE",
                     "--privileged",
                     "--env='CLOUD_ORCHESTRATOR=kubernetes'",
+                    "--volume=/etc/contrailctl:/etc/contrailctl",
                     "--name=contrail-lb",
                     "-itd",
                     image_id
@@ -90,10 +97,12 @@ def install():
     apt_upgrade(fatal=True, dist=True)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
+    #config["launched"] = False
     launch_docker_image()
                 
 @hooks.hook("config-changed")
 def config_changed():
+    set_status()
     return None
 
 @hooks.hook("contrail-lb-relation-joined")
@@ -101,9 +110,28 @@ def contrail_lb_joined():
     ipaddress = gethostbyname(unit_get("private-address"))
     settings = { "contrail-lb-vip": ipaddress }
     relation_set(relation_settings=settings)
-    for rid in relation_ids("contrail-lb"):
-        for unit in related_units(rid):
-            print "CONTROL NODE IP: ",gethostbyname(relation_get("private-address", unit, rid))
+
+@hooks.hook("contrail-control-relation-joined")
+def contrail_control_joined():
+    config["contrail-control-ready"] = True
+    write_lb_config()
+
+@hooks.hook("contrail-analytics-relation-joined")
+def contrail_analytics_joined():
+    config["contrail-analytics-ready"] = True
+    write_lb_config()
+    #if not config["launched"]:
+    #    launch_docker_image()
+    #    config["launched"] = True
+    #return
+
+@hooks.hook("contrail-control-relation-departed")
+def contrail_control_departed():
+    config["contrail-control-ready"] = False
+
+@hooks.hook("contrail-analytics-relation-departed")
+def contrail_analytics_departed():
+    config["contrail-analytics-ready"] = False
 
 @hooks.hook("update-status")
 def update_status():

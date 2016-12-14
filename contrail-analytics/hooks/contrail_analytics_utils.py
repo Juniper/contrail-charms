@@ -3,7 +3,8 @@ import os
 import pwd
 import shutil
 import socket
-from socket import gaierror, gethostbyname, gethostname
+from socket import gaierror, gethostbyname, gethostname, inet_aton
+import struct
 from subprocess import (
     CalledProcessError,
     check_call,
@@ -165,3 +166,45 @@ def units(relation):
     """Return a list of units for the specified relation"""
     return [ unit for rid in relation_ids(relation)
                   for unit in related_units(rid) ]
+def config_get(key):
+    try:
+        return config[key]
+    except KeyError:
+        return None
+
+def lb_ctx():
+   lb_vip = None
+   for rid in relation_ids("contrail-lb"):
+        for unit in related_units(rid):
+           lb_vip = gethostbyname(relation_get("private-address", unit, rid))
+   return { "lb_vip": lb_vip}
+
+def controller_ctx():
+    """Get the ipaddres of all contrail control nodes"""
+    controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                               for rid in relation_ids("contrail-control")
+                               for unit in related_units(rid) ]
+    controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return { "controller_servers": controller_ip_list }
+
+def analyticsdb_ctx():
+  """Get the ipaddres of all contrail analyticsdb nodes"""
+  analyticsdb_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                            for rid in relation_ids("contrail-analyticsdb")
+                            for unit in related_units(rid) ]
+  analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+  return { "analyticsdb_servers": analyticsdb_ip_list }
+
+def apply_analytics_config():
+    cmd = '/usr/bin/docker exec contrail-analytics contrailctl config sync -c analytics -F -t configure'
+    check_call(cmd, shell=True)
+
+def write_analytics_config():
+    """Render the configuration entries in the analytics.conf file"""
+    ctx = {}
+    ctx.update(controller_ctx())
+    ctx.update(analyticsdb_ctx())
+    ctx.update(lb_ctx())
+    render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
+    if config_get("control-ready") and config_get("lb-ready") and config_get("analyticsdb-ready"):
+        apply_analytics_config()

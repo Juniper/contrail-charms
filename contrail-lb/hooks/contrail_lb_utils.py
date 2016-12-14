@@ -2,7 +2,8 @@ import functools
 import os
 import pwd
 import shutil
-from socket import gethostbyname, gethostname
+from socket import gethostbyname, inet_aton
+import struct
 from subprocess import (
     CalledProcessError,
     check_call,
@@ -26,7 +27,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_type,
-    remote_unit
+    remote_unit,
+    related_units
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -34,13 +36,6 @@ from charmhelpers.core.host import service_restart, service_start
 from charmhelpers.core.templating import render
 
 apt_pkg.init()
-
-def dpkg_version(pkg):
-    try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
-    except CalledProcessError:
-        return None
-
 
 config = config()
 
@@ -87,44 +82,6 @@ def retry(f=None, timeout=10, delay=2):
                 raise error
     return func
 
-def contrail_api_ctx():
-    ip = config.get("contrail-api-ip")
-    if ip:
-        port = config.get("contrail-api-port")
-        return { "api_server": ip,
-                 "api_port": port if port is not None else 8082 }
-
-    ctxs = [ { "api_server": gethostbyname(relation_get("private-address", unit, rid)),
-               "api_port": port }
-             for rid in relation_ids("contrail-api")
-             for unit, port in
-             ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-             if port ]
-    return ctxs[0] if ctxs else {}
-
-def contrail_discovery_ctx():
-    ip = config.get("discovery-server-ip")
-    if ip:
-        return { "discovery_server": ip,
-                 "discovery_port": 5998 }
-
-    ctxs = [ { "discovery_server": vip if vip \
-                 else gethostbyname(relation_get("private-address", unit, rid)),
-               "discovery_port": port }
-             for rid in relation_ids("contrail-discovery")
-             for unit, port, vip in
-             ((unit, relation_get("port", unit, rid), relation_get("vip", unit, rid))
-              for unit in related_units(rid))
-             if port ]
-    return ctxs[0] if ctxs else {}
-
-def drop_caches():
-    """Clears OS pagecache"""
-    log("Clearing pagecache")
-    check_call(["sync"])
-    with open("/proc/sys/vm/drop_caches", "w") as f:
-        f.write("3\n")
-
 def identity_admin_ctx():
     ctxs = [ { "auth_host": gethostbyname(hostname),
                "auth_port": relation_get("service_port", unit, rid),
@@ -138,17 +95,40 @@ def identity_admin_ctx():
              if hostname ]
     return ctxs[0] if ctxs else {}
 
-def ifdown(interfaces=None):
-    """ifdown an interface or all interfaces"""
-    log("Taking down {}".format(interfaces if interfaces else "interfaces"))
-    check_call(["ifdown"] + interfaces if interfaces else ["-a"])
-
-def ifup(interfaces=None):
-    """ifup an interface or all interfaces"""
-    log("Bringing up {}".format(interfaces if interfaces else "interfaces"))
-    check_call(["ifup"] + interfaces if interfaces else ["-a"])
-
 def units(relation):
     """Return a list of units for the specified relation"""
     return [ unit for rid in relation_ids(relation)
                   for unit in related_units(rid) ]
+
+def write_lb_config():
+    """Render the configuration entries in the lb.conf file"""
+    ctx = {}
+    ctx.update(controller_ctx())
+    ctx.update(analytics_ctx())
+    render("lb.conf", "/etc/contrailctl/lb.conf", ctx)
+    if config_get("contrail-control-ready") and config_get("contrail-analytics-ready"):
+        apply_lb_config()
+
+def controller_ctx():
+    """Get the ipaddres of all contrail control nodes"""
+    controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                               for rid in relation_ids("contrail-control")
+                               for unit in related_units(rid) ]
+    controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return { "controller_servers": controller_ip_list }
+
+def analytics_ctx():
+    """Get the ipaddres of all contrail analytics nodes"""
+    return { "analytics_servers": [ gethostbyname(relation_get("private-address", unit, rid))
+                                    for rid in relation_ids("contrail-analytics")
+                                    for unit in related_units(rid) ] }
+
+def apply_lb_config():
+        cmd = '/usr/bin/docker exec contrail-lb contrailctl config sync -c lb -F'
+        check_call(cmd, shell=True)
+
+def config_get(key):
+    try:
+        return config[key]
+    except KeyError:
+        return None

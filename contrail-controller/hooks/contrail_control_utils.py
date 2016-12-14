@@ -129,24 +129,39 @@ def identity_admin_ctx():
              if hostname ]
     return ctxs[0] if ctxs else {}
 
-def write_control_ctx():
-    controller_ip_list = []
-    ctx = {}
+def controller_ctx():
+    """Get the ipaddres of all contrail control nodes"""
+    controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("control-cluster")
+                                     for unit in related_units(rid) ]
+    # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
-    # get all ipaddress of control node instances
-    for rid in relation_ids("control-cluster"):
-        for unit in related_units(rid):
-            ipaddr = gethostbyname(relation_get("private-address", unit, rid))
-            controller_ip_list.append(ipaddr)
-    # sort the ipaddress
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    if relation_get("contrail-lb-vip"):
-        for rid in relation_ids("contrail-lb"):
-            for unit in related_units(rid):
-               #lb_vip = relation_get("contrail-lb-vip", unit, rid)
-               lb_vip = gethostbyname(relation_get("private-address", unit, rid))
-        ctx = {"controller_ip": lb_vip,
-               "analytics_ip": lb_vip,
-               "controller_servers": [controller_ip_list]
-              }
+    return { "controller_servers": controller_ip_list }
+
+def lb_ctx():
+    for rid in relation_ids("contrail-control"):
+        for unit in related_units(rid):
+           lb_vip = gethostbyname(relation_get("private-address", unit, rid))
+    return { "controller_ip": lb_vip,
+             "analytics_ip": lb_vip
+           }
+
+def config_get(key):
+    try:
+        return config[key]
+    except KeyError:
+        return None
+
+def apply_control_config():
+        config["config-applied"] = True
+        cmd = '/usr/bin/docker exec contrail-controller contrailctl config sync -c controller -F -t configure'
+        check_call(cmd, shell=True)
+
+def write_control_config():
+    ctx = {}
+    ctx.update(controller_ctx())
+    ctx.update(lb_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
+    if not config_get("config-applied"):
+        apply_control_config()

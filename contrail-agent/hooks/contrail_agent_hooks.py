@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 from subprocess import (
     CalledProcessError,
@@ -67,7 +66,7 @@ def launch_docker_image():
                             ])
     output = output.split('\n')[:-1]
     for line in output:
-        if line.split()[0] == "contrail-agent":
+        if "contrail-agent" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
         check_call(["/usr/bin/docker",
