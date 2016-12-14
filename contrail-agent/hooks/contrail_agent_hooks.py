@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 from subprocess import (
     CalledProcessError,
@@ -5,7 +6,7 @@ from subprocess import (
     check_output
 )
 import sys
-
+from socket import gethostbyname
 import yaml
 
 from charmhelpers.core.hookenv import (
@@ -30,14 +31,9 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
+    log_level =  config.get("log_level")
     set_status()
     return None
-
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
 
 def set_status():
   result = check_output(["/usr/bin/docker",
@@ -90,11 +86,12 @@ def install():
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     launch_docker_image()
-                
+
 @hooks.hook("update-status")
 def update_status():
   set_status()
-
+  #status_set("active", "Unit ready")
+                
 def main():
     try:
         hooks.execute(sys.argv)
