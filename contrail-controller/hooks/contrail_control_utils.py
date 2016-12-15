@@ -140,7 +140,8 @@ def controller_ctx():
     return { "controller_servers": controller_ip_list }
 
 def lb_ctx():
-    for rid in relation_ids("contrail-control"):
+    lb_vip = None
+    for rid in relation_ids("contrail-lb"):
         for unit in related_units(rid):
            lb_vip = gethostbyname(relation_get("private-address", unit, rid))
     return { "controller_ip": lb_vip,

@@ -35,8 +35,8 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
-    log_level =  config.get("log_level")
-    #set_status()
+    #log_level =  config.get("log_level")
+    set_status()
     return None
 
 def config_get(key):
@@ -98,8 +98,8 @@ def install():
     launch_docker_image()
     config["config-applied"] = False
 
-@hooks.hook("contrail-control-relation-changed")
-def control_changed():
+@hooks.hook("contrail-lb-relation-joined")
+def lb_joined():
     write_control_config()
     #launch_docker_image()
 
