@@ -129,6 +129,14 @@ def identity_admin_ctx():
              if hostname ]
     return ctxs[0] if ctxs else {}
 
+def is_already_launched():
+    cmd = 'docker ps | grep contrail-controller'
+    try:
+        output =  check_output(cmd, shell=True)
+        return True
+    except CalledProcessError:
+        return False
+
 def controller_ctx():
     """Get the ipaddres of all contrail control nodes"""
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
@@ -159,10 +167,43 @@ def apply_control_config():
         cmd = '/usr/bin/docker exec contrail-controller contrailctl config sync -c controller -F -t configure'
         check_call(cmd, shell=True)
 
+def units(relation):
+    """Return a list of units for the specified relation"""
+    return [ unit for rid in relation_ids(relation)
+                  for unit in related_units(rid) ]
+
+def launch_docker_image():
+    image_id = None
+    output =  check_output(["docker",
+                            "images",
+                            ])
+    output = output.split('\n')[:-1]
+    for line in output:
+        if "contrail-controller" in line.split()[0]:
+            image_id = line.split()[2].strip()
+    if image_id:
+        check_call(["/usr/bin/docker",
+                    "run",
+                    "--net=host",
+                    "--pid=host",
+                    "--cap-add=AUDIT_WRITE",
+                    "--privileged",
+                    "--env='CLOUD_ORCHESTRATOR=kubernetes'", 
+                    "--name=contrail-controller",
+                    "--volume=/etc/contrailctl:/etc/contrailctl",
+                    "-itd",
+                    image_id 
+                   ])
+    else:
+        log("contrail-controller docker image is not available")
+
 def write_control_config():
     ctx = {}
     ctx.update(controller_ctx())
     ctx.update(lb_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
-    if not config_get("config-applied"):
-        apply_control_config()
+    if not is_already_launched():
+        #apply_control_config()
+        print "LAUNCHING THE CONTROLLER CONTAINER"
+        print "CTX: ", ctx
+        launch_docker_image()

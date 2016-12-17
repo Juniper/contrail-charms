@@ -15,7 +15,14 @@ from charmhelpers.core.hookenv import (
     config,
     resource_get,
     log,
-    status_set
+    status_set,
+    related_units,
+    relation_get,
+    relation_ids,
+    relation_type,
+    relation_get,
+    unit_get,
+    remote_unit
 )
 
 from charmhelpers.fetch import (
@@ -24,7 +31,9 @@ from charmhelpers.fetch import (
 )
 
 from contrail_control_utils import (
-  write_control_config
+  launch_docker_image,
+  write_control_config,
+  units
 )
 
 PACKAGES = [ "docker.io" ]
@@ -36,7 +45,7 @@ config = config()
 @hooks.hook("config-changed")
 def config_changed():
     #log_level =  config.get("log_level")
-    set_status()
+    #set_status()
     return None
 
 def config_get(key):
@@ -65,48 +74,34 @@ def load_docker_image():
                 img_path,
                 ])
 
-def launch_docker_image():
-    image_id = None
-    output =  check_output(["docker",
-                            "images",
-                            ])
-    output = output.split('\n')[:-1]
-    for line in output:
-        if "contrail-controller" in line.split()[0]:
-            image_id = line.split()[2].strip()
-    if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--pid=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=kubernetes'", 
-                    "--name=contrail-controller",
-                    "--volume=/etc/contrailctl:/etc/contrailctl",
-                    "-itd",
-                    image_id 
-                   ])
-    else:
-        log("contrail-controller docker image is not available")
-
 @hooks.hook()
 def install():
     apt_upgrade(fatal=True, dist=True)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
-    launch_docker_image()
-    config["config-applied"] = False
+    #launch_docker_image()
 
 @hooks.hook("contrail-lb-relation-joined")
 def lb_joined():
+    controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("control-cluster")
+                                     for unit in related_units(rid) ]
+    # add it's own ip address
+    controller_ip_list.append(gethostbyname(unit_get("private-address")))
     write_control_config()
-    #launch_docker_image()
+
+@hooks.hook("control-cluster-relation-joined")
+def cluster_joined():
+    controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("control-cluster")
+                                     for unit in related_units(rid) ]
+    # add it's own ip address
+    controller_ip_list.append(gethostbyname(unit_get("private-address")))
 
 @hooks.hook("update-status")
 def update_status():
-  set_status()
-  #status_set("active", "Unit ready")
+  #set_status()
+  status_set("active", "Unit ready")
                 
 def main():
     try:

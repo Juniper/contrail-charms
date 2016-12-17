@@ -25,7 +25,9 @@ from charmhelpers.fetch import (
 
 from contrail_analytics_utils import (
     fix_hostname,
-    write_analytics_config
+    write_analytics_config,
+    launch_docker_image,
+    units
 )
 
 PACKAGES = [ "docker.io" ]
@@ -36,7 +38,7 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
-    set_status()
+    #set_status()
     return None
 
 def config_get(key):
@@ -65,28 +67,6 @@ def load_docker_image():
                 img_path,
                 ])
 
-def launch_docker_image():
-    image_id = None
-    output =  check_output(["docker",
-                            "images",
-                            ])
-    output = output.split('\n')[:-1]
-    for line in output:
-        if "contrail-analytics" in line.split()[0]:
-            image_id = line.split()[2].strip()
-    if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=kubernetes'", 
-                    "--name=contrail-analytics",
-                    "-itd",
-                    image_id
-                   ])
-    else:
-        log("contrail-analytics docker image is not available")
 
 @hooks.hook()
 def install():
@@ -94,16 +74,19 @@ def install():
     apt_upgrade(fatal=True, dist=True)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
-    launch_docker_image()
+    #launch_docker_image()
 
 @hooks.hook("contrail-control-relation-joined")
 def contrail_control_joined():
-   config["control-ready"] = True
+   print "NUM CONTROL UNITS: ", len(units("contrail-control"))
+   if len(units("contrail-control")) == 3:
+       config["control-ready"] = True
    write_analytics_config()
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def contrail_analyticsdb_joined():
-   config["analyticsdb-ready"] = True
+   if len(units("contrail-analyticsdb")) == 3:
+       config["analyticsdb-ready"] = True
    write_analytics_config()
 
 @hooks.hook("contrail-lb-relation-joined")
@@ -125,8 +108,8 @@ def contrail_lb_departed():
 
 @hooks.hook("update-status")
 def update_status():
-  set_status()
-  #status_set("active", "Unit ready")
+  #set_status()
+  status_set("active", "Unit ready")
                 
 def main():
     try:

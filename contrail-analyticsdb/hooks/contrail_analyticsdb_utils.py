@@ -165,14 +165,13 @@ def lb_ctx():
            lb_vip = gethostbyname(relation_get("private-address", unit, rid))
    return { "lb_vip": lb_vip}
 
-def write_analyticsdb_config():
-    ctx = {}
-    ctx.update(controller_ctx())
-    ctx.update(analyticsdb_ctx())
-    ctx.update(lb_ctx())
-    render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
-    if config_get("control-ready") and config_get("lb-ready"):
-        apply_config()
+def is_already_launched():
+    cmd = 'docker ps | grep contrail-analyticsdb'
+    try:
+        output =  check_output(cmd, shell=True)
+        return True
+    except CalledProcessError:
+        return False
 
 def apply_config():
    cmd = '/usr/bin/docker exec contrail-analyticsdb contrailctl config sync -c analyticsdb -F -t configure'
@@ -183,3 +182,43 @@ def config_get(key):
         return config[key]
     except KeyError:
         return None
+
+def units(relation):
+    """Return a list of units for the specified relation"""
+    return [ unit for rid in relation_ids(relation)
+                  for unit in related_units(rid) ]
+
+def launch_docker_image():
+    image_id = None
+    output =  check_output(["docker",
+                            "images",
+                            ])
+    output = output.split('\n')[:-1]
+    for line in output:
+        if "contrail-analyticsdb" in line.split()[0]:
+            image_id = line.split()[2].strip()
+    if image_id:
+        check_call(["/usr/bin/docker",
+                    "run",
+                    "--net=host",
+                    "--cap-add=AUDIT_WRITE",
+                    "--privileged",
+                    "--env='CLOUD_ORCHESTRATOR=kubernetes'",
+                    "--name=contrail-analyticsdb",
+                    "-itd",
+                    image_id
+                   ])
+    else:
+        log("contrail-analyticsdb docker image is not available")
+
+def write_analyticsdb_config():
+    ctx = {}
+    ctx.update(controller_ctx())
+    ctx.update(analyticsdb_ctx())
+    ctx.update(lb_ctx())
+    render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
+    if config_get("control-ready") and config_get("lb-ready") \
+       and not is_already_launched():
+        #apply_config()
+        print "ANALYTICSDB CONTAINER LAUNCHED, ctx"
+        launch_docker_image()

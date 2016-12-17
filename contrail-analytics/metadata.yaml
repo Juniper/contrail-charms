@@ -18,6 +18,9 @@ description: |
   
   This charm provides both the TSN and TOR agent service on the same node.
   It supports running multiple TOR agents as well.
+peers:
+  analytics-cluster:
+    interface: contrail-analytics-cluster
 provides:
  contrail-analytics:
    interface: contrail-analytics

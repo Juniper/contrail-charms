@@ -199,6 +199,37 @@ def apply_analytics_config():
     cmd = '/usr/bin/docker exec contrail-analytics contrailctl config sync -c analytics -F -t configure'
     check_call(cmd, shell=True)
 
+def launch_docker_image():
+    image_id = None
+    output =  check_output(["docker",
+                            "images",
+                            ])
+    output = output.split('\n')[:-1]
+    for line in output:
+        if "contrail-analytics" in line.split()[0]:
+            image_id = line.split()[2].strip()
+    if image_id:
+        check_call(["/usr/bin/docker",
+                    "run",
+                    "--net=host",
+                    "--cap-add=AUDIT_WRITE",
+                    "--privileged",
+                    "--env='CLOUD_ORCHESTRATOR=kubernetes'", 
+                    "--name=contrail-analytics",
+                    "-itd",
+                    image_id
+                   ])
+    else:
+        log("contrail-analytics docker image is not available")
+
+def is_already_launched():
+    cmd = 'docker ps | grep contrail-analytics'
+    try:
+        output =  check_output(cmd, shell=True)
+        return True
+    except CalledProcessError:
+        return False
+ 
 def write_analytics_config():
     """Render the configuration entries in the analytics.conf file"""
     ctx = {}
@@ -206,5 +237,9 @@ def write_analytics_config():
     ctx.update(analyticsdb_ctx())
     ctx.update(lb_ctx())
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
-    if config_get("control-ready") and config_get("lb-ready") and config_get("analyticsdb-ready"):
-        apply_analytics_config()
+    if config_get("control-ready") and config_get("lb-ready") \
+       and config_get("analyticsdb-ready") and not is_already_launched():
+        #apply_analytics_config()
+        print "LAUNCHING THE ANALYTICS CONTAINER"
+        print "CTX: ", ctx
+        launch_docker_image()

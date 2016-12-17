@@ -100,14 +100,53 @@ def units(relation):
     return [ unit for rid in relation_ids(relation)
                   for unit in related_units(rid) ]
 
+def launch_docker_image():
+    image_id = None
+    output =  check_output(["docker",
+                            "images",
+                            ])
+    output = output.split('\n')[:-1]
+    for line in output:
+        if "contrail-lb" in line.split()[0]:
+            image_id = line.split()[2].strip()
+    if image_id:
+        check_call(["/usr/bin/docker",
+                    "run",
+                    "--net=host",
+                    "--pid=host",
+                    "--cap-add=AUDIT_WRITE",
+                    "--privileged",
+                    "--env='CLOUD_ORCHESTRATOR=kubernetes'",
+                    "--volume=/etc/contrailctl:/etc/contrailctl",
+                    "--name=contrail-lb",
+                    "-itd",
+                    image_id
+                   ])
+    else:
+        log("contrail-lb docker image is not available")
+
+def is_already_launched():
+    cmd = 'docker ps | grep contrail-lb'
+    try:
+        output =  check_output(cmd, shell=True)
+        return True
+    except CalledProcessError:
+        return False
+
 def write_lb_config():
     """Render the configuration entries in the lb.conf file"""
     ctx = {}
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     render("lb.conf", "/etc/contrailctl/lb.conf", ctx)
-    if config_get("contrail-control-ready") and config_get("contrail-analytics-ready"):
-        apply_lb_config()
+    print "write_lb_config control: ", config_get("contrail-control-ready")
+    print "write_lb_config analytics: ", config_get("contrail-analytics-ready")
+    print "CTX: ", ctx
+    if config_get("contrail-control-ready") and config_get("contrail-analytics-ready") \
+         and not is_already_launched():
+        print "LAUNCHING THE LB CONTAINER"
+        launch_docker_image()
+        #apply_lb_config()
 
 def controller_ctx():
     """Get the ipaddres of all contrail control nodes"""
@@ -119,9 +158,11 @@ def controller_ctx():
 
 def analytics_ctx():
     """Get the ipaddres of all contrail analytics nodes"""
-    return { "analytics_servers": [ gethostbyname(relation_get("private-address", unit, rid))
-                                    for rid in relation_ids("contrail-analytics")
-                                    for unit in related_units(rid) ] }
+    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                               for rid in relation_ids("contrail-analytics")
+                               for unit in related_units(rid) ]
+    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return { "analytics_servers": analytics_ip_list }
 
 def apply_lb_config():
         cmd = '/usr/bin/docker exec contrail-lb contrailctl config sync -c lb -F'
