@@ -14,7 +14,8 @@ from charmhelpers.core.hookenv import (
     config,
     resource_get,
     log,
-    status_set
+    status_set,
+    relation_get
 )
 
 from charmhelpers.fetch import (
@@ -38,7 +39,7 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
-    #set_status()
+    set_status()
     return None
 
 def config_get(key):
@@ -48,12 +49,16 @@ def config_get(key):
         return None
 
 def set_status():
-  result = check_output(["/usr/bin/docker",
-                         "inspect",
-                         "-f",
-                         "{{.State.Running}}",
-                         "contrail-analytics"
-                         ])
+  try:
+      result = check_output(["/usr/bin/docker",
+                             "inspect",
+                             "-f",
+                             "{{.State.Running}}",
+                             "contrail-analytics"
+                             ])
+  except CalledProcessError:
+      status_set("waiting", "Waiting for container to be launched")
+      return
   if result:
       status_set("active", "Unit ready")
   else:
@@ -85,6 +90,7 @@ def contrail_control_joined():
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def contrail_analyticsdb_joined():
+   print "NUM ANALYTICSDB UNITS: ", len(units("contrail-analyticsdb"))
    if len(units("contrail-analyticsdb")) == 3:
        config["analyticsdb-ready"] = True
    write_analytics_config()
@@ -106,10 +112,23 @@ def contrail_analyticsdb_departed():
 def contrail_lb_departed():
    config["lb-ready"] = False
 
+@hooks.hook("identity-admin-relation-changed")
+def identity_admin_changed():
+   if not relation_get("service_hostname"):
+        log("Keystone relation not ready")
+        return
+   config["identity-admin-ready"] = True
+   write_analytics_config()
+
+@hooks.hook("identity-admin-relation-departed")
+@hooks.hook("identity-admin-relation-broken")
+def identity_admin_broken():
+   config["identity-admin-ready"] = False
+
 @hooks.hook("update-status")
 def update_status():
-  #set_status()
-  status_set("active", "Unit ready")
+  set_status()
+  #status_set("active", "Unit ready")
                 
 def main():
     try:

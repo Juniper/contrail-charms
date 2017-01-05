@@ -118,37 +118,63 @@ def contrail_discovery_ctx():
              if port ]
     return ctxs[0] if ctxs else {}
 
-def drop_caches():
-    """Clears OS pagecache"""
-    log("Clearing pagecache")
-    check_call(["sync"])
-    with open("/proc/sys/vm/drop_caches", "w") as f:
-        f.write("3\n")
-
-def identity_admin_ctx():
-    ctxs = [ { "auth_host": gethostbyname(hostname),
-               "auth_port": relation_get("service_port", unit, rid),
-               "admin_user": relation_get("service_username", unit, rid),
-               "admin_password": relation_get("service_password", unit, rid),
-               "admin_tenant_name": relation_get("service_tenant_name", unit, rid),
-               "auth_region": relation_get("service_region", unit, rid) }
-             for rid in relation_ids("identity-admin")
-             for unit, hostname in
-             ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-             if hostname ]
-    return ctxs[0] if ctxs else {}
-
-def ifdown(interfaces=None):
-    """ifdown an interface or all interfaces"""
-    log("Taking down {}".format(interfaces if interfaces else "interfaces"))
-    check_call(["ifdown"] + interfaces if interfaces else ["-a"])
-
-def ifup(interfaces=None):
-    """ifup an interface or all interfaces"""
-    log("Bringing up {}".format(interfaces if interfaces else "interfaces"))
-    check_call(["ifup"] + interfaces if interfaces else ["-a"])
-
 def units(relation):
     """Return a list of units for the specified relation"""
     return [ unit for rid in relation_ids(relation)
                   for unit in related_units(rid) ]
+
+def launch_docker_image():
+    image_id = None
+    output =  check_output(["docker",
+                            "images",
+                            ])
+    output = output.split('\n')[:-1]
+    for line in output:
+        if "contrail-agent" in line.split()[0]:
+            image_id = line.split()[2].strip()
+    if image_id:
+        check_call(["/usr/bin/docker",
+                    "run",
+                    "--net=host",
+                    "--cap-add=AUDIT_WRITE",
+                    "--privileged",
+                    "--env='CLOUD_ORCHESTRATOR=kubernetes'",
+                    "--volume=/lib/modules:/lib/modules",
+                    "--volume=/usr/src:/usr/src",
+                    "--name=contrail-agent",
+                    "-itd",
+                    image_id
+                    ])
+        log("contrail-agent docker image is not available")
+
+def config_get(key):
+    try:
+        return config[key]
+    except KeyError:
+        return None
+
+def identity_admin_ctx():
+   if not relation_get("service_hostname"):
+       return {}
+   for rid in relation_ids("identity-admin"):
+      for unit in related_units(rid):
+          hostname = relation_get("service_hostname", unit, rid)
+          return { "keystone_ip": gethostbyname(hostname),
+                   "keystone_public_port": relation_get("service_port", unit, rid),
+                   "keystone_admin_user": relation_get("service_username", unit, rid),
+                   "keystone_admin_password": relation_get("service_password", unit, rid),
+                   "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
+                   "keystone_auth_protocol": relation_get("service_protocol", unit, rid)
+                 }
+
+def remove_juju_bridges():
+    cmd = "scripts/remove-juju-bridges.sh"
+    #check_call("remove-juju-bridges.sh", cwd="scripts")
+    check_call(cmd)
+
+def write_agent_config():
+    ctx = {}
+    ctx.update(identity_admin_ctx())
+    render("agent.conf", "/etc/contrailctl/agent.conf", ctx)
+    if config_get("identity-admin-ready"):
+        launch_docker_image()

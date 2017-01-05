@@ -15,12 +15,19 @@ from charmhelpers.core.hookenv import (
     config,
     resource_get,
     log,
-    status_set
+    status_set,
+    relation_get
 )
 
 from charmhelpers.fetch import (
     apt_install,
     apt_upgrade
+)
+
+from contrail_agent_utils import (
+    remove_juju_bridges,
+    launch_docker_image,
+    write_agent_config
 )
 
 PACKAGES = [ "docker.io" ]
@@ -32,20 +39,24 @@ config = config()
 @hooks.hook("config-changed")
 def config_changed():
     log_level =  config.get("log_level")
-    set_status()
+    #set_status()
     return None
 
 def set_status():
-  result = check_output(["/usr/bin/docker",
-                         "inspect",
-                         "-f",
-                         "{{.State.Running}}",
-                         "contrail-agent"
-                         ])
-  if result:
-      status_set("active", "Unit ready")
-  else:
-      status_set("blocked", "Control container is not running")
+    try:
+       result = check_output(["/usr/bin/docker",
+                              "inspect",
+                              "-f",
+                              "{{.State.Running}}",
+                              "contrail-agent"
+                              ])
+    except CalledProcessError:
+        status_set("waiting", "Waiting for the container to be launched")
+        return
+    if result:
+        status_set("active", "Unit ready")
+    else:
+        status_set("blocked", "Control container is not running")
 
 def load_docker_image():
     img_path = resource_get("contrail-agent")
@@ -55,37 +66,27 @@ def load_docker_image():
                 img_path,
                 ])
 
-def launch_docker_image():
-    image_id = None
-    output =  check_output(["docker",
-                            "images",
-                            ])
-    output = output.split('\n')[:-1]
-    for line in output:
-        if "contrail-agent" in line.split()[0]:
-            image_id = line.split()[2].strip()
-    if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=kubernetes'",
-                    "--volume=/lib/modules:/lib/modules",
-                    "--volume=/usr/src:/usr/src",
-                    "--name=contrail-agent",
-                    "-itd",
-                    image_id
-                   ])
-    else:
-        log("contrail-agent docker image is not available")
 
 @hooks.hook()
 def install():
     apt_upgrade(fatal=True, dist=True)
     apt_install(PACKAGES, fatal=True)
+    remove_juju_bridges()
     load_docker_image()
-    launch_docker_image()
+    #launch_docker_image()
+
+@hooks.hook("identity-admin-relation-changed")
+def identity_admin_changed():
+   if not relation_get("service_hostname"):
+        log("Relation not ready")
+        return
+   config["identity-admin-ready"] = True
+   write_agent_config()
+
+@hooks.hook("identity-admin-relation-departed")
+@hooks.hook("identity-admin-relation-broken")
+def identity_admin_departed():
+    config["identity-admin-ready"] = False
 
 @hooks.hook("update-status")
 def update_status():

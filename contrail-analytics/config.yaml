@@ -1,17 +1,7 @@
 options:
-  remove-juju-bridge:
-    type: boolean
-    default: true
+  cloud_orchestrator:
+    type: string
+    default: openstack
     description: |
-      Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
-      Enable this to remove such a bridge if you want to install vhost0 directly
-      on the underlying interface.
-  contrail-api-ip:
-    type: string
-    description: Specify contrail-api ip manually
-  contrail-api-port:
-    type: int
-    description: Specify contrail-api port manually
-  discovery-server-ip:
-    type: string
-    description: Specify discovery server ip manually
+      cloud_orchestrator - what cloud orchestrator is being used. Valid
+      options are kubernetes, openstack, mesos

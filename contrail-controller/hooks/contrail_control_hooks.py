@@ -44,8 +44,7 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
-    #log_level =  config.get("log_level")
-    #set_status()
+    set_status()
     return None
 
 def config_get(key):
@@ -55,12 +54,17 @@ def config_get(key):
         return None
 
 def set_status():
-  result = check_output(["/usr/bin/docker",
-                         "inspect",
-                         "-f",
-                         "{{.State.Running}}",
-                         "contrail-controller"
-                         ])
+  try:
+      result = check_output(["/usr/bin/docker",
+                             "inspect",
+                             "-f",
+                             "{{.State.Running}}",
+                             "contrail-controller"
+                             ])
+  except CalledProcessError:
+      status_set("waiting", "Waiting for container to be launched")
+      return
+      
   if result:
       status_set("active", "Unit ready")
   else:
@@ -88,6 +92,8 @@ def lb_joined():
                                      for unit in related_units(rid) ]
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
+    print "LB RELATION JOINED: ", controller_ip_list
+    config["lb-ready"] = True
     write_control_config()
 
 @hooks.hook("control-cluster-relation-joined")
@@ -97,11 +103,28 @@ def cluster_joined():
                                      for unit in related_units(rid) ]
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
+    print "CLUSTER RELATION JOINED: ", controller_ip_list
+    if len(controller_ip_list) == 3:
+        config["control-ready"] = True
+    write_control_config()
+
+@hooks.hook("identity-admin-relation-changed")
+def identity_admin_changed():
+   if not relation_get("service_hostname"):
+        log("Relation not ready")
+        return
+   config["identity-admin-ready"] = True
+   write_control_config()
+
+@hooks.hook("identity-admin-relation-departed")
+@hooks.hook("identity-admin-relation-broken")
+def identity_admin_departed():
+    config["identity-admin-ready"] = False
 
 @hooks.hook("update-status")
 def update_status():
-  #set_status()
-  status_set("active", "Unit ready")
+  set_status()
+  #status_set("active", "Unit ready")
                 
 def main():
     try:

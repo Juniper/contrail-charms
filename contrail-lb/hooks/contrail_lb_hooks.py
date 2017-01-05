@@ -42,16 +42,20 @@ hooks = Hooks()
 config = config()
 
 def set_status():
-  result = check_output(["/usr/bin/docker",
-                         "inspect",
-                         "-f",
-                         "{{.State.Running}}",
-                         "contrail-lb"
-                         ])
-  if result:
-      status_set("active", "Unit ready")
-  else:
-      status_set("blocked", "Control container is not running")
+    try:
+        result = check_output(["/usr/bin/docker",
+                             "inspect",
+                             "-f",
+                             "{{.State.Running}}",
+                             "contrail-lb"
+                             ])
+    except CalledProcessError:
+        status_set("waiting", "Waiting for the container to be launched")
+        return
+    if result:
+        status_set("active", "Unit ready")
+    else:
+        status_set("blocked", "Control container is not running")
 
 def load_docker_image():
     img_path = resource_get("contrail-lb")
@@ -72,7 +76,7 @@ def install():
                 
 @hooks.hook("config-changed")
 def config_changed():
-    #set_status()
+    set_status()
     return None
 
 @hooks.hook("contrail-lb-relation-joined")
@@ -103,8 +107,8 @@ def contrail_analytics_departed():
 
 @hooks.hook("update-status")
 def update_status():
-  #set_status()
-  status_set("active", "Unit ready")
+  set_status()
+  #status_set("active", "Unit ready")
 
 def main():
     try:
