@@ -192,6 +192,7 @@ def write_analyticsdb_config():
     render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
     if config_get("control-ready") and config_get("lb-ready") \
        and config_get("identity-admin-ready") and not is_already_launched():
+       #and not is_already_launched():
         #apply_config()
         print "ANALYTICSDB CONTAINER LAUNCHED, ctx"
         launch_docker_image()

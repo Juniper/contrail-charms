@@ -88,6 +88,15 @@ def identity_admin_changed():
 def identity_admin_departed():
     config["identity-admin-ready"] = False
 
+@hooks.hook("contrail-lb-relation-joined")
+def lb_relation_joined():
+   config["lb-ready"] = True
+   write_agent_config()
+    
+@hooks.hook("contrail-lb-relation-departed")
+def lb_relation_departed():
+   config["lb-ready"] = False
+
 @hooks.hook("update-status")
 def update_status():
   set_status()

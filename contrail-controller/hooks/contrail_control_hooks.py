@@ -104,7 +104,7 @@ def cluster_joined():
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
     print "CLUSTER RELATION JOINED: ", controller_ip_list
-    if len(controller_ip_list) == 3:
+    if len(controller_ip_list) == config.get("control_units"):
         config["control-ready"] = True
     write_control_config()
 

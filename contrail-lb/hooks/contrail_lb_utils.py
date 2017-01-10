@@ -102,6 +102,7 @@ def units(relation):
 
 def launch_docker_image():
     image_id = None
+    orchestrator = config.get("cloud_orchestrator")
     output =  check_output(["docker",
                             "images",
                             ])
@@ -116,7 +117,7 @@ def launch_docker_image():
                     "--pid=host",
                     "--cap-add=AUDIT_WRITE",
                     "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=kubernetes'",
+                    "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
                     "--volume=/etc/contrailctl:/etc/contrailctl",
                     "--name=contrail-lb",
                     "-itd",
@@ -132,21 +133,6 @@ def is_already_launched():
         return True
     except CalledProcessError:
         return False
-
-def write_lb_config():
-    """Render the configuration entries in the lb.conf file"""
-    ctx = {}
-    ctx.update(controller_ctx())
-    ctx.update(analytics_ctx())
-    render("lb.conf", "/etc/contrailctl/lb.conf", ctx)
-    print "write_lb_config control: ", config_get("contrail-control-ready")
-    print "write_lb_config analytics: ", config_get("contrail-analytics-ready")
-    print "CTX: ", ctx
-    if config_get("contrail-control-ready") and config_get("contrail-analytics-ready") \
-         and not is_already_launched():
-        print "LAUNCHING THE LB CONTAINER"
-        launch_docker_image()
-        #apply_lb_config()
 
 def controller_ctx():
     """Get the ipaddres of all contrail control nodes"""
@@ -173,3 +159,19 @@ def config_get(key):
         return config[key]
     except KeyError:
         return None
+
+def write_lb_config():
+    """Render the configuration entries in the lb.conf file"""
+    ctx = {}
+    ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
+    ctx.update(controller_ctx())
+    ctx.update(analytics_ctx())
+    render("lb.conf", "/etc/contrailctl/lb.conf", ctx)
+    print "write_lb_config control: ", config_get("contrail-control-ready")
+    print "write_lb_config analytics: ", config_get("contrail-analytics-ready")
+    print "CTX: ", ctx
+    if config_get("contrail-control-ready") and config_get("contrail-analytics-ready") \
+         and not is_already_launched():
+        print "LAUNCHING THE LB CONTAINER"
+        launch_docker_image()
+        #apply_lb_config()

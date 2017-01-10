@@ -196,6 +196,7 @@ def write_analytics_config():
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
     if config_get("control-ready") and config_get("lb-ready") \
        and config_get("identity-admin-ready") and config_get("analyticsdb-ready"):
+       #and config_get("analyticsdb-ready"):
         #apply_analytics_config()
         print "LAUNCHING THE ANALYTICS CONTAINER"
         print "CTX: ", ctx

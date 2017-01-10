@@ -5,3 +5,9 @@ options:
     description: |
       cloud_orchestrator - what cloud orchestrator is being used. Valid
       options are kubernetes, openstack, mesos.
+  control_units:
+    type: int
+    default: 3
+    description: |
+      Minimum number of units required in control peer relation
+      TEMPORARY ENTRY. SHOULD BE REMOVED AFTER THE FIX IS PUT IN CONTRAIL

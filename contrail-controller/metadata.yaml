@@ -24,6 +24,8 @@ peers:
 provides:
   contrail-control:
     interface: contrail-control
+  contrail-api:
+    interface: contrail-api
 requires:
   identity-admin:
     interface: keystone-admin
@@ -33,6 +35,8 @@ requires:
     interface: contrail-analytics
   contrail-analyticsdb:
     interface: contrail-analyticsdb
+  neutron-api-contrail:
+    interface: neutron-api-contrail
 resources:
   contrail-control:
     type: file

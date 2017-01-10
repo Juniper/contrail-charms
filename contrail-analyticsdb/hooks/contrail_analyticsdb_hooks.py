@@ -82,7 +82,7 @@ def install():
                 
 @hooks.hook("contrail-control-relation-joined")
 def control_joined():
-   if len(units("contrail-control")) == 3:
+   if len(units("contrail-control")) == config.get("control_units"):
        config["control-ready"] = True
    write_analyticsdb_config()
 

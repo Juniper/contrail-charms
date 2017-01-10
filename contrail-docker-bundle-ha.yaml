@@ -123,11 +123,13 @@ relations:
   - [ "contrail-analyticsdb", "contrail-analytics:contrail-analyticsdb" ]
   - [ "contrail-control", "contrail-analytics:contrail-control" ]
   - [ "contrail-control", "contrail-analyticsdb:contrail-control" ]
+  - [ "contrail-control", "neutron-api-contrail" ]
   - [ "contrail-lb", "contrail-analyticsdb:contrail-lb" ]
   - [ "contrail-control", "keystone" ]
   - [ "contrail-analytics", "keystone" ]
   - [ "contrail-analyticsdb", "keystone" ]
   - [ "contrail-agent", "keystone" ]
+  - [ "contrail-agent", "contrail-lb" ]
 
 machines:
   "1":

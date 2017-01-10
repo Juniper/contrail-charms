@@ -87,13 +87,13 @@ def contrail_lb_joined():
 
 @hooks.hook("contrail-control-relation-joined")
 def contrail_control_joined():
-    if len(units("contrail-control")) == 3:
+    if len(units("contrail-control")) == config.get("control_units"):
         config["contrail-control-ready"] = True
     write_lb_config()
 
 @hooks.hook("contrail-analytics-relation-joined")
 def contrail_analytics_joined():
-    if len(units("contrail-analytics")) == 3:
+    if len(units("contrail-analytics")) == config.get("analytics_units"):
         config["contrail-analytics-ready"] = True
     write_lb_config()
 

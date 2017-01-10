@@ -145,7 +145,6 @@ def units(relation):
 def launch_docker_image():
     image_id = None
     orchestrator = config.get("cloud_orchestrator")
-    print "ORCHESTRATOR IS: ", orchestrator
     output =  check_output(["docker",
                             "images",
                             ])
@@ -178,6 +177,7 @@ def write_control_config():
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
     if config_get("control-ready") and config_get("lb-ready") \
        and config_get("identity-admin-ready") and not is_already_launched():
+       #and not is_already_launched():
         #apply_control_config()
         print "LAUNCHING THE CONTROLLER CONTAINER"
         print "CTX: ", ctx

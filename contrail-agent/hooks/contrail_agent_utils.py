@@ -125,6 +125,7 @@ def units(relation):
 
 def launch_docker_image():
     image_id = None
+    orchestrator = config.get("cloud_orchestrator")
     output =  check_output(["docker",
                             "images",
                             ])
@@ -138,9 +139,10 @@ def launch_docker_image():
                     "--net=host",
                     "--cap-add=AUDIT_WRITE",
                     "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=kubernetes'",
+                    "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
                     "--volume=/lib/modules:/lib/modules",
                     "--volume=/usr/src:/usr/src",
+                    "--volume=/etc/contrailctl:/etc/contrailctl",
                     "--name=contrail-agent",
                     "-itd",
                     image_id
@@ -167,6 +169,13 @@ def identity_admin_ctx():
                    "keystone_auth_protocol": relation_get("service_protocol", unit, rid)
                  }
 
+def lb_ctx():
+   if config_get("lb-ready"):
+    for rid in relation_ids("contrail-lb"):
+     for unit in related_units(rid):
+      return {"controller_ip": relation_get("private-address", unit, rid) }
+   return {}
+
 def remove_juju_bridges():
     cmd = "scripts/remove-juju-bridges.sh"
     #check_call("remove-juju-bridges.sh", cwd="scripts")
@@ -174,7 +183,10 @@ def remove_juju_bridges():
 
 def write_agent_config():
     ctx = {}
+    ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
     ctx.update(identity_admin_ctx())
+    ctx.update(lb_ctx())
     render("agent.conf", "/etc/contrailctl/agent.conf", ctx)
-    if config_get("identity-admin-ready"):
+    if config_get("lb-ready") and config_get("identity-admin-ready"):
+        print "LAUNCHING THE AGENT CONTAINER"
         launch_docker_image()
