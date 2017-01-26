@@ -1,0 +1,68 @@
+options:
+  install-sources:
+    type: string
+    default: |
+      - "ppa:opencontrail/ppa"
+      - "ppa:opencontrail/r2.20"
+    description: Package sources for install
+  install-keys:
+    type: string
+    description: Apt keys for package install sources
+  vhost-interface:
+    type: string
+    description: |
+      Specify the interface to install vhost0 on. If left empty, vhost0 will
+      be installed on the default gateway interface.
+  vhost-gateway:
+    type: string
+    default: auto
+    description: |
+      Specify the gateway for vhost0, either an IPv4 address or keyword 'auto'.
+      'auto' will set gateway automatically based on host's existing routes.
+  control-interface:
+    type: string
+    default: vhost0
+    description: |
+      Specify the interface to use for the control channel.
+      Default is to use vRouter interface that will be created.
+  local-metadata-server:
+    type: boolean
+    default: true
+    description: |
+      Run a local instance of nova-api-metadata for serving metadata to VMs.
+      An external metadata server (neutron-metadata relation) is not required
+      when enabled.
+  remove-juju-bridge:
+    type: boolean
+    default: false
+    description: |
+      Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
+      Enable this to remove such a bridge if you want to install vhost0 directly
+      on the underlying interface.
+  virtual-gateways:
+    type: string
+    description: |
+      Virtual gateways to create (software based).
+
+      Using a YAML encoded string specify one or more gateways using a list
+      of maps, where each map consists of the following attributes:
+
+      project - project name
+      network - network name
+      interface - interface to use (will be created)
+      subnets - list of virtual subnets to route
+      routes - list of routes gateway will make available to virtual subnets,
+               0.0.0.0/0 selects all routes
+
+      For example:
+
+      // make any network available to virtual subnet 10.0.10.0/24 on
+      // admin:public network using local interface vgw to route
+      [ { project: admin, network: public, interface: vgw, subnets: [ 10.0.10.0/24 ], routes: [ 0.0.0.0/0 ] } ]
+  # development options
+  contrail-api-ip:
+    type: string
+    description: Specify contrail-api ip manually
+  contrail-api-port:
+    type: int
+    description: Specify contrail-api port manually
