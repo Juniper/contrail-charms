@@ -61,6 +61,7 @@ from neutron_contrail_utils import (
 
 PACKAGES = [ "contrail-vrouter-dkms", "contrail-vrouter-agent",
              "contrail-utils", "python-jinja2",
+             "contrail-vrouter-common", "contrail-vrouter-init",
              "python-netifaces", "python-netaddr", "contrail-nodemgr" ]
 
 PACKAGES_LBAAS = [ "python-barbicanclient", "haproxy" ]

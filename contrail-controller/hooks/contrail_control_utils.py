@@ -85,6 +85,15 @@ def retry(f=None, timeout=10, delay=2):
                 raise error
     return func
 
+def get_control_ip():
+  if config_get("lb-ready"):
+    controller_ip = [gethostbyname(relation_get("private-address", unit, rid))
+                for rid in relation_ids("contrail-lb")
+                for unit in related_units(rid) ][0]
+  else:
+    controller_ip = gethostbyname(unit_get("private-address"))
+  return controller_ip
+
 def is_already_launched():
     cmd = 'docker ps | grep contrail-controller'
     try:

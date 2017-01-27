@@ -21,6 +21,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     relation_type,
     relation_get,
+    relation_set,
     unit_get,
     remote_unit
 )
@@ -33,7 +34,8 @@ from charmhelpers.fetch import (
 from contrail_control_utils import (
   launch_docker_image,
   write_control_config,
-  units
+  units,
+  get_control_ip
 )
 
 PACKAGES = [ "docker.io" ]
@@ -85,6 +87,15 @@ def install():
     load_docker_image()
     #launch_docker_image()
 
+@hooks.hook("contrail-api-relation-joined")
+def api_joined():
+  controller_ip = get_control_ip()
+  settings = { "private-address": controller_ip,
+               "port": 8082
+             }
+  for rid in relation_ids("contrail-api"):
+      relation_set(relation_id=rid, relation_settings=settings)
+  
 @hooks.hook("contrail-lb-relation-joined")
 def lb_joined():
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
