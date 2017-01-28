@@ -445,12 +445,6 @@ def vrouter_vgw_ctx():
         ctx["vgws"] = vgws
     return ctx
 
-def write_barbican_auth_config():
-    ctx = identity_admin_ctx()
-    render("contrail-lbaas-auth.conf",
-           "/etc/contrail/contrail-lbaas-auth.conf", ctx, "root", "contrail",
-           0440)
-
 def write_nodemgr_config():
     ctx = analytics_node_ctx()
     render("contrail-vrouter-nodemgr.conf",

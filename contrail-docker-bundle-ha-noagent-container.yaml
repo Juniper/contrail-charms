@@ -94,7 +94,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3028 /"
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3031 /"
   neutron-contrail:
     charm: /home/ubuntu/neutron-contrail
     num_units: 0
@@ -120,7 +120,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3028 /"
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3031 /"
   contrail-analytics:
     charm: /home/ubuntu/contrail-analytics
     num_units: 3

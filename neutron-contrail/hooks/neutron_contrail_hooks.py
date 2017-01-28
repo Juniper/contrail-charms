@@ -34,7 +34,6 @@ from charmhelpers.fetch import (
 
 import neutron_contrail_utils as utils
 from neutron_contrail_utils import (
-    CONTRAIL_VERSION,
     OPENSTACK_VERSION,
     configure_vrouter,
     disable_vrouter_vgw,
@@ -52,7 +51,6 @@ from neutron_contrail_utils import (
     units,
     unprovision_local_metadata,
     unprovision_vrouter,
-    write_barbican_auth_config,
     write_nodemgr_config,
     write_vnc_api_config,
     write_vrouter_config,
@@ -63,8 +61,6 @@ PACKAGES = [ "contrail-vrouter-dkms", "contrail-vrouter-agent",
              "contrail-utils", "python-jinja2",
              "contrail-vrouter-common", "contrail-vrouter-init",
              "python-netifaces", "python-netaddr", "contrail-nodemgr" ]
-
-PACKAGES_LBAAS = [ "python-barbicanclient", "haproxy" ]
 
 hooks = Hooks()
 config = config()
@@ -226,7 +222,6 @@ def contrail_control_node_departed():
 
 @hooks.hook("contrail-control-relation-joined")
 def contrail_control_joined():
-    print "SIVA: , contrial_control_joined"
     control_node_relation()
     config["control-node-ready"] = True
     check_vrouter()
@@ -242,8 +237,6 @@ def identity_admin_changed():
         log("Relation not ready")
         return
     write_vnc_api_config()
-    if version_compare(CONTRAIL_VERSION, "3.0.2.0-34") >= 0:
-        write_barbican_auth_config()
     config["identity-admin-ready"] = True
     check_vrouter()
     check_local_metadata()
@@ -256,8 +249,6 @@ def identity_admin_departed():
         check_vrouter()
         check_local_metadata()
     write_vnc_api_config()
-    if version_compare(CONTRAIL_VERSION, "3.0.2.0-34") >= 0:
-        write_barbican_auth_config()
 
 @hooks.hook()
 def install():
@@ -266,12 +257,7 @@ def install():
     fix_vrouter_scripts() # bug in 2.0+20141015.1 packages
     apt_install(PACKAGES, fatal=True)
 
-    utils.CONTRAIL_VERSION = dpkg_version("contrail-vrouter-agent")
     openstack_version = dpkg_version("nova-compute")
-    if version_compare(utils.CONTRAIL_VERSION, "3.0.2.0-34") >= 0 \
-       and version_compare(openstack_version, "2:12.0.0") >= 0:
-        # install lbaas packages
-        apt_install(PACKAGES_LBAAS, fatal=True)
 
     fix_permissions()
     fix_nodemgr()
