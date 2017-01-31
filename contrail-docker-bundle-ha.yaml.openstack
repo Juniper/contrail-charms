@@ -1,0 +1,177 @@
+series: trusty
+services:
+  ubuntu:
+    charm: cs:trusty/ubuntu
+    num_units: 1
+    to:
+      - '5'
+  ntp:
+    charm: cs:trusty/ntp
+    num_units: 0
+    options:
+      source: ntp.juniper.net
+  mysql:
+    charm: cs:trusty/mysql
+    num_units: 1
+    options:
+      dataset-size: 15%
+      max-connections: 1000
+    to:
+      - lxd:5
+  rabbitmq-server:
+    charm: cs:trusty/rabbitmq-server
+    num_units: 1
+    to:
+      - lxd:5
+  keystone:
+    charm: cs:trusty/keystone
+    num_units: 1
+    options:
+      admin-password: password
+      admin-role: admin
+      openstack-origin: cloud:trusty-mitaka
+    to:
+      - lxd:5
+  nova-cloud-controller:
+    charm: cs:trusty/nova-cloud-controller
+    num_units: 1
+    options:
+      network-manager: Neutron
+      openstack-origin: cloud:trusty-mitaka
+    to:
+      - lxd:5
+  neutron-api:
+    charm: cs:trusty/neutron-api
+    num_units: 1
+    options:
+      manage-neutron-plugin-legacy-mode: false
+      openstack-origin: cloud:trusty-mitaka
+    to:
+      - lxd:5
+  nova-compute:
+    charm: cs:trusty/nova-compute
+    num_units: 1
+    options:
+      openstack-origin: cloud:trusty-mitaka
+    to:
+      - '4'
+  glance:
+    charm: cs:trusty/glance
+    num_units: 1
+    options:
+      openstack-origin: cloud:trusty-mitaka
+    to:
+      - lxd:5
+  openstack-dashboard:
+    charm: cs:trusty/openstack-dashboard
+    num_units: 1
+    options:
+      openstack-origin: cloud:trusty-mitaka
+    to:
+      - lxd:5
+  neutron-api-contrail:
+    charm: cs:~sdn-charmers/trusty/neutron-api-contrail
+    num_units: 0
+    options:
+      install-keys: |
+        - |
+          -----BEGIN PGP PUBLIC KEY BLOCK-----
+          Version: GnuPG v1
+
+          mQENBFZDkpsBCAC+T+UOOLUky331HZk8RbfF7mQ35nwH1PGl2vHM6RWdqayLK4aV
+          1uUNGzI3UJw0YVCMmqJSlNfU58GhxEZ/cRbVjnZ6ebAIWRGepsMYWDlA960ornnL
+          VCRbr6yvHU06MSS8yl0X43QL2yGdBRiC5EAPEAawDOTMk0RxJ1AvMDHmnKommoQG
+          MWJ5zKL+fYSiNEPxQ2/nYd2jVXK4a1jP8c4LcvMdo8uxrEHklr/81wX+UKZYzuZP
+          bWQmiXiZzhQD2qz7IgZDaBKVEH4b2xMjilaPc2JOH0hHdP0M33PUOvCbpXQAYOok
+          kzqFpglZq1mZmM1ba6x37E07YpOvNWN0kE9DABEBAAG0CENvbnRyYWlsiQE4BBMB
+          AgAiBQJWQ5KbAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAKCRBmWWjLMSv5
+          wDrYB/4nMGcDVFRGU4tvIykhu/l6J6uNunpACL5HrdxC93PrThB2EgJXgnPpE/O+
+          KtjN2JKkSs4ehQy0wRMHc1eM/pQ1GRw4QV6vxO1FPT+y8BMdYkuwqd3uM22wg9mZ
+          yKvLtWBhMEu9nAPsTSVaT7Yw1z319Nr7JP+0mRCmlkLjuQUF2RcMwH59XH+8Lpev
+          MJEGdDcwWifPiO83ycBTQ760miz4B4inUWLYZ11lW/tXRSNG+o4QjemF5mWbPO+H
+          knwC/9eukDath9q7itLbJsDbam0/2KCTPxly1sk6E9hCNSIxlNT6ZnnnorLUoSqH
+          cTfEFYBDWmyhtqzHcfqocnBaPZT8
+          =rMS6
+          -----END PGP PUBLIC KEY BLOCK-----
+      install-sources: |
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3028 /"
+  contrail-analytics:
+    charm: /home/ubuntu/contrail-analytics
+    num_units: 3
+    to: [ "1", "2", "3" ]
+  contrail-analyticsdb:
+    charm: /home/ubuntu/contrail-analyticsdb
+    num_units: 3
+    to: [ "1", "2", "3" ]
+  contrail-control:
+    charm: /home/ubuntu/contrail-controller
+    num_units: 3
+    to: [ "1", "2", "3" ]
+  contrail-agent:
+    charm: /home/ubuntu/contrail-agent
+    num_units: 1
+    to:
+      - '4'
+  contrail-lb:
+    charm: /home/ubuntu/contrail-lb
+    num_units: 1
+    to:
+      - '5'
+
+relations:
+  - [ "ubuntu", "ntp" ]
+  - [ "keystone", "mysql" ]
+  - [ "glance", "mysql" ]
+  - [ "glance", "keystone" ]
+  - [ "nova-cloud-controller", "mysql" ]
+  - [ "nova-cloud-controller", "rabbitmq-server" ]
+  - [ "nova-cloud-controller", "keystone" ]
+  - [ "nova-cloud-controller", "glance" ]
+  - [ "neutron-api", "mysql" ]
+  - [ "neutron-api", "rabbitmq-server" ]
+  - [ "neutron-api", "nova-cloud-controller" ]
+  - [ "neutron-api", "keystone" ]
+  - [ "neutron-api", "neutron-api-contrail" ]
+  - [ "neutron-api-contrail", "keystone" ]
+  - [ "nova-compute:shared-db", "mysql:shared-db" ]
+  - [ "nova-compute:amqp", "rabbitmq-server:amqp" ]
+  - [ "nova-compute", "glance" ]
+  - [ "nova-compute", "nova-cloud-controller" ]
+  - [ "nova-compute", "ntp" ]
+  - [ "openstack-dashboard", "keystone" ]
+  - [ "contrail-lb", "contrail-control:contrail-lb"]
+  - [ "contrail-control", "contrail-lb:contrail-control" ]
+  - [ "contrail-analytics", "contrail-lb:contrail-analytics" ]
+  - [ "contrail-lb", "contrail-analytics:contrail-lb" ]
+  - [ "contrail-analyticsdb", "contrail-analytics:contrail-analyticsdb" ]
+  - [ "contrail-control", "contrail-analytics:contrail-control" ]
+  - [ "contrail-control", "contrail-analyticsdb:contrail-control" ]
+  - [ "contrail-control", "neutron-api-contrail" ]
+  - [ "contrail-lb", "contrail-analyticsdb:contrail-lb" ]
+  - [ "contrail-control", "keystone" ]
+  - [ "contrail-analytics", "keystone" ]
+  - [ "contrail-analyticsdb", "keystone" ]
+  - [ "contrail-agent", "keystone" ]
+  - [ "contrail-agent", "contrail-lb" ]
+
+machines:
+  "1":
+    series: trusty
+    #constraints: mem=15G root-disk=40G
+    constraints: tags=contrail-controller-vm-1
+  "2":
+    series: trusty
+    #constraints: mem=15G root-disk=40G
+    constraints: tags=contrail-controller-vm-2
+  "3":
+    series: trusty
+    #constraints: mem=15G root-disk=40G
+    constraints: tags=contrail-controller-vm-3
+  "4":
+    series: trusty
+    #constraints: mem=4G root-disk=20G
+    constraints: tags=compute-storage-1
+  "5":
+    series: trusty
+    constraints: mem=4G root-disk=20G
+    constraints: tags=compute-storage-2
