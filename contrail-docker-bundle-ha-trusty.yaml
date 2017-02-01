@@ -1,16 +1,16 @@
-series: xenial
+series: trusty
 services:
   ubuntu:
-    charm: cs:xenial/ubuntu
+    charm: cs:trusty/ubuntu
     num_units: 3
     to: [ "1", "2", "3" ]
   ntp:
-    charm: cs:xenial/ntp
+    charm: cs:trusty/ntp
     num_units: 0
     options:
       source: ntp.juniper.net
   mysql:
-    charm: cs:xenial/percona-cluster
+    charm: cs:trusty/percona-cluster
     options:
       dataset-size: 15%
       max-connections: 10000
@@ -21,91 +21,91 @@ services:
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   rabbitmq-server:
-    charm: cs:xenial/rabbitmq-server
+    charm: cs:trusty/rabbitmq-server
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   keystone:
-    charm: cs:xenial/keystone
+    charm: cs:trusty/keystone
     options:
       admin-password: password
       admin-role: admin
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:trusty-mitaka
       vip: 192.168.1.241
       vip_cidr: 24
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   nova-cloud-controller:
-    charm: cs:xenial/nova-cloud-controller
+    charm: cs:trusty/nova-cloud-controller
     options:
       network-manager: Neutron
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:trusty-mitaka
       vip: 192.168.1.242
       vip_cidr: 24
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   neutron-api:
-    charm: cs:xenial/neutron-api
+    charm: cs:trusty/neutron-api
     options:
       manage-neutron-plugin-legacy-mode: false
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:trusty-mitaka
       vip: 192.168.1.243
       vip_cidr: 24
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   glance:
-    charm: cs:xenial/glance
+    charm: cs:trusty/glance
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:trusty-mitaka
       vip: 192.168.1.244
       vip_cidr: 24
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   openstack-dashboard:
-    charm: cs:xenial/openstack-dashboard
+    charm: cs:trusty/openstack-dashboard
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:trusty-mitaka
       vip: 192.168.1.245
       vip_cidr: 24
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
   nova-compute:
-    charm: cs:xenial/nova-compute
+    charm: cs:trusty/nova-compute
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:trusty-mitaka
     num_units: 3
     to: [ "4", "5", "6" ]
   mysql-hacluster:
-    charm: cs:xenial/hacluster
+    charm: cs:trusty/hacluster
     options:
       cluster_count: 3
     num_units: 0
   keystone-hacluster:
-    charm: cs:xenial/hacluster
+    charm: cs:trusty/hacluster
     options:
       cluster_count: 3
     num_units: 0
   ncc-hacluster:
-    charm: cs:xenial/hacluster
+    charm: cs:trusty/hacluster
     options:
       cluster_count: 3
     num_units: 0
   neutron-hacluster:
-    charm: cs:xenial/hacluster
+    charm: cs:trusty/hacluster
     options:
       cluster_count: 3
     num_units: 0
   glance-hacluster:
-    charm: cs:xenial/hacluster
+    charm: cs:trusty/hacluster
     options:
       cluster_count: 3
     num_units: 0
   dashboard-hacluster:
-    charm: cs:xenial/hacluster
+    charm: cs:trusty/hacluster
     options:
       cluster_count: 3
     num_units: 0
   neutron-api-contrail:
-    charm: /home/ubuntu/neutron-api-contrail
+    charm: cs:~sdn-charmers/trusty/neutron-api-contrail
     num_units: 0
     options:
       install-keys: |
@@ -129,7 +129,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/newton/3034 /"
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3031 /"
   neutron-contrail:
     charm: /home/ubuntu/neutron-contrail
     num_units: 0
@@ -155,7 +155,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/newton/3034 /"
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3031 /"
   contrail-analytics:
     charm: /home/ubuntu/contrail-analytics
     num_units: 3
@@ -224,26 +224,26 @@ relations:
 
 machines:
   "1":
-    series: xenial
+    series: trusty
     #constraints: mem=15G root-disk=40G
     constraints: tags=contrail-controller-vm-1
   "2":
-    series: xenial
+    series: trusty
     #constraints: mem=15G root-disk=40G
     constraints: tags=contrail-controller-vm-2
   "3":
-    series: xenial
+    series: trusty
     #constraints: mem=15G root-disk=40G
     constraints: tags=contrail-controller-vm-3
   "4":
-    series: xenial
+    series: trusty
     #constraints: mem=4G root-disk=20G
     constraints: tags=compute-storage-1
   "5":
-    series: xenial
+    series: trusty
     #constraints: mem=4G root-disk=20G
     constraints: tags=compute-storage-2
   "6":
-    series: xenial
+    series: trusty
     #constraints: mem=4G root-disk=20G
     constraints: tags=compute-storage-3
