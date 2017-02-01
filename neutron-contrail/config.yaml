@@ -34,7 +34,7 @@ options:
       when enabled.
   remove-juju-bridge:
     type: boolean
-    default: false
+    default: true
     description: |
       Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
       Enable this to remove such a bridge if you want to install vhost0 directly

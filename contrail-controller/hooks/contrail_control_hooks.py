@@ -23,7 +23,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_set,
     unit_get,
-    remote_unit
+    remote_unit,
+    application_version_set
 )
 
 from charmhelpers.fetch import (
@@ -35,7 +36,9 @@ from contrail_control_utils import (
   launch_docker_image,
   write_control_config,
   units,
-  get_control_ip
+  get_control_ip,
+  dpkg_version,
+  is_already_launched
 )
 
 PACKAGES = [ "docker.io" ]
@@ -57,6 +60,10 @@ def config_get(key):
 
 def set_status():
   try:
+      # set the application version
+      if is_already_launched():
+          version  = dpkg_version("contrail-control")
+          application_version_set(version)
       result = check_output(["/usr/bin/docker",
                              "inspect",
                              "-f",

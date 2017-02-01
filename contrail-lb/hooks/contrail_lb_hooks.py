@@ -21,7 +21,8 @@ from charmhelpers.core.hookenv import (
     unit_get,
     relation_get,
     relation_ids,
-    related_units
+    related_units,
+    application_version_set
 )
 
 from charmhelpers.fetch import (
@@ -32,7 +33,9 @@ from charmhelpers.fetch import (
 from contrail_lb_utils import (
   launch_docker_image,
   write_lb_config,
-  units
+  units,
+  dpkg_version,
+  is_already_launched
 )
 
 PACKAGES = [ "docker.io" ]
@@ -43,6 +46,10 @@ config = config()
 
 def set_status():
     try:
+        # set the application version
+        if is_already_launched():
+            version  = dpkg_version()
+            application_version_set(version)
         result = check_output(["/usr/bin/docker",
                              "inspect",
                              "-f",

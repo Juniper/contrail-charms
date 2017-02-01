@@ -39,10 +39,12 @@ apt_pkg.init()
 
 def dpkg_version(pkg):
     try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
+        return check_output(["docker",
+                              "exec",
+                              "contrail-analytics",
+                              "dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
     except CalledProcessError:
         return None
-
 
 config = config()
 
@@ -135,18 +137,17 @@ def analyticsdb_ctx():
   return { "analyticsdb_servers": analyticsdb_ip_list }
 
 def identity_admin_ctx():
-   if not relation_get("service_hostname"):
-       return {}
-   for rid in relation_ids("identity-admin"):
-      for unit in related_units(rid):
-          hostname = relation_get("service_hostname", unit, rid)
-          return { "keystone_ip": gethostbyname(hostname),
-                   "keystone_public_port": relation_get("service_port", unit, rid),
-                   "keystone_admin_user": relation_get("service_username", unit, rid),
-                   "keystone_admin_password": relation_get("service_password", unit, rid),
-                   "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-                   "keystone_auth_protocol": relation_get("service_protocol", unit, rid)
-                 }
+   ctxs = [ { "keystone_ip": gethostbyname(hostname),
+               "keystone_public_port": relation_get("service_port", unit, rid),
+               "keystone_admin_user": relation_get("service_username", unit, rid),
+               "keystone_admin_password": relation_get("service_password", unit, rid),
+               "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
+               "keystone_auth_protocol": relation_get("service_protocol", unit, rid) }
+             for rid in relation_ids("identity-admin")
+             for unit, hostname in
+             ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
+             if hostname ]
+   return ctxs[0] if ctxs else {}
 
 def apply_analytics_config():
     cmd = '/usr/bin/docker exec contrail-analytics contrailctl config sync -c analytics -F -t configure'
@@ -178,7 +179,7 @@ def launch_docker_image():
         log("contrail-analytics docker image is not available")
 
 def is_already_launched():
-    cmd = 'docker ps | grep contrail-analytics'
+    cmd = 'docker ps | grep -w contrail-analytics'
     try:
         output =  check_output(cmd, shell=True)
         return True
@@ -194,9 +195,14 @@ def write_analytics_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
+    print "SIVA control-readY: ", config_get("control-ready")
+    print "SIVA lb-readY: ", config_get("lb-ready")
+    print "SIVA identity-admin-readY: ", config_get("identity-admin-ready")
+    print "SIVA analyticsdb-readY: ", config_get("analyticsdb-ready")
+    print "SIVA is_already_launched: ", is_already_launched()
     if config_get("control-ready") and config_get("lb-ready") \
-       and config_get("identity-admin-ready") and config_get("analyticsdb-ready"):
-       #and config_get("analyticsdb-ready"):
+       and config_get("identity-admin-ready") and config_get("analyticsdb-ready") \
+       and not is_already_launched():
         #apply_analytics_config()
         print "LAUNCHING THE ANALYTICS CONTAINER"
         print "CTX: ", ctx

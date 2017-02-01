@@ -83,6 +83,16 @@ def retry(f=None, timeout=10, delay=2):
                 raise error
     return func
 
+def dpkg_version(pkg):
+    try:
+        return check_output(["docker",
+                              "exec",
+                              "contrail-analyticsdb",
+                              "dpkg-query",
+                              "-f", "${Version}\\n", "-W", pkg]).rstrip()
+    except CalledProcessError:
+        return None
+
 def fix_hostname():
     hostname = gethostname()
     try:
@@ -121,18 +131,17 @@ def lb_ctx():
    return { "lb_vip": lb_vip}
 
 def identity_admin_ctx():
-   if not relation_get("service_hostname"):
-       return {}
-   for rid in relation_ids("identity-admin"):
-      for unit in related_units(rid):
-          hostname = relation_get("service_hostname", unit, rid)
-          return { "keystone_ip": gethostbyname(hostname),
-                   "keystone_public_port": relation_get("service_port", unit, rid),
-                   "keystone_admin_user": relation_get("service_username", unit, rid),
-                   "keystone_admin_password": relation_get("service_password", unit, rid),
-                   "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-                   "keystone_auth_protocol": relation_get("service_protocol", unit, rid)
-                 }
+   ctxs = [ { "keystone_ip": gethostbyname(hostname),
+               "keystone_public_port": relation_get("service_port", unit, rid),
+               "keystone_admin_user": relation_get("service_username", unit, rid),
+               "keystone_admin_password": relation_get("service_password", unit, rid),
+               "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
+               "keystone_auth_protocol": relation_get("service_protocol", unit, rid) }
+             for rid in relation_ids("identity-admin")
+             for unit, hostname in
+             ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
+             if hostname ]
+   return ctxs[0] if ctxs else {}
 
 def is_already_launched():
     cmd = 'docker ps | grep contrail-analyticsdb'

@@ -15,7 +15,8 @@ from charmhelpers.core.hookenv import (
     resource_get,
     log,
     status_set,
-    relation_get
+    relation_get,
+    application_version_set
 )
 
 from charmhelpers.fetch import (
@@ -28,7 +29,9 @@ from contrail_analytics_utils import (
     fix_hostname,
     write_analytics_config,
     launch_docker_image,
-    units
+    units,
+    dpkg_version,
+    is_already_launched
 )
 
 PACKAGES = [ "docker.io" ]
@@ -50,6 +53,9 @@ def config_get(key):
 
 def set_status():
   try:
+      if is_already_launched():
+          version = dpkg_version("contrail-analytics")
+          application_version_set(version)
       result = check_output(["/usr/bin/docker",
                              "inspect",
                              "-f",

@@ -16,7 +16,8 @@ from charmhelpers.core.hookenv import (
     resource_get,
     log,
     status_set,
-    relation_get
+    relation_get,
+    application_version_set
 )
 
 from charmhelpers.fetch import (
@@ -27,7 +28,8 @@ from charmhelpers.fetch import (
 from contrail_agent_utils import (
     remove_juju_bridges,
     launch_docker_image,
-    write_agent_config
+    write_agent_config,
+    is_already_launched
 )
 
 PACKAGES = [ "docker.io" ]
@@ -44,6 +46,10 @@ def config_changed():
 
 def set_status():
     try:
+       # set the application version
+       if is_already_launched():
+           version  = dpkg_version("contrail-vrouter-agent")
+           application_version_set(version)
        result = check_output(["/usr/bin/docker",
                               "inspect",
                               "-f",

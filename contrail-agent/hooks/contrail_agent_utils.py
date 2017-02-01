@@ -35,12 +35,23 @@ from charmhelpers.core.templating import render
 
 apt_pkg.init()
 
+def is_already_launched():
+    cmd = 'docker ps | grep contrail-agent'
+    try:
+        output =  check_output(cmd, shell=True)
+        return True
+    except CalledProcessError:
+        return False
+
 def dpkg_version(pkg):
     try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
+        return check_output(["docker",
+                              "exec",
+                              "contrail-agent",
+                              "dpkg-query",
+                              "-f", "${Version}\\n", "-W", pkg]).rstrip()
     except CalledProcessError:
         return None
-
 
 config = config()
 

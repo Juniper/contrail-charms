@@ -82,6 +82,26 @@ def retry(f=None, timeout=10, delay=2):
                 raise error
     return func
 
+def is_already_launched():
+    cmd = 'docker ps | grep contrail-lb'
+    try:
+        output =  check_output(cmd, shell=True)
+        return True
+    except CalledProcessError:
+        return False
+
+def dpkg_version():
+    try:
+        output=check_output(["docker",
+                             "images"])
+        output = output.split('\n')[:-1]
+        for line in output:
+            if "contrail-lb" in line.split()[0]:
+                tag = line.split()[1].strip()
+        return tag
+    except CalledProcessError:
+        return None
+
 def identity_admin_ctx():
     ctxs = [ { "auth_host": gethostbyname(hostname),
                "auth_port": relation_get("service_port", unit, rid),
