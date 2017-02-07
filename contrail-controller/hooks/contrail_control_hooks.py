@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from subprocess import (
     CalledProcessError,
@@ -41,7 +41,7 @@ from contrail_control_utils import (
   is_already_launched
 )
 
-PACKAGES = [ "docker.io" ]
+PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
 
 
 hooks = Hooks()
@@ -110,7 +110,7 @@ def lb_joined():
                                      for unit in related_units(rid) ]
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
-    print "LB RELATION JOINED: ", controller_ip_list
+    print ("LB RELATION JOINED: ", controller_ip_list)
     config["lb-ready"] = True
     write_control_config()
 
@@ -121,7 +121,7 @@ def cluster_joined():
                                      for unit in related_units(rid) ]
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
-    print "CLUSTER RELATION JOINED: ", controller_ip_list
+    print ("CLUSTER RELATION JOINED: ", controller_ip_list)
     if len(controller_ip_list) == config.get("control_units"):
         config["control-ready"] = True
     write_control_config()

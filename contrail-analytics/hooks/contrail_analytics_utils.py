@@ -14,6 +14,7 @@ from time import sleep, time
 
 import apt_pkg
 import yaml
+import platform
 
 try:
   import netaddr
@@ -159,22 +160,24 @@ def launch_docker_image():
     output =  check_output(["docker",
                             "images",
                             ])
-    output = output.split('\n')[:-1]
+    output = output.decode().split('\n')[:-1]
     for line in output:
         if "contrail-analytics" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
-                    "--name=contrail-analytics",
-                    "--volume=/etc/contrailctl:/etc/contrailctl",
-                    "-itd",
-                    image_id
-                   ])
+        dist = platform.linux_distribution()[2].strip()
+        cmd = "/usr/bin/docker "+ \
+              "run "+ \
+              "--net=host "+ \
+              "--cap-add=AUDIT_WRITE "+ \
+              "--privileged "+ \
+              "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
+              "--volume=/etc/contrailctl:/etc/contrailctl "+ \
+              "--name=contrail-analytics "
+        if dist == "trusty":
+            cmd = cmd + "--pid=host "
+        cmd = cmd +"-itd "+ image_id
+        check_call(cmd, shell=True)
     else:
         log("contrail-analytics docker image is not available")
 
@@ -195,15 +198,10 @@ def write_analytics_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
-    print "SIVA control-readY: ", config_get("control-ready")
-    print "SIVA lb-readY: ", config_get("lb-ready")
-    print "SIVA identity-admin-readY: ", config_get("identity-admin-ready")
-    print "SIVA analyticsdb-readY: ", config_get("analyticsdb-ready")
-    print "SIVA is_already_launched: ", is_already_launched()
     if config_get("control-ready") and config_get("lb-ready") \
        and config_get("identity-admin-ready") and config_get("analyticsdb-ready") \
        and not is_already_launched():
         #apply_analytics_config()
-        print "LAUNCHING THE ANALYTICS CONTAINER"
-        print "CTX: ", ctx
+        print ("LAUNCHING THE ANALYTICS CONTAINER")
+        print ("CTX: ", ctx)
         launch_docker_image()

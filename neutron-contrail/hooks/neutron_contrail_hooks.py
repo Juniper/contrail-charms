@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from subprocess import CalledProcessError
 import sys
@@ -7,6 +7,7 @@ from apt_pkg import version_compare
 import json
 import uuid
 import yaml
+import shutil
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -31,7 +32,11 @@ from charmhelpers.fetch import (
     apt_upgrade,
     configure_sources
 )
-
+from subprocess import (
+    CalledProcessError,
+    check_call,
+    check_output
+)
 import neutron_contrail_utils as utils
 from neutron_contrail_utils import (
     OPENSTACK_VERSION,
@@ -57,10 +62,12 @@ from neutron_contrail_utils import (
     write_vrouter_vgw_interfaces
 )
 
-PACKAGES = [ "contrail-vrouter-dkms", "contrail-vrouter-agent",
+PACKAGES = [ "python", "python-yaml", "python-apt",
+             "python3-netaddr", "python3-netifaces",
+             "contrail-vrouter-dkms", "contrail-vrouter-agent",
              "contrail-utils", "python-jinja2",
              "contrail-vrouter-common", "contrail-vrouter-init",
-             "python-netifaces", "python-netaddr", "contrail-nodemgr" ]
+             "contrail-nodemgr" ]
 
 hooks = Hooks()
 config = config()
@@ -170,10 +177,8 @@ def configure_virtual_gateways():
 @hooks.hook("contrail-api-relation-departed")
 @hooks.hook("contrail-api-relation-broken")
 def contrail_api_departed():
-    print "SIVA: entering api departed"
     if not units("contrail-api") and not config.get("contrail-api-ip"):
         config["contrail-api-ready"] = False
-        print "SIVA: NO API ip's departed"
         check_vrouter()
         check_local_metadata()
     write_vnc_api_config()
@@ -190,7 +195,6 @@ def contrail_api_changed():
 
 @hooks.hook("contrail-analytics-relation-joined")
 def contrail_analytics_joined():
-    print "SIVA: , contrial_analytics_joined"
     config["analytics-node-ready"] = True
     contrail_analytics_relation()
     check_vrouter()
@@ -252,15 +256,20 @@ def identity_admin_departed():
 
 @hooks.hook()
 def install():
+    # set apt preferences
+    shutil.copy('files/40contrail', '/etc/apt/preferences.d')
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
     fix_vrouter_scripts() # bug in 2.0+20141015.1 packages
+    cmd = "apt-cache policy nova-common"
+    output = check_output(cmd, shell=True)
+    print (output)
     apt_install(PACKAGES, fatal=True)
 
     openstack_version = dpkg_version("nova-compute")
 
     fix_permissions()
-    fix_nodemgr()
+    #fix_nodemgr()
     try:
         modprobe("vrouter")
     except CalledProcessError:

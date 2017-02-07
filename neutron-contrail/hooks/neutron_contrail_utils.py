@@ -14,8 +14,8 @@ import apt_pkg
 from apt_pkg import version_compare
 import yaml
 
-import netaddr
-import netifaces
+#import netaddr
+#import netifaces
 import struct
 
 from charmhelpers.core.hookenv import (
@@ -185,12 +185,12 @@ def fix_nodemgr():
           if version_compare(CONTRAIL_VERSION, "3.1") >= 0 \
           else "files/contrail-vrouter-nodemgr"
     shutil.copy(src, "/etc/init.d/contrail-vrouter-nodemgr")
-    os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0755)
+    os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0o755)
 
     service_restart("supervisor-vrouter")
 
 def fix_permissions():
-    os.chmod("/etc/contrail", 0755)
+    os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
 
 def fix_vrouter_scripts():
@@ -272,6 +272,7 @@ def analytics_node_ctx():
     return { "analytics_nodes": analytics_ip_list }
 
 def network_ctx():
+    import netifaces
     iface = config.get("control-interface")
     return { "control_network_ip": netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"] }
 
@@ -309,6 +310,7 @@ def provision_local_metadata():
                                  "add", user, password)
 
 def provision_vrouter():
+    import netifaces
     hostname = gethostname()
     ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
     api_port = None
@@ -373,6 +375,7 @@ def unprovision_local_metadata():
                                  "del", user, password)
 
 def unprovision_vrouter():
+    import netifaces
     relation = relation_type()
     if relation and not remote_unit():
         return
@@ -414,13 +417,15 @@ def vhost_gateway():
     gateway = config.get("vhost-gateway")
     if gateway == "auto":
         for line in check_output(["route", "-n"]).splitlines()[2:]:
-            l = line.split()
+            l = line.decode().split()
             if "G" in l[3] and l[7] == "vhost0":
                 return l[1]
         gateway = None
     return gateway
 
 def vhost_ip(iface):
+    import netaddr
+    import netifaces
     # return a vhost formatted address and mask - x.x.x.x/xx
     addr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
     ip = addr["addr"]
@@ -434,7 +439,7 @@ def vhost_phys():
 def vrouter_ctx():
     return { "vhost_ip": vhost_ip("vhost0"),
              "vhost_gateway": vhost_gateway(),
-             "vhost_physical": vhost_phys() }
+             "vhost_physical": vhost_phys().decode() }
 
 def vrouter_vgw_ctx():
     ctx = {}
@@ -465,7 +470,7 @@ def write_vrouter_config():
     ctx.update(vrouter_ctx())
     ctx.update(vrouter_vgw_ctx())
     render("contrail-vrouter-agent.conf",
-           "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0440)
+           "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
 
 def write_vrouter_vgw_interfaces():
     ctx = vrouter_vgw_ctx()

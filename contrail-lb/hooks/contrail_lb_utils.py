@@ -2,6 +2,7 @@ import functools
 import os
 import pwd
 import shutil
+import platform
 from socket import gethostbyname, inet_aton
 import struct
 from subprocess import (
@@ -94,7 +95,7 @@ def dpkg_version():
     try:
         output=check_output(["docker",
                              "images"])
-        output = output.split('\n')[:-1]
+        output = output.decode().split('\n')[:-1]
         for line in output:
             if "contrail-lb" in line.split()[0]:
                 tag = line.split()[1].strip()
@@ -126,23 +127,24 @@ def launch_docker_image():
     output =  check_output(["docker",
                             "images",
                             ])
-    output = output.split('\n')[:-1]
+    output = output.decode().split('\n')[:-1]
     for line in output:
         if "contrail-lb" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--pid=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
-                    "--volume=/etc/contrailctl:/etc/contrailctl",
-                    "--name=contrail-lb",
-                    "-itd",
-                    image_id
-                   ])
+        dist = platform.linux_distribution()[2].strip()
+        cmd = "/usr/bin/docker "+ \
+              "run "+ \
+              "--net=host "+ \
+              "--cap-add=AUDIT_WRITE "+ \
+              "--privileged "+ \
+              "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
+              "--volume=/etc/contrailctl:/etc/contrailctl "+ \
+              "--name=contrail-lb "
+        if dist == "trusty":
+            cmd = cmd + "--pid=host "
+        cmd = cmd +"-itd "+ image_id
+        check_call(cmd, shell=True)
     else:
         log("contrail-lb docker image is not available")
 
@@ -187,11 +189,8 @@ def write_lb_config():
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     render("lb.conf", "/etc/contrailctl/lb.conf", ctx)
-    print "write_lb_config control: ", config_get("contrail-control-ready")
-    print "write_lb_config analytics: ", config_get("contrail-analytics-ready")
-    print "CTX: ", ctx
     if config_get("contrail-control-ready") and config_get("contrail-analytics-ready") \
          and not is_already_launched():
-        print "LAUNCHING THE LB CONTAINER"
+        print ("LAUNCHING THE LB CONTAINER")
         launch_docker_image()
         #apply_lb_config()

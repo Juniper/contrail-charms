@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from subprocess import (
     CalledProcessError,
     check_call,
@@ -34,7 +34,7 @@ from contrail_analytics_utils import (
     is_already_launched
 )
 
-PACKAGES = [ "docker.io" ]
+PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
 
 
 hooks = Hooks()
@@ -89,14 +89,14 @@ def install():
 
 @hooks.hook("contrail-control-relation-joined")
 def contrail_control_joined():
-   print "NUM CONTROL UNITS: ", len(units("contrail-control"))
+   print ("NUM CONTROL UNITS: ", len(units("contrail-control")))
    if len(units("contrail-control")) == config.get("control_units"):
        config["control-ready"] = True
    write_analytics_config()
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def contrail_analyticsdb_joined():
-   print "NUM ANALYTICSDB UNITS: ", len(units("contrail-analyticsdb"))
+   print ("NUM ANALYTICSDB UNITS: ", len(units("contrail-analyticsdb")))
    if len(units("contrail-analyticsdb")) == config.get("analyticsdb_units"):
        config["analyticsdb-ready"] = True
    write_analytics_config()

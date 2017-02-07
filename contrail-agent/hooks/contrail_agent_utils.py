@@ -140,7 +140,7 @@ def launch_docker_image():
     output =  check_output(["docker",
                             "images",
                             ])
-    output = output.split('\n')[:-1]
+    output = output.decode()split('\n')[:-1]
     for line in output:
         if "contrail-agent" in line.split()[0]:
             image_id = line.split()[2].strip()

@@ -14,6 +14,7 @@ from time import sleep, time
 
 import apt_pkg
 import yaml
+import platform
 
 try:
   import netaddr
@@ -172,22 +173,24 @@ def launch_docker_image():
     output =  check_output(["docker",
                             "images",
                             ])
-    output = output.split('\n')[:-1]
+    output = output.decode().split('\n')[:-1]
     for line in output:
         if "contrail-analyticsdb" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
-                    "--name=contrail-analyticsdb",
-                    "--volume=/etc/contrailctl:/etc/contrailctl",
-                    "-itd",
-                    image_id
-                   ])
+        dist = platform.linux_distribution()[2].strip()
+        cmd = "/usr/bin/docker "+ \
+              "run "+ \
+              "--net=host "+ \
+              "--cap-add=AUDIT_WRITE "+ \
+              "--privileged "+ \
+              "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
+              "--volume=/etc/contrailctl:/etc/contrailctl "+ \
+              "--name=contrail-analyticsdb "
+        if dist == "trusty":
+            cmd = cmd + "--pid=host "
+        cmd = cmd +"-itd "+ image_id
+        check_call(cmd, shell=True)
     else:
         log("contrail-analyticsdb docker image is not available")
 
@@ -203,5 +206,5 @@ def write_analyticsdb_config():
        and config_get("identity-admin-ready") and not is_already_launched():
        #and not is_already_launched():
         #apply_config()
-        print "ANALYTICSDB CONTAINER LAUNCHED, ctx"
+        print ("ANALYTICSDB CONTAINER LAUNCHED, ctx")
         launch_docker_image()

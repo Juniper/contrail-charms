@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from subprocess import (
     CalledProcessError,
@@ -34,7 +34,7 @@ from contrail_analyticsdb_utils import (
     is_already_launched
 )
 
-PACKAGES = [ "docker.io" ]
+PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
 
 
 hooks = Hooks()
