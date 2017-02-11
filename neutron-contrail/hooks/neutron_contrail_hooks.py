@@ -59,7 +59,8 @@ from neutron_contrail_utils import (
     write_nodemgr_config,
     write_vnc_api_config,
     write_vrouter_config,
-    write_vrouter_vgw_interfaces
+    write_vrouter_vgw_interfaces,
+    set_status
 )
 
 PACKAGES = [ "python", "python-yaml", "python-apt",
@@ -116,6 +117,7 @@ def config_changed():
                                             else False
     check_vrouter()
     check_local_metadata()
+    set_status
 
 def config_get(key):
     try:
@@ -269,7 +271,7 @@ def install():
     openstack_version = dpkg_version("nova-compute")
 
     fix_permissions()
-    #fix_nodemgr()
+    fix_nodemgr()
     try:
         modprobe("vrouter")
     except CalledProcessError:
@@ -323,6 +325,10 @@ def main():
         hooks.execute(sys.argv)
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
+
+@hooks.hook("update-status")
+def update_status():
+  set_status()
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():

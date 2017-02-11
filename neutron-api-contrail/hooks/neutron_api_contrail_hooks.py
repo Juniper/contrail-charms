@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+from subprocess import check_output
 
 from apt_pkg import version_compare
 import json
@@ -28,7 +29,9 @@ from charmhelpers.fetch import (
 from neutron_api_contrail_utils import (
     CONTRAIL_VERSION,
     OPENSTACK_VERSION,
-    write_plugin_config
+    write_plugin_config,
+    dpkg_version,
+    set_status
 )
 
 PACKAGES = [ "python", "python-yaml", "python-apt", "neutron-plugin-contrail" ]
@@ -38,6 +41,7 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
+    set_status()
     pass
 
 @hooks.hook("contrail-api-relation-changed")
@@ -110,6 +114,10 @@ def neutron_plugin_joined():
                  "quota-driver": "neutron_plugin_contrail.plugins.opencontrail.quota.driver.QuotaDriver",
                  "subordinate_configuration": json.dumps(conf) }
     relation_set(relation_settings=settings)
+
+@hooks.hook("update-status")
+def update_status():
+    set_status()
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():

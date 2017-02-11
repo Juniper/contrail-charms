@@ -25,7 +25,9 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_type,
-    remote_unit
+    remote_unit,
+    status_set,
+    application_version_set
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -34,9 +36,25 @@ from charmhelpers.core.templating import render
 
 apt_pkg.init()
 
+def set_status():
+    version  = dpkg_version("contrail-vrouter-agent")
+    application_version_set(version)
+    output = check_output("contrail-status", shell=True)
+    for line in output.splitlines()[2:]:
+        if len(line) > 0:
+            lst = line.decode().split()
+            service_name = lst[0].strip()
+            service_status = lst[1].strip()
+            if 'contrail-vrouter-agent' in service_name \
+                and 'active' in service_status:
+                status_set("active", "Unit is ready")
+                break
+            else:
+                status_set("waiting", "vrouter-agent is not up")
+
 def dpkg_version(pkg):
     try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
+        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
     except CalledProcessError:
         return None
 
