@@ -6,7 +6,7 @@ from subprocess import (
     check_output
 )
 import sys
-
+from socket import gethostbyname
 import yaml
 
 from charmhelpers.core.hookenv import (
@@ -16,6 +16,10 @@ from charmhelpers.core.hookenv import (
     resource_get,
     log,
     status_set,
+    related_units,
+    relation_get,
+    relation_ids,
+    relation_type,
     relation_get,
     application_version_set
 )
@@ -105,6 +109,23 @@ def control_departed():
 @hooks.hook("contrail-lb-relation-departed")
 def lb_departed():
    config["lb-ready"] = False
+
+@hooks.hook("contrail-analytics-relation-joined")
+def analytics_joined():
+   analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("contrail-analytics")
+                                     for unit in related_units(rid) ]
+   print ("ANALYTICS_RELATION JOINED: ", analytics_ip_list)
+   print ("len analytics_ip_list: ", len(analytics_ip_list))
+   print ("control-units: ", config.get("control_units"))
+   if len(analytics_ip_list) == config.get("control_units"):
+       config["analytics-ready"] = True
+   write_analyticsdb_config()
+
+@hooks.hook("contrail-analytics-relation-departed")
+@hooks.hook("contrail-analytics-relation-broken")
+def control_departed():
+   config["analytics-ready"] = False
 
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():

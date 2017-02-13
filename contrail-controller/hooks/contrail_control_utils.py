@@ -122,6 +122,14 @@ def controller_ctx():
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "controller_servers": controller_ip_list }
 
+def analytics_ctx():
+    """Get the ipaddres of all contrail control nodes"""
+    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("contrail-analytics")
+                                     for unit in related_units(rid) ]
+    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return { "analytics_servers": analytics_ip_list }
+
 def lb_ctx():
     lb_vip = None
     for rid in relation_ids("contrail-lb"):
@@ -191,12 +199,13 @@ def write_control_config():
     ctx = {}
     ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
     ctx.update(controller_ctx())
+    ctx.update(analytics_ctx())
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
     if config_get("control-ready") and config_get("lb-ready") \
-       and config_get("identity-admin-ready") and not is_already_launched():
-       #and not is_already_launched():
+       and config_get("identity-admin-ready") and config_get("analytics-ready") \
+       and not is_already_launched():
         #apply_control_config()
         print ("LAUNCHING THE CONTROLLER CONTAINER")
         print ("CTX: ", ctx)

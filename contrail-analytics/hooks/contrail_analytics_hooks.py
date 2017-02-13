@@ -7,6 +7,7 @@ from subprocess import (
 import sys
 
 import yaml
+from socket import gaierror, gethostbyname, gethostname
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -15,7 +16,11 @@ from charmhelpers.core.hookenv import (
     resource_get,
     log,
     status_set,
+    related_units,
     relation_get,
+    relation_ids,
+    relation_ids,
+    unit_get,
     application_version_set
 )
 
@@ -130,6 +135,18 @@ def identity_admin_changed():
 @hooks.hook("identity-admin-relation-broken")
 def identity_admin_broken():
    config["identity-admin-ready"] = False
+
+@hooks.hook("analytics-cluster-relation-joined")
+def analytics_cluster_joined():
+    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("analytics-cluster")
+                                     for unit in related_units(rid) ]
+    # add it's own ip address
+    analytics_ip_list.append(gethostbyname(unit_get("private-address")))
+    print ("CLUSTER RELATION JOINED: ", analytics_ip_list)
+    if len(analytics_ip_list) == config.get("control_units"):
+        config["analytics-ready"] = True
+    write_analytics_config()
 
 @hooks.hook("update-status")
 def update_status():

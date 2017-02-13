@@ -105,7 +105,7 @@ services:
       cluster_count: 3
     num_units: 0
   neutron-api-contrail:
-    charm: cs:~sdn-charmers/trusty/neutron-api-contrail
+    charm: /home/ubuntu/neutron-api-contrail
     num_units: 0
     options:
       install-keys: |
@@ -129,7 +129,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3031 /"
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3038 /"
   neutron-contrail:
     charm: /home/ubuntu/neutron-contrail
     num_units: 0
@@ -155,7 +155,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3031 /"
+        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3038 /"
   contrail-analytics:
     charm: /home/ubuntu/contrail-analytics
     num_units: 3
@@ -209,7 +209,9 @@ relations:
   - [ "contrail-analytics", "contrail-lb:contrail-analytics" ]
   - [ "contrail-lb", "contrail-analytics:contrail-lb" ]
   - [ "contrail-analyticsdb", "contrail-analytics:contrail-analyticsdb" ]
+  - [ "contrail-analytics", "contrail-analyticsdb:contrail-analytics" ]
   - [ "contrail-control", "contrail-analytics:contrail-control" ]
+  - [ "contrail-control", "contrail-analytics:contrail-analytics" ]
   - [ "contrail-control", "contrail-analyticsdb:contrail-control" ]
   - [ "contrail-control", "neutron-api-contrail" ]
   - [ "contrail-lb", "contrail-analyticsdb:contrail-lb" ]

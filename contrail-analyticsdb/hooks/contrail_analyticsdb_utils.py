@@ -114,8 +114,16 @@ def controller_ctx():
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "controller_servers": controller_ip_list }
 
+def analytics_ctx():
+    """Get the ipaddres of all analytics nodes"""
+    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                            for rid in relation_ids("contrail-analytics")
+                            for unit in related_units(rid) ]
+    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return { "analytics_servers": analytics_ip_list }
+
 def analyticsdb_ctx():
-    """Get the ipaddres of all contrail control nodes"""
+    """Get the ipaddres of all analyticsdb nodes"""
     analyticsdb_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
                             for rid in relation_ids("analyticsdb-cluster")
                             for unit in related_units(rid) ]
@@ -198,13 +206,19 @@ def write_analyticsdb_config():
     ctx = {}
     ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
     ctx.update(controller_ctx())
+    ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
+    print ("control-ready: ", config_get("control-ready"))
+    print ("lb-ready: ", config_get("lb-ready"))
+    print ("keystone-ready: ", config_get("identity-admin-ready"))
+    print ("analytics-ready: ", config_get("analytics-ready"))
+    print ("is_already_launched: ", is_already_launched())
     if config_get("control-ready") and config_get("lb-ready") \
-       and config_get("identity-admin-ready") and not is_already_launched():
-       #and not is_already_launched():
+       and config_get("identity-admin-ready") and config_get("analytics-ready") \
+       and not is_already_launched():
         #apply_config()
         print ("ANALYTICSDB CONTAINER LAUNCHED, ctx")
         launch_docker_image()

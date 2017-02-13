@@ -126,6 +126,21 @@ def cluster_joined():
         config["control-ready"] = True
     write_control_config()
 
+@hooks.hook("contrail-analytics-relation-joined")
+def analytics_joined():
+    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("contrail-analytics")
+                                     for unit in related_units(rid) ]
+    print ("ANALYTICS_RELATION JOINED: ", analytics_ip_list)
+    if len(analytics_ip_list) == config.get("control_units"):
+        config["analytics-ready"] = True
+    write_control_config()
+
+@hooks.hook("contrail-analytics-relation-departed")
+@hooks.hook("contrail-analytics-relation-broken")
+def analytics_departed():
+    config["config-ready"] = False
+
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
    if not relation_get("service_hostname"):

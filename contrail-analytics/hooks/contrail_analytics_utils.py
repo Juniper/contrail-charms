@@ -29,7 +29,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_type,
-    remote_unit
+    remote_unit,
+    unit_get
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -122,15 +123,26 @@ def lb_ctx():
    return { "lb_vip": lb_vip}
 
 def controller_ctx():
-    """Get the ipaddres of all contrail control nodes"""
+    print ("INSIDE CONTROLLER CTX")
+    """Get the ipaddress of all contrail control nodes"""
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
                                for rid in relation_ids("contrail-control")
                                for unit in related_units(rid) ]
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "controller_servers": controller_ip_list }
 
+def analytics_ctx():
+    """Get the ipaddress of all analytics control nodes"""
+    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
+                                     for rid in relation_ids("analytics-cluster")
+                                     for unit in related_units(rid) ]
+    # add it's own ip address
+    analytics_ip_list.append(gethostbyname(unit_get("private-address")))
+    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return { "analytics_servers": analytics_ip_list }
+
 def analyticsdb_ctx():
-  """Get the ipaddres of all contrail analyticsdb nodes"""
+  """Get the ipaddress of all contrail analyticsdb nodes"""
   analyticsdb_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
                             for rid in relation_ids("contrail-analyticsdb")
                             for unit in related_units(rid) ]
@@ -194,13 +206,14 @@ def write_analytics_config():
     ctx = {}
     ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
     ctx.update(controller_ctx())
+    ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
     if config_get("control-ready") and config_get("lb-ready") \
        and config_get("identity-admin-ready") and config_get("analyticsdb-ready") \
-       and not is_already_launched():
+       and config_get("analytics-ready")and not is_already_launched():
         #apply_analytics_config()
         print ("LAUNCHING THE ANALYTICS CONTAINER")
         print ("CTX: ", ctx)
