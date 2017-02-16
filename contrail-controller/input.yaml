@@ -1,2 +1,3 @@
 contrail-control:
-   log_level: "SYS_ERR"
+   cloud_orchestrator: "openstack"
+   log_level: "SYS_NOTICE"

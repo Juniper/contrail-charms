@@ -11,3 +11,7 @@ options:
     description: |
       Minimum number of units required in control peer relation
       TEMPORARY ENTRY. SHOULD BE REMOVED AFTER THE FIX IS PUT IN CONTRAIL
+  log_level:
+    type: string
+    description: |
+      log level

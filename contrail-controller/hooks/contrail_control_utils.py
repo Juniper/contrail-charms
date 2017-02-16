@@ -198,6 +198,7 @@ def launch_docker_image():
 def write_control_config():
     ctx = {}
     ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
+    ctx.update({"default_log_level": config.get("log_level")})
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(lb_ctx())

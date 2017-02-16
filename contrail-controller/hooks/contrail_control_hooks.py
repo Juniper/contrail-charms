@@ -50,6 +50,9 @@ config = config()
 @hooks.hook("config-changed")
 def config_changed():
     set_status()
+    print ("ORCHESTRATOR: ", config_get("cloud_orchestrator"))
+    print ("LOG LEVEL: ", config_get("log_level"))
+    write_control_config()
     return None
 
 def config_get(key):
