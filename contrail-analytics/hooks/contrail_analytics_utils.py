@@ -163,7 +163,7 @@ def identity_admin_ctx():
    return ctxs[0] if ctxs else {}
 
 def apply_analytics_config():
-    cmd = '/usr/bin/docker exec contrail-analytics contrailctl config sync -c analytics -F -t configure'
+    cmd = '/usr/bin/docker exec contrail-analytics contrailctl config sync -c analytics'
     check_call(cmd, shell=True)
 
 def launch_docker_image():

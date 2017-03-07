@@ -7,7 +7,7 @@ from subprocess import (
 )
 import sys
 from socket import gethostbyname
-import yaml
+#import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -26,7 +26,8 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.fetch import (
     apt_install,
-    apt_upgrade
+    apt_upgrade,
+    apt_update
 )
 
 from contrail_analyticsdb_utils import (
@@ -39,6 +40,7 @@ from contrail_analyticsdb_utils import (
 )
 
 PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
+#PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
 
 
 hooks = Hooks()
@@ -83,10 +85,23 @@ def load_docker_image():
                 img_path,
                 ])
 
+def setup_docker_env():
+    import platform
+    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
+    check_output(cmd, shell=True)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = "add-apt-repository "+ \
+          "\"deb https://apt.dockerproject.org/repo/ " + \
+          "ubuntu-%s "%(dist) +\
+          "main\""
+    check_output(cmd, shell=True)
+
 @hooks.hook()
 def install():
     fix_hostname()
     apt_upgrade(fatal=True, dist=True)
+    #setup_docker_env()
+    #apt_update(fatal=False)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     #launch_docker_image()
@@ -99,6 +114,7 @@ def control_joined():
 
 @hooks.hook("contrail-lb-relation-joined")
 def lb_joined():
+   print ("LB RELATION JOINED")
    config["lb-ready"] = True
    write_analyticsdb_config()
 
@@ -143,7 +159,6 @@ def identity_admin_broken():
 @hooks.hook("update-status")
 def update_status():
   set_status()
-  #status_set("active", "Unit ready")
 
 def main():
     try:

@@ -161,7 +161,7 @@ def is_already_launched():
         return False
 
 def apply_config():
-   cmd = '/usr/bin/docker exec contrail-analyticsdb contrailctl config sync -c analyticsdb -F -t configure'
+   cmd = '/usr/bin/docker exec contrail-analyticsdb contrailctl config sync -c analyticsdb'
    check_call(cmd, shell=True)
 
 def config_get(key):

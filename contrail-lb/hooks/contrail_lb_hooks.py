@@ -7,7 +7,7 @@ from subprocess import (
 )
 import sys
 
-import yaml
+#import yaml
 from socket import gethostbyname
 
 from charmhelpers.core.hookenv import (
@@ -27,7 +27,8 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.fetch import (
     apt_install,
-    apt_upgrade
+    apt_upgrade,
+    apt_update
 )
 
 from contrail_lb_utils import (
@@ -39,7 +40,7 @@ from contrail_lb_utils import (
 )
 
 PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
-
+#PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
 
 hooks = Hooks()
 config = config()
@@ -72,8 +73,21 @@ def load_docker_image():
                 img_path,
                 ])
 
+def setup_docker_env():
+    import platform
+    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
+    check_output(cmd, shell=True)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = "add-apt-repository "+ \
+          "\"deb https://apt.dockerproject.org/repo/ " + \
+          "ubuntu-%s "%(dist) +\
+          "main\""
+    check_output(cmd, shell=True)
+
 @hooks.hook()
 def install():
+    #setup_docker_env()
+    #apt_update(fatal=False)
     apt_upgrade(fatal=True, dist=True)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()

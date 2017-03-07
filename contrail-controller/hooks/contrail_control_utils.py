@@ -160,7 +160,7 @@ def config_get(key):
 
 def apply_control_config():
         config["config-applied"] = True
-        cmd = '/usr/bin/docker exec contrail-controller contrailctl config sync -c controller -F -t configure'
+        cmd = '/usr/bin/docker exec contrail-controller contrailctl config sync -c controller'
         check_call(cmd, shell=True)
 
 def units(relation):

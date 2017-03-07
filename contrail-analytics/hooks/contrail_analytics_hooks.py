@@ -6,7 +6,7 @@ from subprocess import (
 )
 import sys
 
-import yaml
+#import yaml
 from socket import gaierror, gethostbyname, gethostname
 
 from charmhelpers.core.hookenv import (
@@ -26,7 +26,8 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.fetch import (
     apt_install,
-    apt_upgrade
+    apt_upgrade,
+    apt_update
 )
 
 
@@ -40,7 +41,7 @@ from contrail_analytics_utils import (
 )
 
 PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
-
+#PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
 
 hooks = Hooks()
 config = config()
@@ -83,11 +84,23 @@ def load_docker_image():
                 img_path,
                 ])
 
+def setup_docker_env():
+    import platform
+    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
+    check_output(cmd, shell=True)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = "add-apt-repository "+ \
+          "\"deb https://apt.dockerproject.org/repo/ " + \
+          "ubuntu-%s "%(dist) +\
+          "main\""
+    check_output(cmd, shell=True)
 
 @hooks.hook()
 def install():
     fix_hostname()
     apt_upgrade(fatal=True, dist=True)
+    #setup_docker_env()
+    #apt_update(fatal=False)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     #launch_docker_image()
@@ -109,6 +122,7 @@ def contrail_analyticsdb_joined():
 @hooks.hook("contrail-lb-relation-joined")
 def contrail_lb_joined():
    config["lb-ready"] = True
+   print ("LB RELATION JOINED")
    write_analytics_config()
 
 @hooks.hook("contrail-control-relation-departed")
@@ -128,6 +142,7 @@ def identity_admin_changed():
    if not relation_get("service_hostname"):
         log("Keystone relation not ready")
         return
+   print ("KEYSTONE RELATION JOINED")
    config["identity-admin-ready"] = True
    write_analytics_config()
 
@@ -151,7 +166,6 @@ def analytics_cluster_joined():
 @hooks.hook("update-status")
 def update_status():
   set_status()
-  #status_set("active", "Unit ready")
                 
 def main():
     try:
