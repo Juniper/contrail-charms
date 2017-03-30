@@ -113,6 +113,7 @@ def is_already_launched():
         return False
 
 def controller_ctx():
+    ctx = {}
     """Get the ipaddres of all contrail control nodes"""
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
                                      for rid in relation_ids("control-cluster")
@@ -120,7 +121,23 @@ def controller_ctx():
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    return { "controller_servers": controller_ip_list }
+    
+    multi_tenancy = config.get("multi_tenancy")
+    ext_zk_list = yaml.load(config.get("external_zookeeper_servers")) if \
+       config.get("external_zookeeper_servers") else []
+    ext_rabbitmq_list = yaml.load(config.get("external_rabbitmq_servers")) if \
+       config.get("external_rabbitmq_servers") else []
+    ext_configdb_list = yaml.load(config.get("external_configdb_servers")) if \
+       config.get("external_configdb_servers") else []
+
+    ctx["multi_tenancy"] = multi_tenancy
+    ctx["external_zookeeper_servers"] = ext_zk_list
+    ctx["external_rabbitmq_servers"] = ext_rabbitmq_list
+    ctx["external_configdb_servers"] = ext_configdb_list
+    ctx["controller_servers"] = controller_ip_list
+    #return { "controller_servers": controller_ip_list }
+    print ("SIVA CTX: ", ctx)
+    return ctx
 
 def analytics_ctx():
     """Get the ipaddres of all contrail control nodes"""
@@ -151,6 +168,10 @@ def identity_admin_ctx():
              ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
              if hostname ]
    return ctxs[0] if ctxs else {}
+
+def config_ctx():
+    return {"cloud_orchestrator": config.get("cloud_orchestrator"),
+            "default_log_level": config.get("log_level") }
 
 def config_get(key):
     try:
@@ -197,8 +218,7 @@ def launch_docker_image():
 
 def write_control_config():
     ctx = {}
-    ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
-    ctx.update({"default_log_level": config.get("log_level")})
+    ctx.update(config_ctx())
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(lb_ctx())

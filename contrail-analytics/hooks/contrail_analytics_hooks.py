@@ -40,8 +40,8 @@ from contrail_analytics_utils import (
     is_already_launched
 )
 
-PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
-#PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
+#PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
+PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
 
 hooks = Hooks()
 config = config()
@@ -99,8 +99,8 @@ def setup_docker_env():
 def install():
     fix_hostname()
     apt_upgrade(fatal=True, dist=True)
-    #setup_docker_env()
-    #apt_update(fatal=False)
+    setup_docker_env()
+    apt_update(fatal=False)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     #launch_docker_image()

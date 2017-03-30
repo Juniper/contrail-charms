@@ -271,7 +271,7 @@ def install():
     openstack_version = dpkg_version("nova-compute")
 
     fix_permissions()
-    fix_nodemgr()
+    #fix_nodemgr()
     try:
         modprobe("vrouter")
     except CalledProcessError:

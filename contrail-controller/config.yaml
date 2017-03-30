@@ -15,3 +15,40 @@ options:
     type: string
     description: |
       log level
+  external_lb:
+    type: boolean
+    default: False
+    description: |
+      Flag to identify whether the loadbalancer is internally hosted in the lb
+      container or managed externally based on which the listen port of the
+      contrail-api will be decided. Default is false(internally hosted in lb 
+      container)
+  external_zookeeper_servers:
+    type: string
+    description: |
+      List of external zookeeper servers
+  external_rabbitmq_servers:
+    type: string
+    description: |
+      List of external rabbitmq servers
+  external_configdb_servers:
+    type: string
+    description: |
+      List of external cassandra servers
+  multi_tenancy:
+    type: boolean
+    default: False
+    description: |
+      Enable or disable multi_tenancy - True/False.
+      The effects of setting this are:
+      1. multi_tenancy for config_api is enabled/disabled
+      2. static_auth is used in webui in case of multi_tenancy disabled
+  listen_port:
+    type: int
+    default: 8082
+    description: |
+      contrail-api listen port 
+  listen_address:
+    type: string
+    description: |
+      contrail-api listen ipaddress 

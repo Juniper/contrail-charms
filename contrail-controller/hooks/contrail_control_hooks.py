@@ -39,11 +39,12 @@ from contrail_control_utils import (
   units,
   get_control_ip,
   dpkg_version,
-  is_already_launched
+  is_already_launched,
+  apply_control_config
 )
 
-PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
-#PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
+#PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
+PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
 
 hooks = Hooks()
 config = config()
@@ -51,9 +52,9 @@ config = config()
 @hooks.hook("config-changed")
 def config_changed():
     set_status()
-    print ("ORCHESTRATOR: ", config_get("cloud_orchestrator"))
-    print ("LOG LEVEL: ", config_get("log_level"))
     write_control_config()
+    if is_already_launched():
+        apply_control_config()
     return None
 
 def config_get(key):
@@ -105,8 +106,8 @@ def setup_docker_env():
 @hooks.hook()
 def install():
     apt_upgrade(fatal=True, dist=True)
-    #setup_docker_env()
-    #apt_update(fatal=False)
+    setup_docker_env()
+    apt_update(fatal=False)
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     #launch_docker_image()
@@ -157,6 +158,8 @@ def analytics_joined():
 @hooks.hook("contrail-analytics-relation-broken")
 def analytics_departed():
     config["config-ready"] = False
+    write_control_config()
+    apply_control_config()
 
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
