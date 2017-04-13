@@ -18,6 +18,3 @@ options:
   contrail-api-port:
     type: int
     description: Specify contrail-api port manually
-  discovery-server-ip:
-    type: string
-    description: Specify discovery server ip manually

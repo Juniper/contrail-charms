@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from subprocess import (
     CalledProcessError,
@@ -22,27 +22,32 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.fetch import (
     apt_install,
-    apt_upgrade
+    apt_upgrade,
+    apt-update
 )
 
 from contrail_agent_utils import (
     remove_juju_bridges,
     launch_docker_image,
     write_agent_config,
-    is_already_launched
+    is_already_launched,
+    dpkg_version
 )
 
-PACKAGES = [ "docker.io" ]
+PACKAGES = [ "docker.engine" ]
 
 
 hooks = Hooks()
 config = config()
 
+
 @hooks.hook("config-changed")
 def config_changed():
     log_level =  config.get("log_level")
     #set_status()
+    write_agent_config()
     return None
+
 
 def set_status():
     try:
@@ -64,6 +69,7 @@ def set_status():
     else:
         status_set("blocked", "Control container is not running")
 
+
 def load_docker_image():
     img_path = resource_get("contrail-agent")
     check_call(["/usr/bin/docker",
@@ -73,46 +79,67 @@ def load_docker_image():
                 ])
 
 
+def setup_docker_env():
+    import platform
+    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
+    check_output(cmd, shell=True)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = "add-apt-repository "+ \
+          "\"deb https://apt.dockerproject.org/repo/ " + \
+          "ubuntu-%s "%(dist) +\
+          "main\""
+    check_output(cmd, shell=True)
+
+
 @hooks.hook()
 def install():
     apt_upgrade(fatal=True, dist=True)
+    setup_docker_env()
+    apt_update(fatal=False)
     apt_install(PACKAGES, fatal=True)
     remove_juju_bridges()
     load_docker_image()
     #launch_docker_image()
 
+
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
-   if not relation_get("service_hostname"):
+    if not relation_get("service_hostname"):
         log("Relation not ready")
         return
-   config["identity-admin-ready"] = True
-   write_agent_config()
+    config["identity-admin-ready"] = True
+    write_agent_config()
+
 
 @hooks.hook("identity-admin-relation-departed")
 @hooks.hook("identity-admin-relation-broken")
 def identity_admin_departed():
     config["identity-admin-ready"] = False
 
+
 @hooks.hook("contrail-lb-relation-joined")
 def lb_relation_joined():
-   config["lb-ready"] = True
-   write_agent_config()
-    
+    config["lb-ready"] = True
+    write_agent_config()
+
+
 @hooks.hook("contrail-lb-relation-departed")
 def lb_relation_departed():
-   config["lb-ready"] = False
+    config["lb-ready"] = False
+
 
 @hooks.hook("update-status")
 def update_status():
-  set_status()
-  #status_set("active", "Unit ready")
-                
+    set_status()
+    #status_set("active", "Unit ready")
+
+
 def main():
     try:
         hooks.execute(sys.argv)
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
+
 
 if __name__ == "__main__":
     main()
