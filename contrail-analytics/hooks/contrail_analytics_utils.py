@@ -75,7 +75,7 @@ def lb_ctx():
 def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                               for rid in relation_ids("contrail-control")
+                               for rid in relation_ids("contrail-controller")
                                for unit in related_units(rid) ]
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "controller_servers": controller_ip_list }
@@ -167,7 +167,7 @@ def write_analytics_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
-    if config_get("control-ready") and config_get("lb-ready") \
+    if config_get("controller-ready") and config_get("lb-ready") \
       and config_get("identity-admin-ready") and config_get("analyticsdb-ready") \
       and config_get("analytics-ready"):
         if is_already_launched():

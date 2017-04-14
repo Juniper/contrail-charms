@@ -73,9 +73,9 @@ def is_already_launched():
 
 def controller_ctx():
     ctx = {}
-    """Get the ipaddres of all contrail control nodes"""
+    """Get the ipaddres of all contrail controller nodes"""
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                                     for rid in relation_ids("control-cluster")
+                                     for rid in relation_ids("controller-cluster")
                                      for unit in related_units(rid) ]
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
@@ -98,7 +98,7 @@ def controller_ctx():
 
 
 def analytics_ctx():
-    """Get the ipaddres of all contrail control nodes"""
+    """Get the ipaddres of all contrail nodes"""
     analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
                                      for rid in relation_ids("contrail-analytics")
                                      for unit in related_units(rid) ]
@@ -178,7 +178,7 @@ def write_control_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
-    if config.get("control-ready") and config.get("lb-ready") \
+    if config.get("controller-ready") and config.get("lb-ready") \
       and config.get("identity-admin-ready") and config.get("analytics-ready") \
         if is_already_launched():
             apply_control_config()

@@ -7,7 +7,6 @@ from subprocess import (
 )
 import sys
 from socket import gethostbyname
-#import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -31,7 +30,7 @@ from charmhelpers.fetch import (
     apt_update
 )
 
-from contrail_control_utils import (
+from contrail_controller_utils import (
   launch_docker_image,
   write_control_config,
   get_control_ip,
@@ -56,7 +55,7 @@ def set_status():
     try:
         # set the application version
         if is_already_launched():
-            version  = dpkg_version("contrail-control")
+            version  = dpkg_version("contrail-controller")
             application_version_set(version)
         result = check_output(["/usr/bin/docker",
                                "inspect",
@@ -70,11 +69,11 @@ def set_status():
     if result:
         status_set("active", "Unit ready")
     else:
-        status_set("blocked", "Control container is not running")
+        status_set("blocked", "Container is not running")
 
 
 def load_docker_image():
-    img_path = resource_get("contrail-control")
+    img_path = resource_get("contrail-controller")
     check_call(["/usr/bin/docker",
                 "load",
                 "-i",
@@ -120,9 +119,9 @@ def lb_joined():
     write_control_config()
 
 
-@hooks.hook("control-cluster-relation-joined")
+@hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
-    config["control-ready"] = True
+    config["controller-ready"] = True
     write_control_config()
 
 

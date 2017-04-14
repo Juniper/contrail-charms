@@ -66,7 +66,7 @@ def set_status():
   if result:
       status_set("active", "Unit ready")
   else:
-      status_set("blocked", "Control container is not running")
+      status_set("blocked", "Container is not running")
 
 
 def load_docker_image():
@@ -101,9 +101,9 @@ def install():
     #launch_docker_image()
 
 
-@hooks.hook("contrail-control-relation-joined")
-def contrail_control_joined():
-    config["control-ready"] = True
+@hooks.hook("contrail-controller-relation-joined")
+def contrail_controller_joined():
+    config["controller-ready"] = True
     write_analytics_config()
 
 
@@ -119,9 +119,9 @@ def contrail_lb_joined():
     write_analytics_config()
 
 
-@hooks.hook("contrail-control-relation-departed")
-def contrail_control_departed():
-    config["control-ready"] = False
+@hooks.hook("contrail-controller-relation-departed")
+def contrail_controller_departed():
+    config["controller-ready"] = False
 
 
 @hooks.hook("contrail-analyticsdb-relation-departed")

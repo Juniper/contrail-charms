@@ -1,28 +1,13 @@
 name: contrail-lb
-summary: Contrail TSN Service Node and Tor Agent
+summary: Contrail Load Balancer Node
 maintainer: Sivakumar Gurumurthy <sgurumurthy@juniper.net>
 description: |
-  The TOR services node (TSN) acts as the multicast controller for the ToR
-  switches. The TSN also provides DHCP and DNS services to the bare metal
-  servers or virtual instances running behind ToR switch ports.
-  The TSN receives all the broadcast packets from the ToR switch, and replicates
-  them to the required compute nodes in the cluster and to other EVPN nodes.
-  Broadcast packets from the virtual machines in the cluster are sent directly
-  from the respective compute nodes to the ToR switch.
-  A ToR agent provisioned in the Contrail cluster acts as the OVSDB client for
-  the ToR switch, and all of the OVSDB interactions with the ToR switch are
-  performed by using the ToR agent.
-  The TOR agent programs the different OVSDB tables onto the ToR switch and
-  receives the local unicast table entries from the ToR switch.
-  The typical practice is to run the ToR agent on the TSN node.
-  
-  This charm provides both the TSN and TOR agent service on the same node.
-  It supports running multiple TOR agents as well.
+  TODO
 requires:
   identity-admin:
     interface: keystone-admin
-  contrail-control:
-    interface: contrail-control
+  contrail-controller:
+    interface: contrail-controller
   contrail-analytics:
     interface: contrail-analytics
 provides:
@@ -33,4 +18,3 @@ resources:
     type: file
     filename: contrail-lb.tar.gz
     description: "Contrail lb docker image"
-

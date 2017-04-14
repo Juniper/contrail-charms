@@ -1,16 +1,4 @@
 options:
-  control_units:
-    type: int
-    default: 3
-    description: |
-      Minimum number of units required in control relation
-      TEMPORARY ENTRY. SHOULD BE REMOVED AFTER THE FIX IS PUT IN CONTRAIL
-  analytics_units:
-    type: int
-    default: 3
-    description: |
-      Minimum number of units required in analytics relation
-      TEMPORARY ENTRY. SHOULD BE REMOVED AFTER THE FIX IS PUT IN CONTRAIL
   cloud_orchestrator:
     type: string
     default: openstack

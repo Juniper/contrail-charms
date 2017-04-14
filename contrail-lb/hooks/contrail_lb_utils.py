@@ -116,7 +116,7 @@ def is_already_launched():
 def controller_ctx():
     """Get the ipaddres of all contrail control nodes"""
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                               for rid in relation_ids("contrail-control")
+                               for rid in relation_ids("contrail-controller")
                                for unit in related_units(rid) ]
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "controller_servers": controller_ip_list }
@@ -143,7 +143,7 @@ def write_lb_config():
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     render("lb.conf", "/etc/contrailctl/lb.conf", ctx)
-    if config.get("contrail-control-ready") and config.get("contrail-analytics-ready"):
+    if config.get("contrail-controller-ready") and config.get("contrail-analytics-ready"):
         if is_already_launched():
             apply_lb_config()
         else:
