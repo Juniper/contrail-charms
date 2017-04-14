@@ -39,52 +39,8 @@ from charmhelpers.core.host import service_restart, service_start
 from charmhelpers.core.templating import render
 
 apt_pkg.init()
-
-
 config = config()
 
-def retry(f=None, timeout=10, delay=2):
-    """Retry decorator.
-
-    Provides a decorator that can be used to retry a function if it raises
-    an exception.
-
-    :param timeout: timeout in seconds (default 10)
-    :param delay: retry delay in seconds (default 2)
-
-    Examples::
-
-        # retry fetch_url function
-        @retry
-        def fetch_url():
-            # fetch url
-
-        # retry fetch_url function for 60 secs
-        @retry(timeout=60)
-        def fetch_url():
-            # fetch url
-    """
-    if not f:
-        return functools.partial(retry, timeout=timeout, delay=delay)
-    @functools.wraps(f)
-    def func(*args, **kwargs):
-        start = time()
-        error = None
-        while True:
-            try:
-                return f(*args, **kwargs)
-            except Exception as e:
-                error = e
-            elapsed = time() - start
-            if elapsed >= timeout:
-                raise error
-            remaining = timeout - elapsed
-            if delay <= remaining:
-                sleep(delay)
-            else:
-                sleep(remaining)
-                raise error
-    return func
 
 def dpkg_version(pkg):
     try:
@@ -95,14 +51,16 @@ def dpkg_version(pkg):
     except CalledProcessError:
         return None
 
+
 def get_control_ip():
-  if config_get("lb-ready"):
-    controller_ip = [gethostbyname(relation_get("private-address", unit, rid))
-                for rid in relation_ids("contrail-lb")
-                for unit in related_units(rid) ][0]
-  else:
-    controller_ip = gethostbyname(unit_get("private-address"))
-  return controller_ip
+    if config.get("lb-ready"):
+        controller_ip = [gethostbyname(relation_get("private-address", unit, rid))
+                         for rid in relation_ids("contrail-lb")
+                         for unit in related_units(rid) ][0]
+    else:
+        controller_ip = gethostbyname(unit_get("private-address"))
+    return controller_ip
+
 
 def is_already_launched():
     cmd = 'docker ps | grep contrail-controller'
@@ -111,6 +69,7 @@ def is_already_launched():
         return True
     except CalledProcessError:
         return False
+
 
 def controller_ctx():
     ctx = {}
@@ -121,7 +80,7 @@ def controller_ctx():
     # add it's own ip address
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    
+
     multi_tenancy = config.get("multi_tenancy")
     ext_zk_list = yaml.load(config.get("external_zookeeper_servers")) if \
        config.get("external_zookeeper_servers") else []
@@ -135,9 +94,8 @@ def controller_ctx():
     ctx["external_rabbitmq_servers"] = ext_rabbitmq_list
     ctx["external_configdb_servers"] = ext_configdb_list
     ctx["controller_servers"] = controller_ip_list
-    #return { "controller_servers": controller_ip_list }
-    print ("SIVA CTX: ", ctx)
     return ctx
+
 
 def analytics_ctx():
     """Get the ipaddres of all contrail control nodes"""
@@ -147,17 +105,20 @@ def analytics_ctx():
     analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "analytics_servers": analytics_ip_list }
 
+
 def lb_ctx():
     lb_vip = None
     for rid in relation_ids("contrail-lb"):
         for unit in related_units(rid):
            lb_vip = gethostbyname(relation_get("private-address", unit, rid))
-    return { "controller_ip": lb_vip,
-             "analytics_ip": lb_vip
-           }
+    return {
+       "controller_ip": lb_vip,
+       "analytics_ip": lb_vip
+    }
+
 
 def identity_admin_ctx():
-   ctxs = [ { "keystone_ip": gethostbyname(hostname),
+    ctxs = [ { "keystone_ip": gethostbyname(hostname),
                "keystone_public_port": relation_get("service_port", unit, rid),
                "keystone_admin_user": relation_get("service_username", unit, rid),
                "keystone_admin_password": relation_get("service_password", unit, rid),
@@ -167,27 +128,19 @@ def identity_admin_ctx():
              for unit, hostname in
              ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
              if hostname ]
-   return ctxs[0] if ctxs else {}
+    return ctxs[0] if ctxs else {}
+
 
 def config_ctx():
     return {"cloud_orchestrator": config.get("cloud_orchestrator"),
             "default_log_level": config.get("log_level") }
 
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
 
 def apply_control_config():
-        config["config-applied"] = True
-        cmd = '/usr/bin/docker exec contrail-controller contrailctl config sync -c controller'
-        check_call(cmd, shell=True)
+    config["config-applied"] = True
+    cmd = '/usr/bin/docker exec contrail-controller contrailctl config sync -c controller'
+    check_call(cmd, shell=True)
 
-def units(relation):
-    """Return a list of units for the specified relation"""
-    return [ unit for rid in relation_ids(relation)
-                  for unit in related_units(rid) ]
 
 def launch_docker_image():
     image_id = None
@@ -216,6 +169,7 @@ def launch_docker_image():
     else:
         log("contrail-controller docker image is not available")
 
+
 def write_control_config():
     ctx = {}
     ctx.update(config_ctx())
@@ -224,10 +178,9 @@ def write_control_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
-    if config_get("control-ready") and config_get("lb-ready") \
-       and config_get("identity-admin-ready") and config_get("analytics-ready") \
-       and not is_already_launched():
-        #apply_control_config()
-        print ("LAUNCHING THE CONTROLLER CONTAINER")
-        print ("CTX: ", ctx)
-        launch_docker_image()
+    if config.get("control-ready") and config.get("lb-ready") \
+      and config.get("identity-admin-ready") and config.get("analytics-ready") \
+        if is_already_launched():
+            apply_control_config()
+        else:
+            launch_docker_image()

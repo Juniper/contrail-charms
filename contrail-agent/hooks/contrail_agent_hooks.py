@@ -43,7 +43,6 @@ config = config()
 
 @hooks.hook("config-changed")
 def config_changed():
-    log_level =  config.get("log_level")
     #set_status()
     write_agent_config()
     return None

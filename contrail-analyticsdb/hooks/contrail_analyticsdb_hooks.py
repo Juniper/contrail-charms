@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from subprocess import (
     CalledProcessError,
@@ -7,7 +7,6 @@ from subprocess import (
 )
 import sys
 from socket import gethostbyname
-#import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -16,7 +15,6 @@ from charmhelpers.core.hookenv import (
     resource_get,
     log,
     status_set,
-    related_units,
     relation_get,
     relation_ids,
     relation_type,
@@ -34,48 +32,44 @@ from contrail_analyticsdb_utils import (
     fix_hostname,
     write_analyticsdb_config,
     launch_docker_image,
-    units,
     dpkg_version,
     is_already_launched
 )
 
-#PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
 PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
 
 
 hooks = Hooks()
 config = config()
 
+
 @hooks.hook("config-changed")
 def config_changed():
     set_status()
+    write_analyticsdb_config()
     return None
 
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
 
 def set_status():
-  try:
-      # set the application version
-      if is_already_launched():
-          version  = dpkg_version("contrail-nodemgr")
-          application_version_set(version)
-      result = check_output(["/usr/bin/docker",
-                             "inspect",
-                             "-f",
-                             "{{.State.Running}}",
-                             "contrail-analyticsdb"
-                             ])
-  except CalledProcessError:
-      status_set("waiting", "Waiting for the container to be launched")
-      return
-  if result:
-      status_set("active", "Unit ready")
-  else:
-      status_set("blocked", "Control container is not running")
+    try:
+        # set the application version
+        if is_already_launched():
+            version  = dpkg_version("contrail-nodemgr")
+            application_version_set(version)
+        result = check_output(["/usr/bin/docker",
+                               "inspect",
+                               "-f",
+                               "{{.State.Running}}",
+                               "contrail-analyticsdb"
+                               ])
+    except CalledProcessError:
+        status_set("waiting", "Waiting for the container to be launched")
+        return
+    if result:
+        status_set("active", "Unit ready")
+    else:
+        status_set("blocked", "Control container is not running")
+
 
 def load_docker_image():
     img_path = resource_get("contrail-analyticsdb")
@@ -84,6 +78,7 @@ def load_docker_image():
                 "-i",
                 img_path,
                 ])
+
 
 def setup_docker_env():
     import platform
@@ -96,6 +91,7 @@ def setup_docker_env():
           "main\""
     check_output(cmd, shell=True)
 
+
 @hooks.hook()
 def install():
     fix_hostname()
@@ -105,66 +101,68 @@ def install():
     apt_install(PACKAGES, fatal=True)
     load_docker_image()
     #launch_docker_image()
-                
+
+
 @hooks.hook("contrail-control-relation-joined")
 def control_joined():
-   if len(units("contrail-control")) == config.get("control_units"):
-       config["control-ready"] = True
-   write_analyticsdb_config()
+    config["control-ready"] = True
+    write_analyticsdb_config()
+
 
 @hooks.hook("contrail-lb-relation-joined")
 def lb_joined():
-   print ("LB RELATION JOINED")
-   config["lb-ready"] = True
-   write_analyticsdb_config()
+    config["lb-ready"] = True
+    write_analyticsdb_config()
+
 
 @hooks.hook("contrail-control-relation-departed")
 def control_departed():
-   config["control-ready"] = False
+    config["control-ready"] = False
+
 
 @hooks.hook("contrail-lb-relation-departed")
 def lb_departed():
-   config["lb-ready"] = False
+    config["lb-ready"] = False
+
 
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
-   analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                                     for rid in relation_ids("contrail-analytics")
-                                     for unit in related_units(rid) ]
-   print ("ANALYTICS_RELATION JOINED: ", analytics_ip_list)
-   print ("len analytics_ip_list: ", len(analytics_ip_list))
-   print ("control-units: ", config.get("control_units"))
-   if len(analytics_ip_list) == config.get("control_units"):
-       config["analytics-ready"] = True
-   write_analyticsdb_config()
+    config["analytics-ready"] = True
+    write_analyticsdb_config()
+
 
 @hooks.hook("contrail-analytics-relation-departed")
 @hooks.hook("contrail-analytics-relation-broken")
 def control_departed():
-   config["analytics-ready"] = False
+    config["analytics-ready"] = False
+
 
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
-   if not relation_get("service_hostname"):
+    if not relation_get("service_hostname"):
         log("Keystone relation not ready")
         return
-   config["identity-admin-ready"] = True
-   write_analyticsdb_config()
+    config["identity-admin-ready"] = True
+    write_analyticsdb_config()
+
 
 @hooks.hook("identity-admin-relation-departed")
 @hooks.hook("identity-admin-relation-broken")
 def identity_admin_broken():
-   config["identity-admin-ready"] = False
+    config["identity-admin-ready"] = False
+
 
 @hooks.hook("update-status")
 def update_status():
-  set_status()
+    set_status()
+
 
 def main():
     try:
         hooks.execute(sys.argv)
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
+
 
 if __name__ == "__main__":
     main()

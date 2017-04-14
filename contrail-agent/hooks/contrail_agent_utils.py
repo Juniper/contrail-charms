@@ -74,12 +74,6 @@ def contrail_api_ctx():
     return ctxs[0] if ctxs else {}
 
 
-def units(relation):
-    """Return a list of units for the specified relation"""
-    return [ unit for rid in relation_ids(relation)
-                  for unit in related_units(rid) ]
-
-
 def launch_docker_image():
     image_id = None
     orchestrator = config.get("cloud_orchestrator")
@@ -112,13 +106,6 @@ def apply_agent_config():
     check_call(cmd, shell=True)
 
 
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
-
-
 def identity_admin_ctx():
     ctxs = [ { "keystone_ip": gethostbyname(hostname),
                "keystone_public_port": relation_get("service_port", unit, rid),
@@ -145,7 +132,7 @@ def write_agent_config():
     ctx.update(identity_admin_ctx())
     ctx.update(lb_ctx())
     render("agent.conf", "/etc/contrailctl/agent.conf", ctx)
-    if config_get("lb-ready") and config_get("identity-admin-ready"):
+    if config.get("lb-ready") and config.get("identity-admin-ready"):
         if is_already_launched():
             apply_agent_config()
         else:
