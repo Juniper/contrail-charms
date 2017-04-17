@@ -104,52 +104,25 @@ def install():
 
 
 @hooks.hook("contrail-controller-relation-joined")
-def controller_joined():
-    config["controller-ready"] = True
-    write_analyticsdb_config()
-
-
-@hooks.hook("contrail-lb-relation-joined")
-def lb_joined():
-    config["lb-ready"] = True
-    write_analyticsdb_config()
-
-
 @hooks.hook("contrail-controller-relation-departed")
-def controller_departed():
-    config["controller-ready"] = False
-
-
-@hooks.hook("contrail-lb-relation-departed")
-def lb_departed():
-    config["lb-ready"] = False
+def controller_relation():
+    write_analyticsdb_config()
 
 
 @hooks.hook("contrail-analytics-relation-joined")
-def analytics_joined():
-    config["analytics-ready"] = True
-    write_analyticsdb_config()
-
-
 @hooks.hook("contrail-analytics-relation-departed")
 @hooks.hook("contrail-analytics-relation-broken")
-def analytics_departed():
-    config["analytics-ready"] = False
+def analytics_relation():
+    write_analyticsdb_config()
 
 
 @hooks.hook("identity-admin-relation-changed")
+@hooks.hook("identity-admin-relation-departed")
+@hooks.hook("identity-admin-relation-broken")
 def identity_admin_changed():
     if not relation_get("service_hostname"):
         log("Keystone relation not ready")
-        return
-    config["identity-admin-ready"] = True
     write_analyticsdb_config()
-
-
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-def identity_admin_broken():
-    config["identity-admin-ready"] = False
 
 
 @hooks.hook("update-status")

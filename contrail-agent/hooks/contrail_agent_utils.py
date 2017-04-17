@@ -34,7 +34,6 @@ from charmhelpers.core.host import service_restart, service_start
 from charmhelpers.core.templating import render
 
 apt_pkg.init()
-
 config = config()
 
 
@@ -56,22 +55,6 @@ def dpkg_version(pkg):
                               "-f", "${Version}\\n", "-W", pkg]).rstrip()
     except CalledProcessError:
         return None
-
-
-def contrail_api_ctx():
-    ip = config.get("contrail-api-ip")
-    if ip:
-        port = config.get("contrail-api-port")
-        return { "api_server": ip,
-                 "api_port": port if port is not None else 8082 }
-
-    ctxs = [ { "api_server": gethostbyname(relation_get("private-address", unit, rid)),
-               "api_port": port }
-             for rid in relation_ids("contrail-api")
-             for unit, port in
-             ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-             if port ]
-    return ctxs[0] if ctxs else {}
 
 
 def launch_docker_image():
@@ -120,6 +103,13 @@ def identity_admin_ctx():
     return ctxs[0] if ctxs else {}
 
 
+def lb_ctx():
+    for rid in relation_ids("contrail-controller"):
+        for unit in related_units(rid):
+            return {"controller_ip": relation_get("private-address", unit, rid) }
+    return {}
+
+
 def remove_juju_bridges():
     cmd = "scripts/remove-juju-bridges.sh"
     #check_call("remove-juju-bridges.sh", cwd="scripts")
@@ -132,7 +122,7 @@ def write_agent_config():
     ctx.update(identity_admin_ctx())
     ctx.update(lb_ctx())
     render("agent.conf", "/etc/contrailctl/agent.conf", ctx)
-    if config.get("lb-ready") and config.get("identity-admin-ready"):
+    if ctx.get("controller_ip") and ctx.get("keystone_ip"):
         if is_already_launched():
             apply_agent_config()
         else:

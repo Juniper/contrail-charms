@@ -24,7 +24,7 @@ requires:
   container:
     interface: juju-info
     scope: container
-  contrail-api:
-    interface: contrail-api
+  contrail-controller:
+    interface: contrail-controller
   identity-admin:
     interface: keystone-admin

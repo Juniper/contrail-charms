@@ -36,26 +36,30 @@ from neutron_api_contrail_utils import (
 
 PACKAGES = [ "python", "python-yaml", "python-apt", "neutron-plugin-contrail" ]
 
+
 hooks = Hooks()
 config = config()
+
 
 @hooks.hook("config-changed")
 def config_changed():
     set_status()
-    pass
 
-@hooks.hook("contrail-api-relation-changed")
+
+@hooks.hook("contrail-controller-relation-changed")
 def contrail_api_changed():
     if not relation_get("port"):
         log("Relation not ready")
         return
     contrail_api_relation()
 
-@hooks.hook("contrail-api-relation-departed")
-@hooks.hook("contrail-api-relation-broken")
+
+@hooks.hook("contrail-controller-relation-departed")
+@hooks.hook("contrail-controller-relation-broken")
 @restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"]})
 def contrail_api_relation():
     write_plugin_config()
+
 
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
@@ -64,11 +68,13 @@ def identity_admin_changed():
         return
     identity_admin_relation()
 
+
 @hooks.hook("identity-admin-relation-departed")
 @hooks.hook("identity-admin-relation-broken")
 @restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"]})
 def identity_admin_relation():
     write_plugin_config()
+
 
 @hooks.hook()
 def install():
@@ -76,11 +82,6 @@ def install():
     apt_upgrade(fatal=True, dist=True)
     apt_install(PACKAGES, fatal=True)
 
-def main():
-    try:
-        hooks.execute(sys.argv)
-    except UnregisteredHookError as e:
-        log("Unknown hook {} - skipping.".format(e))
 
 @hooks.hook("neutron-plugin-api-subordinate-relation-joined")
 def neutron_plugin_joined():
@@ -115,14 +116,24 @@ def neutron_plugin_joined():
                  "subordinate_configuration": json.dumps(conf) }
     relation_set(relation_settings=settings)
 
+
 @hooks.hook("update-status")
 def update_status():
     set_status()
+
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
     write_plugin_config()
     service_restart("neutron-server")
+
+
+def main():
+    try:
+        hooks.execute(sys.argv)
+    except UnregisteredHookError as e:
+        log("Unknown hook {} - skipping.".format(e))
+
 
 if __name__ == "__main__":
     main()

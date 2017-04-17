@@ -65,27 +65,32 @@ def fix_hostname():
 
 
 def lb_ctx():
-    lb_vip = None
-    for rid in relation_ids("contrail-lb"):
+    for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
-            lb_vip = gethostbyname(relation_get("private-address", unit, rid))
-    return { "lb_vip": lb_vip}
+            return {"lb_vip": gethostbyname(relation_get("private-address", unit, rid))}
+    return {}
 
 
 def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
+    multi_tenancy = config.get("multi_tenancy")
+    if multi_tenancy is None:
+        return {}
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                               for rid in relation_ids("contrail-controller")
-                               for unit in related_units(rid) ]
+                           for rid in relation_ids("contrail-controller")
+                           for unit in related_units(rid) ]
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    return { "controller_servers": controller_ip_list }
+    return {
+        "multi_tenancy": multi_tenancy,
+        "controller_servers": controller_ip_list,
+    }
 
 
 def analytics_ctx():
     """Get the ipaddress of all analytics control nodes"""
     analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                                     for rid in relation_ids("analytics-cluster")
-                                     for unit in related_units(rid) ]
+                          for rid in relation_ids("analytics-cluster")
+                          for unit in related_units(rid) ]
     # add it's own ip address
     analytics_ip_list.append(gethostbyname(unit_get("private-address")))
     analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
@@ -167,9 +172,7 @@ def write_analytics_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
-    if config_get("controller-ready") and config_get("lb-ready") \
-      and config_get("identity-admin-ready") and config_get("analyticsdb-ready") \
-      and config_get("analytics-ready"):
+    if ctx.get("lb_vip") and ctx.get("keystone_ip") and ctx.get("analyticsdb_servers") and ctx.get("controller_servers"):
         if is_already_launched():
             apply_analytics_config()
         else:

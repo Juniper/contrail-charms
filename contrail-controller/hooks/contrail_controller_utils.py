@@ -53,13 +53,7 @@ def dpkg_version(pkg):
 
 
 def get_control_ip():
-    if config.get("lb-ready"):
-        controller_ip = [gethostbyname(relation_get("private-address", unit, rid))
-                         for rid in relation_ids("contrail-lb")
-                         for unit in related_units(rid) ][0]
-    else:
-        controller_ip = gethostbyname(unit_get("private-address"))
-    return controller_ip
+    return gethostbyname(unit_get("private-address"))
 
 
 def is_already_launched():
@@ -104,17 +98,6 @@ def analytics_ctx():
                                      for unit in related_units(rid) ]
     analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return { "analytics_servers": analytics_ip_list }
-
-
-def lb_ctx():
-    lb_vip = None
-    for rid in relation_ids("contrail-lb"):
-        for unit in related_units(rid):
-           lb_vip = gethostbyname(relation_get("private-address", unit, rid))
-    return {
-       "controller_ip": lb_vip,
-       "analytics_ip": lb_vip
-    }
 
 
 def identity_admin_ctx():
@@ -178,8 +161,7 @@ def write_control_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
-    if config.get("controller-ready") and config.get("lb-ready") \
-      and config.get("identity-admin-ready") and config.get("analytics-ready") \
+    if ctx.get("keystone_ip") and ctx.get("analytics_servers"):
         if is_already_launched():
             apply_control_config()
         else:

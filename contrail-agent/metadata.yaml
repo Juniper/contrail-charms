@@ -21,8 +21,8 @@ description: |
 requires:
   identity-admin:
     interface: keystone-admin
-  contrail-lb:
-    interface: contrail-lb
+  contrail-controller:
+    interface: contrail-controller
 resources:
   contrail-agent:
     type: file

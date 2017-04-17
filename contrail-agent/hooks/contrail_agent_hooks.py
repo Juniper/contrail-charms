@@ -50,23 +50,23 @@ def config_changed():
 
 def set_status():
     try:
-       # set the application version
-       if is_already_launched():
-           version  = dpkg_version("contrail-vrouter-agent")
-           application_version_set(version)
-       result = check_output(["/usr/bin/docker",
-                              "inspect",
-                              "-f",
-                              "{{.State.Running}}",
-                              "contrail-agent"
-                              ])
+        # set the application version
+        if is_already_launched():
+            version  = dpkg_version("contrail-vrouter-agent")
+            application_version_set(version)
+        result = check_output(["/usr/bin/docker",
+                               "inspect",
+                               "-f",
+                               "{{.State.Running}}",
+                               "contrail-agent"
+                               ])
     except CalledProcessError:
         status_set("waiting", "Waiting for the container to be launched")
         return
     if result:
         status_set("active", "Unit ready")
     else:
-        status_set("blocked", "Control container is not running")
+        status_set("blocked", "Container is not running")
 
 
 def load_docker_image():
@@ -102,35 +102,23 @@ def install():
 
 
 @hooks.hook("identity-admin-relation-changed")
+@hooks.hook("identity-admin-relation-departed")
+@hooks.hook("identity-admin-relation-broken")
 def identity_admin_changed():
     if not relation_get("service_hostname"):
         log("Relation not ready")
-        return
-    config["identity-admin-ready"] = True
     write_agent_config()
 
 
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-def identity_admin_departed():
-    config["identity-admin-ready"] = False
-
-
-@hooks.hook("contrail-lb-relation-joined")
-def lb_relation_joined():
-    config["lb-ready"] = True
+@hooks.hook("contrail-control-relation-joined")
+@hooks.hook("contrail-control-relation-departed")
+def contrail_control_relation():
     write_agent_config()
-
-
-@hooks.hook("contrail-lb-relation-departed")
-def lb_relation_departed():
-    config["lb-ready"] = False
 
 
 @hooks.hook("update-status")
 def update_status():
     set_status()
-    #status_set("active", "Unit ready")
 
 
 def main():

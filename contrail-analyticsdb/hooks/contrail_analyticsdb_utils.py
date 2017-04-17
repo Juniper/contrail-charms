@@ -95,8 +95,7 @@ def analyticsdb_ctx():
 
 
 def lb_ctx():
-    lb_vip = None
-    for rid in relation_ids("contrail-lb"):
+    for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             lb_vip = gethostbyname(relation_get("private-address", unit, rid))
     return { "lb_vip": lb_vip}
@@ -167,8 +166,7 @@ def write_analyticsdb_config():
     ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
-    if config.get("controller-ready") and config.get("lb-ready") \
-      and config.get("identity-admin-ready") and config.get("analytics-ready"):
+    if ctx.get("lb_vip") and ctx.get("keystone_ip") and ctx.get("controller_servers") and ctx.get("analytics_servers"):
         if is_already_launched():
             apply_config()
         else:

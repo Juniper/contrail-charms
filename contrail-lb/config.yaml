@@ -1,7 +1,0 @@
-options:
-  cloud_orchestrator:
-    type: string
-    default: openstack
-    description: |
-      cloud_orchestrator - what cloud orchestrator is being used. Valid
-      options are kubernetes, openstack, mesos.

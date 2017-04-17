@@ -7,13 +7,11 @@ peers:
   analytics-cluster:
     interface: contrail-analytics-cluster
 provides:
- contrail-analytics:
-   interface: contrail-analytics
+  contrail-analytics:
+    interface: contrail-analytics
 requires:
   identity-admin:
     interface: keystone-admin
-  contrail-lb:
-    interface: contrail-lb
   contrail-controller:
     interface: contrail-controller
   contrail-analyticsdb:

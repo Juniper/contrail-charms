@@ -16,6 +16,7 @@ from charmhelpers.core.templating import render
 
 apt_pkg.init()
 
+
 def set_status():
     version  = dpkg_version("neutron-plugin-contrail")
     application_version_set(version)
@@ -26,25 +27,29 @@ def set_status():
     else:
        status_set("waiting", "neutron server is not running")
 
+
 def dpkg_version(pkg):
     try:
         return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
     except CalledProcessError:
         return None
 
+
 CONTRAIL_VERSION = dpkg_version("python-contrail")
 OPENSTACK_VERSION = dpkg_version("neutron-server")
+
 
 def contrail_api_ctx():
     ctxs = [ { "api_server": vip if vip \
                  else gethostbyname(relation_get("private-address", unit, rid)),
                "api_port": port }
-             for rid in relation_ids("contrail-api")
+             for rid in relation_ids("contrail-controller")
              for unit, port, vip in
              ((unit, relation_get("port", unit, rid), relation_get("vip", unit, rid))
               for unit in related_units(rid))
              if port ]
     return ctxs[0] if ctxs else {}
+
 
 def identity_admin_ctx():
     ctxs = [ { "auth_host": gethostbyname(hostname),
@@ -57,6 +62,7 @@ def identity_admin_ctx():
              ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
              if hostname ]
     return ctxs[0] if ctxs else {}
+
 
 def write_plugin_config():
     ctx = {}

@@ -14,8 +14,6 @@ requires:
     interface: keystone-admin
   contrail-controller:
     interface: contrail-controller
-  contrail-lb:
-    interface: contrail-lb
   contrail-analytics:
     interface: contrail-analytics
 resources:

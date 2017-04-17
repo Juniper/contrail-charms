@@ -9,19 +9,11 @@ peers:
 provides:
   contrail-controller:
     interface: contrail-controller
-  contrail-api:
-    interface: contrail-api
 requires:
   identity-admin:
     interface: keystone-admin
-  contrail-lb:
-    interface: contrail-lb
   contrail-analytics:
     interface: contrail-analytics
-  contrail-analyticsdb:
-    interface: contrail-analyticsdb
-  neutron-api-contrail:
-    interface: neutron-api-contrail
 resources:
   contrail-controller:
     type: file

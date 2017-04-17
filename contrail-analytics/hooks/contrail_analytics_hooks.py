@@ -102,56 +102,36 @@ def install():
 
 
 @hooks.hook("contrail-controller-relation-joined")
-def contrail_controller_joined():
-    config["controller-ready"] = True
+@hooks.hook("contrail-controller-relation-departed")
+def contrail_controller_relation():
+    write_analytics_config()
+
+
+@hooks.hook("contrail-controller-relation-changed")
+def contrail_controller_changed():
+    multi_tenancy = relation_get("multi_tenancy")
+    if multi_tenancy is not None:
+        config["multi_tenancy"] = multi_tenancy
     write_analytics_config()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
-def contrail_analyticsdb_joined():
-    config["analyticsdb-ready"] = True
-    write_analytics_config()
-
-
-@hooks.hook("contrail-lb-relation-joined")
-def contrail_lb_joined():
-    config["lb-ready"] = True
-    write_analytics_config()
-
-
-@hooks.hook("contrail-controller-relation-departed")
-def contrail_controller_departed():
-    config["controller-ready"] = False
-
-
 @hooks.hook("contrail-analyticsdb-relation-departed")
-def contrail_analyticsdb_departed():
-    config["analyticsdb-ready"] = False
-
-
-@hooks.hook("contrail-lb-relation-departed")
-def contrail_lb_departed():
-    config["lb-ready"] = False
+def contrail_analyticsdb_relation():
+    write_analytics_config()
 
 
 @hooks.hook("identity-admin-relation-changed")
-def identity_admin_changed():
-    if not relation_get("service_hostname"):
-        log("Keystone relation not ready")
-        return
-    config["identity-admin-ready"] = True
-    write_analytics_config()
-
-
 @hooks.hook("identity-admin-relation-departed")
 @hooks.hook("identity-admin-relation-broken")
-def identity_admin_broken():
-    config["identity-admin-ready"] = False
+def identity_admin_relation():
+    if not relation_get("service_hostname"):
+        log("Keystone relation not ready")
+    write_analytics_config()
 
 
 @hooks.hook("analytics-cluster-relation-joined")
 def analytics_cluster_joined():
-    config["analytics-ready"] = True
     write_analytics_config()
 
 
