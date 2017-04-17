@@ -109,7 +109,7 @@ def contrail_controller_relation():
 
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
-    multi_tenancy = relation_get("multi_tenancy")
+    multi_tenancy = relation_get("multi-tenancy")
     if multi_tenancy is not None:
         config["multi_tenancy"] = multi_tenancy
     write_analytics_config()

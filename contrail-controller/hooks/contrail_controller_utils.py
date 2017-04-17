@@ -158,7 +158,6 @@ def write_control_config():
     ctx.update(config_ctx())
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
-    ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
     if ctx.get("keystone_ip") and ctx.get("analytics_servers"):

@@ -23,7 +23,7 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.fetch import (
     apt_install,
     apt_upgrade,
-    apt-update
+    apt_update
 )
 
 from contrail_agent_utils import (
@@ -45,7 +45,6 @@ config = config()
 def config_changed():
     #set_status()
     write_agent_config()
-    return None
 
 
 def set_status():
@@ -110,8 +109,9 @@ def identity_admin_changed():
     write_agent_config()
 
 
-@hooks.hook("contrail-control-relation-joined")
-@hooks.hook("contrail-control-relation-departed")
+@hooks.hook("contrail-controller-relation-joined")
+@hooks.hook("contrail-controller-relation-changed")
+@hooks.hook("contrail-controller-relation-departed")
 def contrail_control_relation():
     write_agent_config()
 

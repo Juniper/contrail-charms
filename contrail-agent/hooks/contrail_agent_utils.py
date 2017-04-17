@@ -81,6 +81,11 @@ def launch_docker_image():
                     "-itd",
                     image_id
                     ])
+        # TODO: read from image config. open only needed ports
+        open_port(8085)
+        open_port(9090)
+        # sudo docker cp contrail-agent:/usr/bin/vrouter-port-control /usr/bin/
+    else:
         log("contrail-agent docker image is not available")
 
 

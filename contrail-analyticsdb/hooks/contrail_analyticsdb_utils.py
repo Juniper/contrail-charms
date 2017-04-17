@@ -30,7 +30,8 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     relation_type,
     remote_unit,
-    unit_get
+    unit_get,
+    open_port
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -95,10 +96,11 @@ def analyticsdb_ctx():
 
 
 def lb_ctx():
+    lb_vip = None
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             lb_vip = gethostbyname(relation_get("private-address", unit, rid))
-    return { "lb_vip": lb_vip}
+    return {"lb_vip": lb_vip}
 
 
 def identity_admin_ctx():
@@ -155,6 +157,9 @@ def launch_docker_image():
         cmd = cmd + "--pid=host "
     cmd = cmd +"-itd "+ image_id
     check_call(cmd, shell=True)
+    # TODO: read from image config. open only needed ports
+    open_port(9141)
+    open_port(9161)
 
 
 def write_analyticsdb_config():

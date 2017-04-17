@@ -50,7 +50,7 @@ def set_status():
     try:
         # set the application version
         if is_already_launched():
-            version  = dpkg_version("contrail-controller")
+            version  = dpkg_version("contrail-control")
             application_version_set(version)
         result = check_output(["/usr/bin/docker",
                                "inspect",
@@ -106,7 +106,7 @@ def config_changed():
     if is_leader():
         settings = {
             "private-address": get_control_ip(),
-            "port": 8082
+            "port": 8082,
             "multi-tenancy": config.get("multi_tenancy")
         }
         for rid in relation_ids("contrail-controller"):

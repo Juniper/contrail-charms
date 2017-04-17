@@ -30,7 +30,8 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     relation_type,
     remote_unit,
-    unit_get
+    unit_get,
+    open_port
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -149,6 +150,9 @@ def launch_docker_image():
             cmd = cmd + "--pid=host "
         cmd = cmd +"-itd "+ image_id
         check_call(cmd, shell=True)
+        # TODO: read from image config. open only needed ports
+        open_port(8081)
+        open_port(8086)
     else:
         log("contrail-analytics docker image is not available")
 
