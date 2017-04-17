@@ -15,6 +15,7 @@ from time import sleep, time
 import apt_pkg
 import yaml
 import platform
+import six
 
 try:
   import netaddr
@@ -74,15 +75,15 @@ def lb_ctx():
 
 def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
-    multi_tenancy = config.get("multi_tenancy")
-    if multi_tenancy is None:
+    mt = config.get("multi_tenancy")
+    if mt is None:
         return {}
     controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
                            for rid in relation_ids("contrail-controller")
                            for unit in related_units(rid) ]
     controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
     return {
-        "multi_tenancy": multi_tenancy,
+        "multi_tenancy": yaml.load(mt) if isinstance(mt, six.string_types) else mt,
         "controller_servers": controller_ip_list,
     }
 
