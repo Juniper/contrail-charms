@@ -12,6 +12,7 @@ from time import sleep, time
 
 import apt_pkg
 import yaml
+import json
 
 try:
   import netaddr
@@ -26,7 +27,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_type,
-    remote_unit
+    remote_unit,
+    ERROR
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -57,6 +59,27 @@ def dpkg_version(pkg):
         return None
 
 
+def open_ports(image_id):
+    try:
+        result = check_output(["/usr/bin/docker",
+                               "inspect",
+                               "-f='{{json .Config.ExposedPorts}}'",
+                               image_id
+                               ])
+    except CalledProcessError as e:
+        log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
+        return
+    try:
+        ports = json.loads(result)
+    except Exception:
+        log("error in decoding ExposedPorts from image: " + result, level=ERROR)
+        return
+
+    for pp_str in ports:
+        pp = pp_str.split('/')
+        open_port(pp[0], pp[1].upper())
+
+
 def launch_docker_image():
     image_id = None
     orchestrator = config.get("cloud_orchestrator")
@@ -67,26 +90,24 @@ def launch_docker_image():
     for line in output:
         if "contrail-agent" in line.split()[0]:
             image_id = line.split()[2].strip()
-    if image_id:
-        check_call(["/usr/bin/docker",
-                    "run",
-                    "--net=host",
-                    "--cap-add=AUDIT_WRITE",
-                    "--privileged",
-                    "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
-                    "--volume=/lib/modules:/lib/modules",
-                    "--volume=/usr/src:/usr/src",
-                    "--volume=/etc/contrailctl:/etc/contrailctl",
-                    "--name=contrail-agent",
-                    "-itd",
-                    image_id
-                    ])
-        # TODO: read from image config. open only needed ports
-        open_port(8085)
-        open_port(9090)
-        # sudo docker cp contrail-agent:/usr/bin/vrouter-port-control /usr/bin/
-    else:
+    if not image_id:
         log("contrail-agent docker image is not available")
+        return
+
+    open_ports(image_id)
+    check_call(["/usr/bin/docker",
+                "run",
+                "--net=host",
+                "--cap-add=AUDIT_WRITE",
+                "--privileged",
+                "--env='CLOUD_ORCHESTRATOR=%s'"%(orchestrator),
+                "--volume=/lib/modules:/lib/modules",
+                "--volume=/usr/src:/usr/src",
+                "--volume=/etc/contrailctl:/etc/contrailctl",
+                "--name=contrail-agent",
+                "-itd",
+                image_id
+                ])
 
 
 def apply_agent_config():

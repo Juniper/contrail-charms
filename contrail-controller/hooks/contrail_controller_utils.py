@@ -15,6 +15,7 @@ from time import sleep, time
 import apt_pkg
 import yaml
 import platform
+import json
 
 try:
   import netaddr
@@ -31,7 +32,8 @@ from charmhelpers.core.hookenv import (
     relation_type,
     relation_get,
     unit_get,
-    remote_unit
+    remote_unit,
+    ERROR
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -125,6 +127,27 @@ def apply_control_config():
     check_call(cmd, shell=True)
 
 
+def open_ports(image_id):
+    try:
+        result = check_output(["/usr/bin/docker",
+                               "inspect",
+                               "-f='{{json .Config.ExposedPorts}}'",
+                               image_id
+                               ])
+    except CalledProcessError as e:
+        log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
+        return
+    try:
+        ports = json.loads(result)
+    except Exception:
+        log("error in decoding ExposedPorts from image: " + result, level=ERROR)
+        return
+
+    for pp_str in ports:
+        pp = pp_str.split('/')
+        open_port(pp[0], pp[1].upper())
+
+
 def launch_docker_image():
     image_id = None
     orchestrator = config.get("cloud_orchestrator")
@@ -136,21 +159,23 @@ def launch_docker_image():
         if "contrail-controller" in line.split()[0]:
             image_id = line.split()[2].strip()
     if image_id:
-        dist = platform.linux_distribution()[2].strip()
-        cmd = "/usr/bin/docker "+ \
-              "run "+ \
-              "--net=host "+ \
-              "--cap-add=AUDIT_WRITE "+ \
-              "--privileged "+ \
-              "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
-              "--volume=/etc/contrailctl:/etc/contrailctl "+ \
-              "--name=contrail-controller "
-        if dist == "trusty":
-            cmd = cmd + "--pid=host "
-        cmd = cmd +"-itd "+ image_id
-        check_call(cmd, shell=True)
-    else:
         log("contrail-controller docker image is not available")
+        return
+
+    open_ports(image_id)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = "/usr/bin/docker "+ \
+          "run "+ \
+          "--net=host "+ \
+          "--cap-add=AUDIT_WRITE "+ \
+          "--privileged "+ \
+          "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
+          "--volume=/etc/contrailctl:/etc/contrailctl "+ \
+          "--name=contrail-controller "
+    if dist == "trusty":
+        cmd = cmd + "--pid=host "
+    cmd = cmd +"-itd "+ image_id
+    check_call(cmd, shell=True)
 
 
 def write_control_config():

@@ -16,6 +16,7 @@ import apt_pkg
 import yaml
 import platform
 import six
+import json
 
 try:
   import netaddr
@@ -32,7 +33,8 @@ from charmhelpers.core.hookenv import (
     relation_type,
     remote_unit,
     unit_get,
-    open_port
+    open_port,
+    ERROR
 )
 
 from charmhelpers.core.host import service_restart, service_start
@@ -127,6 +129,27 @@ def apply_analytics_config():
     check_call(cmd, shell=True)
 
 
+def open_ports(image_id):
+    try:
+        result = check_output(["/usr/bin/docker",
+                               "inspect",
+                               "-f='{{json .Config.ExposedPorts}}'",
+                               image_id
+                               ])
+    except CalledProcessError as e:
+        log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
+        return
+    try:
+        ports = json.loads(result)
+    except Exception:
+        log("error in decoding ExposedPorts from image: " + result, level=ERROR)
+        return
+
+    for pp_str in ports:
+        pp = pp_str.split('/')
+        open_port(pp[0], pp[1].upper())
+
+
 def launch_docker_image():
     image_id = None
     orchestrator = config.get("cloud_orchestrator")
@@ -137,25 +160,24 @@ def launch_docker_image():
     for line in output:
         if "contrail-analytics" in line.split()[0]:
             image_id = line.split()[2].strip()
-    if image_id:
-        dist = platform.linux_distribution()[2].strip()
-        cmd = "/usr/bin/docker "+ \
-              "run "+ \
-              "--net=host "+ \
-              "--cap-add=AUDIT_WRITE "+ \
-              "--privileged "+ \
-              "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
-              "--volume=/etc/contrailctl:/etc/contrailctl "+ \
-              "--name=contrail-analytics "
-        if dist == "trusty":
-            cmd = cmd + "--pid=host "
-        cmd = cmd +"-itd "+ image_id
-        check_call(cmd, shell=True)
-        # TODO: read from image config. open only needed ports
-        open_port(8081)
-        open_port(8086)
-    else:
+    if not image_id:
         log("contrail-analytics docker image is not available")
+        return
+
+    open_ports(image_id)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = "/usr/bin/docker "+ \
+          "run "+ \
+          "--net=host "+ \
+          "--cap-add=AUDIT_WRITE "+ \
+          "--privileged "+ \
+          "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
+          "--volume=/etc/contrailctl:/etc/contrailctl "+ \
+          "--name=contrail-analytics "
+    if dist == "trusty":
+        cmd = cmd + "--pid=host "
+    cmd = cmd +"-itd "+ image_id
+    check_call(cmd, shell=True)
 
 
 def is_already_launched():
