@@ -109,6 +109,15 @@ def launch_docker_image():
                 image_id
                 ])
 
+    # TODO: find a way to do not use 'sleep'
+    sleep(5)
+    # TODO: looks like that this step is needed only for OpenStack
+    check_call(["/usr/bin/docker",
+                "cp",
+                "contrail-agent:/usr/bin/vrouter-port-control"
+                "/usr/bin/"
+                ])
+
 
 def apply_agent_config():
     cmd = '/usr/bin/docker exec contrail-agent contrailctl config sync -c agent'
