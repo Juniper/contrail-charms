@@ -43,24 +43,18 @@ def is_container_launched(name):
     # [DOCKER_CLI, "inspect", "-f", "{{.State.Running}}", name]
     cmd = DOCKER_CLI + ' ps | grep -w ' + name
     try:
-        log("Run: " + cmd, level=DEBUG)
-        result = check_output(cmd, shell=True)
-        log("Result: " + result, level=DEBUG)
+        check_output(cmd, shell=True)
         return True
-    except CalledProcessError as e:
-        log("Result is exception: " + str(e), level=DEBUG)
+    except CalledProcessError:
         return False
 
 
 def is_container_present(name):
     cmd = DOCKER_CLI + ' ps --all | grep -w ' + name
     try:
-        log("Run: " + cmd, level=DEBUG)
-        result = check_output(cmd, shell=True)
-        log("Result: " + result, level=DEBUG)
+        check_output(cmd, shell=True)
         return True
-    except CalledProcessError as e:
-        log("Result is exception: " + str(e), level=DEBUG)
+    except CalledProcessError:
         return False
 
 
@@ -88,8 +82,8 @@ def load_docker_image(name):
 
 
 def get_docker_image_id(name):
-    output = check_output([DOCKER_CLI, "images"])
-    output = output.decode().split('\n')[:-1]
+    output = check_output(DOCKER_CLI + ' images | grep -w ' + name, shell=True)
+    output = output.decode().split('\n')
     for line in output:
         parts = line.split()
         if name in parts[0]:
@@ -104,7 +98,7 @@ def open_ports(image_id):
                                "-f='{{json .Config.ExposedPorts}}'",
                                image_id
                                ])
-        result = result.strip("'")
+        result = result.replace("'", "")
     except CalledProcessError as e:
         log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
         return
@@ -148,4 +142,5 @@ def docker_cp(name, src, dst):
 
 
 def apply_config_in_container(name, cfg_name):
-    check_call([DOCKER_CLI, 'exec', name, 'contrailctl config sync -c', cfg_name])
+    cmd = DOCKER_CLI + ' exec ' + name + ' contrailctl config sync -c ' + cfg_name
+    check_call(cmd, shell=True)
