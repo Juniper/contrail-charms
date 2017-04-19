@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     ERROR,
+    DEBUG,
     open_port,
 )
 
@@ -42,18 +43,24 @@ def is_container_launched(name):
     # [DOCKER_CLI, "inspect", "-f", "{{.State.Running}}", name]
     cmd = DOCKER_CLI + ' ps | grep -w ' + name
     try:
-        check_output(cmd, shell=True)
+        log("Run: " + cmd, level=DEBUG)
+        result = check_output(cmd, shell=True)
+        log("Result: " + result, level=DEBUG)
         return True
-    except CalledProcessError:
+    except CalledProcessError as e:
+        log("Result is exception: " + str(e), level=DEBUG)
         return False
 
 
 def is_container_present(name):
-    cmd = DOCKER_CLI + ' ps --all | grep ' + name
+    cmd = DOCKER_CLI + ' ps --all | grep -w ' + name
     try:
-        check_output(cmd, shell=True)
+        log("Run: " + cmd, level=DEBUG)
+        result = check_output(cmd, shell=True)
+        log("Result: " + result, level=DEBUG)
         return True
-    except CalledProcessError:
+    except CalledProcessError as e:
+        log("Result is exception: " + str(e), level=DEBUG)
         return False
 
 
@@ -101,9 +108,10 @@ def open_ports(image_id):
         log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
         return
     try:
-        ports = json.loads(result)
+        ports = json.loads(result.strip("'"))
     except Exception:
         log("error in decoding ExposedPorts from image: " + result, level=ERROR)
+        log(str(e), level=ERROR)
         return
 
     for pp_str in ports:
@@ -130,6 +138,7 @@ def launch_docker_image(name, additional_args=[]):
             "--name=%s" % name]
     args.extend(additional_args)
     args.extend(["-itd", image_id])
+    log("Run container with cmd: " + ' '.join(args))
     check_call(args)
 
 
