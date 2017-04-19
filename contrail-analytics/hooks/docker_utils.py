@@ -104,12 +104,13 @@ def open_ports(image_id):
                                "-f='{{json .Config.ExposedPorts}}'",
                                image_id
                                ])
+        result = result.strip("'")
     except CalledProcessError as e:
         log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
         return
     try:
-        ports = json.loads(result.strip("'"))
-    except Exception:
+        ports = json.loads(result)
+    except Exception as e:
         log("error in decoding ExposedPorts from image: " + result, level=ERROR)
         log(str(e), level=ERROR)
         return
@@ -147,5 +148,4 @@ def docker_cp(name, src, dst):
 
 
 def apply_config_in_container(name, cfg_name):
-    cmd = [DOCKER_CLI, 'exec', name, 'contrailctl config sync -c', cfg_name]
-    check_call(cmd, shell=True)
+    check_call([DOCKER_CLI, 'exec', name, 'contrailctl config sync -c', cfg_name])
