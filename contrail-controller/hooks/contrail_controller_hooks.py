@@ -1,28 +1,17 @@
 #!/usr/bin/env python
 
-from subprocess import (
-    CalledProcessError,
-    check_call,
-    check_output
-)
 import sys
-from socket import gethostbyname
 
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
     config,
-    resource_get,
     log,
     is_leader,
-    status_set,
     relation_get,
     relation_ids,
-    relation_type,
     relation_set,
-    unit_get,
-    remote_unit,
-    application_version_set
+    ERROR,
 )
 
 from charmhelpers.fetch import (
@@ -32,76 +21,37 @@ from charmhelpers.fetch import (
 )
 
 from contrail_controller_utils import (
-  launch_docker_image,
-  write_control_config,
-  get_control_ip,
-  dpkg_version,
-  is_already_launched,
-  apply_control_config
+    get_control_ip,
+    update_charm_status,
+    CONTAINER_NAME,
 )
 
-PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
+from docker_utils import (
+    add_docker_repo,
+    DOCKER_PACKAGES,
+    is_container_launched,
+    load_docker_image,
+)
+
+PACKAGES = ["python", "python-yaml", "python-apt"]
 
 hooks = Hooks()
 config = config()
 
 
-def set_status():
-    try:
-        # set the application version
-        if is_already_launched():
-            version  = dpkg_version("contrail-control")
-            application_version_set(version)
-        result = check_output(["/usr/bin/docker",
-                               "inspect",
-                               "-f",
-                               "{{.State.Running}}",
-                               "contrail-controller"
-                               ])
-    except CalledProcessError:
-        status_set("waiting", "Waiting for container to be launched")
-        return
-    if result:
-        status_set("active", "Unit ready")
-    else:
-        status_set("blocked", "Container is not running")
-
-
-def load_docker_image():
-    img_path = resource_get("contrail-controller")
-    check_call(["/usr/bin/docker",
-                "load",
-                "-i",
-                img_path,
-                ])
-
-
-def setup_docker_env():
-    import platform
-    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
-    check_output(cmd, shell=True)
-    dist = platform.linux_distribution()[2].strip()
-    cmd = "add-apt-repository "+ \
-          "\"deb https://apt.dockerproject.org/repo/ " + \
-          "ubuntu-%s "%(dist) +\
-          "main\""
-    check_output(cmd, shell=True)
-
-
 @hooks.hook()
 def install():
     apt_upgrade(fatal=True, dist=True)
-    setup_docker_env()
+    add_docker_repo()
     apt_update(fatal=False)
-    apt_install(PACKAGES, fatal=True)
-    load_docker_image()
-    #launch_docker_image()
+    apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
+    load_docker_image(CONTAINER_NAME)
+    update_charm_status()
 
 
 @hooks.hook("config-changed")
 def config_changed():
-    set_status()
-    write_control_config()
+    update_charm_status()
 
     if is_leader():
         settings = {
@@ -126,14 +76,14 @@ def contrail_controller_joined():
 
 @hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
-    write_control_config()
+    update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-joined")
 @hooks.hook("contrail-analytics-relation-departed")
 @hooks.hook("contrail-analytics-relation-broken")
 def analytics_relation():
-    write_control_config()
+    update_charm_status()
 
 
 @hooks.hook("identity-admin-relation-changed")
@@ -142,12 +92,31 @@ def analytics_relation():
 def identity_admin_changed():
     if not relation_get("service_hostname"):
         log("Relation not ready")
-    write_control_config()
+    update_charm_status()
 
 
 @hooks.hook("update-status")
 def update_status():
-    set_status()
+    update_charm_status(update_config=False)
+
+
+@hooks.hook("upgrade-charm")
+def upgrade_charm():
+    load_docker_image(CONTAINER_NAME)
+    if is_container_launched(CONTAINER_NAME):
+        log("Container already launched", ERROR)
+        # TODO: set error status?
+        return
+    # TODO: this hook can be fired when resource changed or charm code changed
+    # so if code changed then we may need to update config
+    update_charm_status()
+
+
+@hooks.hook("start")
+@hooks.hook("stop")
+def todo():
+    # TODO: think about it
+    pass
 
 
 def main():

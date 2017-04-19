@@ -1,23 +1,14 @@
 #!/usr/bin/env python
 
-from subprocess import (
-    CalledProcessError,
-    check_call,
-    check_output
-)
 import sys
-from socket import gethostbyname
-import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
     config,
-    resource_get,
     log,
-    status_set,
     relation_get,
-    application_version_set
+    ERROR,
 )
 
 from charmhelpers.fetch import (
@@ -28,76 +19,36 @@ from charmhelpers.fetch import (
 
 from contrail_agent_utils import (
     remove_juju_bridges,
-    launch_docker_image,
-    write_agent_config,
-    is_already_launched,
-    dpkg_version
+    update_charm_status,
+    CONTAINER_NAME,
 )
 
-PACKAGES = [ "docker.engine" ]
+from docker_utils import (
+    add_docker_repo,
+    DOCKER_PACKAGES,
+    is_container_launched,
+    load_docker_image,
+)
 
 
 hooks = Hooks()
 config = config()
 
 
-@hooks.hook("config-changed")
-def config_changed():
-    #set_status()
-    write_agent_config()
-
-
-def set_status():
-    try:
-        # set the application version
-        if is_already_launched():
-            version  = dpkg_version("contrail-vrouter-agent")
-            application_version_set(version)
-        result = check_output(["/usr/bin/docker",
-                               "inspect",
-                               "-f",
-                               "{{.State.Running}}",
-                               "contrail-agent"
-                               ])
-    except CalledProcessError:
-        status_set("waiting", "Waiting for the container to be launched")
-        return
-    if result:
-        status_set("active", "Unit ready")
-    else:
-        status_set("blocked", "Container is not running")
-
-
-def load_docker_image():
-    img_path = resource_get("contrail-agent")
-    check_call(["/usr/bin/docker",
-                "load",
-                "-i",
-                img_path,
-                ])
-
-
-def setup_docker_env():
-    import platform
-    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
-    check_output(cmd, shell=True)
-    dist = platform.linux_distribution()[2].strip()
-    cmd = "add-apt-repository "+ \
-          "\"deb https://apt.dockerproject.org/repo/ " + \
-          "ubuntu-%s "%(dist) +\
-          "main\""
-    check_output(cmd, shell=True)
-
-
 @hooks.hook()
 def install():
     apt_upgrade(fatal=True, dist=True)
-    setup_docker_env()
+    add_docker_repo()
     apt_update(fatal=False)
-    apt_install(PACKAGES, fatal=True)
+    apt_install(DOCKER_PACKAGES, fatal=True)
     remove_juju_bridges()
-    load_docker_image()
-    #launch_docker_image()
+    load_docker_image(CONTAINER_NAME)
+    update_charm_status()
+
+
+@hooks.hook("config-changed")
+def config_changed():
+    update_charm_status()
 
 
 @hooks.hook("identity-admin-relation-changed")
@@ -106,19 +57,38 @@ def install():
 def identity_admin_changed():
     if not relation_get("service_hostname"):
         log("Relation not ready")
-    write_agent_config()
+    update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-joined")
 @hooks.hook("contrail-controller-relation-changed")
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_control_relation():
-    write_agent_config()
+    update_charm_status()
 
 
 @hooks.hook("update-status")
 def update_status():
-    set_status()
+    update_charm_status(update_config=False)
+
+
+@hooks.hook("upgrade-charm")
+def upgrade_charm():
+    load_docker_image(CONTAINER_NAME)
+    if is_container_launched(CONTAINER_NAME):
+        log("Container already launched", ERROR)
+        # TODO: set error status?
+        return
+    # TODO: this hook can be fired when resource changed or charm code changed
+    # so if code changed then we may need to update config
+    update_charm_status()
+
+
+@hooks.hook("start")
+@hooks.hook("stop")
+def todo():
+    # TODO: think about it
+    pass
 
 
 def main():

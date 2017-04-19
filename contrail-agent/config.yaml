@@ -12,9 +12,3 @@ options:
     description: |
       cloud_orchestrator - what cloud orchestrator is being used. Valid
       options are kubernetes, openstack, mesos.
-  contrail-api-ip:
-    type: string
-    description: Specify contrail-api ip manually
-  contrail-api-port:
-    type: int
-    description: Specify contrail-api port manually
