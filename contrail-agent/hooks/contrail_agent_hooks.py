@@ -74,13 +74,11 @@ def update_status():
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
-    if is_container_launched(CONTAINER_NAME):
-        log("Container already launched", ERROR)
-        # TODO: set error status?
-        return
+    if not is_container_launched(CONTAINER_NAME):
+        load_docker_image(CONTAINER_NAME)
+        # NOTE: image can not be deleted if container is running.
+        # TODO: think about killing the container
 
-    # NOTE: image can not be deleted if container is running.
-    load_docker_image(CONTAINER_NAME)
     # TODO: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config
     update_charm_status()
