@@ -82,7 +82,10 @@ def load_docker_image(name):
 
 
 def get_docker_image_id(name):
-    output = check_output(DOCKER_CLI + ' images | grep -w ' + name, shell=True)
+    try:
+        output = check_output(DOCKER_CLI + ' images | grep -w ' + name, shell=True)
+    except CalledProcessError:
+        return None
     output = output.decode().split('\n')
     for line in output:
         parts = line.split()
