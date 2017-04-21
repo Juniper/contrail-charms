@@ -1,8 +1,11 @@
 name: contrail-controller
 summary: Contrail Controller Node
-maintainer: Sivakumar Gurumurthy <sgurumurthy@juniper.net>
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
   TODO
+series:
+  - xenial
+  - trusty
 peers:
   controller-cluster:
     interface: contrail-controller-cluster

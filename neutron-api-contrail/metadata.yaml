@@ -15,6 +15,9 @@ description: |
   L2 connectivity on neutron-api services.
 categories:
   - openstack
+series:
+  - xenial
+  - trusty
 subordinate: true
 provides:
   neutron-plugin-api-subordinate:

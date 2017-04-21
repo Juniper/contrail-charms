@@ -1,8 +1,11 @@
 name: contrail-analytics
 summary: Contrail Analytics Node
-maintainer: Sivakumar Gurumurthy <sgurumurthy@juniper.net>
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
   TODO
+series:
+  - xenial
+  - trusty
 peers:
   analytics-cluster:
     interface: contrail-analytics-cluster

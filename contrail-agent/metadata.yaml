@@ -1,6 +1,6 @@
 name: contrail-agent
 summary: Contrail TSN Service Node and Tor Agent
-maintainer: Sivakumar Gurumurthy <sgurumurthy@juniper.net>
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
   The TOR services node (TSN) acts as the multicast controller for the ToR
   switches. The TSN also provides DHCP and DNS services to the bare metal
@@ -18,6 +18,9 @@ description: |
   
   This charm provides both the TSN and TOR agent service on the same node.
   It supports running multiple TOR agents as well.
+series:
+  - xenial
+  - trusty
 requires:
   identity-admin:
     interface: keystone-admin
