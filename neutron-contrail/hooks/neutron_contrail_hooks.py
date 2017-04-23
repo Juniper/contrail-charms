@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from subprocess import CalledProcessError
 import sys
 
 from apt_pkg import version_compare
@@ -34,10 +33,8 @@ from charmhelpers.fetch import (
 )
 from subprocess import (
     CalledProcessError,
-    check_call,
     check_output
 )
-import neutron_contrail_utils as utils
 from neutron_contrail_utils import (
     OPENSTACK_VERSION,
     configure_vrouter,
@@ -63,15 +60,44 @@ from neutron_contrail_utils import (
     set_status
 )
 
-PACKAGES = [ "python", "python-yaml", "python-apt",
-             "python3-netaddr", "python3-netifaces",
-             "contrail-vrouter-dkms", "contrail-vrouter-agent",
-             "contrail-utils", "python-jinja2",
-             "contrail-vrouter-common", "contrail-vrouter-init",
-             "contrail-nodemgr" ]
+PACKAGES = ["python", "python-yaml", "python-apt",
+            "python3-netaddr", "python3-netifaces",
+            "contrail-vrouter-dkms", "contrail-vrouter-agent",
+            "contrail-utils", "python-jinja2",
+            "contrail-vrouter-common", "contrail-vrouter-init",
+            "contrail-nodemgr"]
 
 hooks = Hooks()
 config = config()
+
+
+@hooks.hook()
+def install():
+    # set apt preferences
+    shutil.copy('files/40contrail', '/etc/apt/preferences.d')
+    configure_sources(True, "install-sources", "install-keys")
+    apt_upgrade(fatal=True, dist=True)
+
+    # bug in 2.0+20141015.1 packages
+    fix_vrouter_scripts()
+
+    cmd = "apt-cache policy nova-common"
+    output = check_output(cmd, shell=True)
+    print (output)
+    apt_install(PACKAGES, fatal=True)
+
+    fix_permissions()
+    #fix_nodemgr()
+    try:
+        modprobe("vrouter")
+    except CalledProcessError:
+        log("vrouter kernel module failed to load, clearing pagecache and retrying")
+        drop_caches()
+        modprobe("vrouter")
+    modprobe("vrouter", True, True)
+    configure_vrouter()
+    service_restart("nova-compute")
+
 
 def check_local_metadata():
     if not is_leader():
@@ -94,36 +120,33 @@ def check_local_metadata():
         unprovision_local_metadata()
         leader_set({"local-metadata-provisioned": ""})
 
+
 def check_vrouter():
     # check relation dependencies
-    if config_get("contrail-api-ready") \
-       and config_get("control-node-ready") \
-       and config_get("analytics-node-ready") \
-       and config_get("identity-admin-ready"):
-        if not config_get("vrouter-provisioned"):
+    if config.get("contrail-api-ready") \
+       and config.get("control-node-ready") \
+       and config.get("analytics-node-ready") \
+       and config.get("identity-admin-ready"):
+        if not config.get("vrouter-provisioned"):
             provision_vrouter()
             config["vrouter-provisioned"] = True
-    elif config_get("vrouter-provisioned"):
+    elif config.get("vrouter-provisioned"):
         unprovision_vrouter()
         config["vrouter-provisioned"] = False
+
 
 @hooks.hook("config-changed")
 def config_changed():
     configure_local_metadata()
     configure_virtual_gateways()
     write_config()
-    if not units("contrail-api"):
+    if not units("contrail-controller"):
         config["contrail-api-ready"] = True if config.get("contrail-api-ip") \
                                             else False
     check_vrouter()
     check_local_metadata()
     set_status
 
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
 
 def configure_local_metadata():
     if config["local-metadata-server"]:
@@ -139,61 +162,46 @@ def configure_local_metadata():
         if "local-metadata-secret" in config:
             # remove secret
             del config["local-metadata-secret"]
-            settings = { "metadata-shared-secret": None }
+            settings = {"metadata-shared-secret": None}
             # inform relations
             for rid in relation_ids("neutron-plugin"):
                 relation_set(relation_id=rid, relation_settings=settings)
 
+
 def configure_virtual_gateways():
     gateways = config.get("virtual-gateways")
-    previous_gateways = config_get("virtual-gateways-prev")
-    if gateways != previous_gateways:
-        # create/destroy virtual gateway interfaces according to new value
-        interfaces = { gateway["interface"]: set(gateway["subnets"])
-                       for gateway in yaml.safe_load(gateways) } \
-                     if gateways else {}
-        previous_interfaces = { gateway["interface"]: set(gateway["subnets"])
-                                for gateway in yaml.safe_load(previous_gateways) } \
-                              if previous_gateways else {}
-        ifaces = [ interface for interface, subnets in previous_interfaces.iteritems()
-                   if interface not in interfaces
-                   or subnets != interfaces[interface] ]
-        if ifaces:
-            ifdown(ifaces)
-
-        write_vrouter_vgw_interfaces()
-
-        ifaces = [ interface for interface, subnets in interfaces.iteritems()
-                   if interface not in previous_interfaces
-                   or subnets != previous_interfaces[interface] ]
-        if ifaces:
-            ifup(ifaces)
-
-        if interfaces:
-            enable_vrouter_vgw()
-        else:
-            disable_vrouter_vgw()
-
-        config["virtual-gateways-prev"] = gateways
-
-@hooks.hook("contrail-api-relation-departed")
-@hooks.hook("contrail-api-relation-broken")
-def contrail_api_departed():
-    if not units("contrail-api") and not config.get("contrail-api-ip"):
-        config["contrail-api-ready"] = False
-        check_vrouter()
-        check_local_metadata()
-    write_vnc_api_config()
-
-@hooks.hook("contrail-api-relation-changed")
-def contrail_api_changed():
-    if not relation_get("port"):
-        log("Relation not ready")
+    previous_gateways = config.get("virtual-gateways-prev")
+    if gateways == previous_gateways:
         return
-    write_vnc_api_config()
-    config["contrail-api-ready"] = True
-    check_vrouter()
-    check_local_metadata()
+
+    # create/destroy virtual gateway interfaces according to new value
+    interfaces = {gateway["interface"]: set(gateway["subnets"])
+                  for gateway in yaml.safe_load(gateways)} \
+                 if gateways else {}
+    previous_interfaces = {gateway["interface"]: set(gateway["subnets"])
+                           for gateway in yaml.safe_load(previous_gateways)} \
+                          if previous_gateways else {}
+    ifaces = [interface for interface, subnets in previous_interfaces.iteritems()
+              if interface not in interfaces
+              or subnets != interfaces[interface]]
+    if ifaces:
+        ifdown(ifaces)
+
+    write_vrouter_vgw_interfaces()
+
+    ifaces = [interface for interface, subnets in interfaces.iteritems()
+              if interface not in previous_interfaces
+              or subnets != previous_interfaces[interface]]
+    if ifaces:
+        ifup(ifaces)
+
+    if interfaces:
+        enable_vrouter_vgw()
+    else:
+        disable_vrouter_vgw()
+
+    config["virtual-gateways-prev"] = gateways
+
 
 @hooks.hook("contrail-analytics-relation-joined")
 def contrail_analytics_joined():
@@ -201,6 +209,7 @@ def contrail_analytics_joined():
     contrail_analytics_relation()
     check_vrouter()
     check_local_metadata()
+
 
 @hooks.hook("contrail-analytics-relation-departed")
 @hooks.hook("contrail-analytics-relation-broken")
@@ -211,31 +220,42 @@ def contrail_analytics_departed():
         check_local_metadata()
     contrail_analytics_relation()
 
+
 @restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"],
                     "/etc/contrail/contrail-vrouter-nodemgr.conf": ["contrail-vrouter-nodemgr"]})
 def contrail_analytics_relation():
     write_vrouter_config()
     write_nodemgr_config()
 
-@hooks.hook("contrail-control-relation-departed")
-@hooks.hook("contrail-control-relation-broken")
-def contrail_control_node_departed():
-    if not units("contrail-control"):
+
+@hooks.hook("contrail-controller-relation-departed")
+@hooks.hook("contrail-controller-relation-broken")
+def contrail_controller_node_departed():
+    if not units("contrail-controller") and not config.get("contrail-api-ip"):
         config["control-node-ready"] = False
         check_vrouter()
         check_local_metadata()
     control_node_relation()
+    write_vnc_api_config()
 
-@hooks.hook("contrail-control-relation-joined")
-def contrail_control_joined():
+
+@hooks.hook("contrail-controller-relation-changed")
+def contrail_controller_changed():
+    if not relation_get("port"):
+        log("Relation not ready")
+        return
+
+    write_vnc_api_config()
     control_node_relation()
     config["control-node-ready"] = True
     check_vrouter()
     check_local_metadata()
 
+
 @restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"]})
 def control_node_relation():
     write_vrouter_config()
+
 
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
@@ -247,6 +267,7 @@ def identity_admin_changed():
     check_vrouter()
     check_local_metadata()
 
+
 @hooks.hook("identity-admin-relation-departed")
 @hooks.hook("identity-admin-relation-broken")
 def identity_admin_departed():
@@ -256,31 +277,6 @@ def identity_admin_departed():
         check_local_metadata()
     write_vnc_api_config()
 
-@hooks.hook()
-def install():
-    # set apt preferences
-    shutil.copy('files/40contrail', '/etc/apt/preferences.d')
-    configure_sources(True, "install-sources", "install-keys")
-    apt_upgrade(fatal=True, dist=True)
-    fix_vrouter_scripts() # bug in 2.0+20141015.1 packages
-    cmd = "apt-cache policy nova-common"
-    output = check_output(cmd, shell=True)
-    print (output)
-    apt_install(PACKAGES, fatal=True)
-
-    openstack_version = dpkg_version("nova-compute")
-
-    fix_permissions()
-    #fix_nodemgr()
-    try:
-        modprobe("vrouter")
-    except CalledProcessError:
-        log("vrouter kernel module failed to load, clearing pagecache and retrying")
-        drop_caches()
-        modprobe("vrouter")
-    modprobe("vrouter", True, True)
-    configure_vrouter()
-    service_restart("nova-compute")
 
 @hooks.hook("neutron-metadata-relation-changed")
 def neutron_metadata_changed():
@@ -289,11 +285,13 @@ def neutron_metadata_changed():
         return
     neutron_metadata_relation()
 
+
 @hooks.hook("neutron-metadata-relation-departed")
 @hooks.hook("neutron-metadata-relation-broken")
 @restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"]})
 def neutron_metadata_relation():
     write_vrouter_config()
+
 
 @hooks.hook("neutron-plugin-relation-joined")
 def neutron_plugin_joined():
@@ -317,18 +315,14 @@ def neutron_plugin_joined():
     relation_set(subordinate_configuration=json.dumps(conf))
 
     if config["local-metadata-server"]:
-        settings = { "metadata-shared-secret": config["local-metadata-secret"] }
+        settings = {"metadata-shared-secret": config["local-metadata-secret"]}
         relation_set(relation_settings=settings)
 
-def main():
-    try:
-        hooks.execute(sys.argv)
-    except UnregisteredHookError as e:
-        log("Unknown hook {} - skipping.".format(e))
 
 @hooks.hook("update-status")
 def update_status():
-  set_status()
+    set_status()
+
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
@@ -337,12 +331,21 @@ def upgrade_charm():
     write_nodemgr_config()
     service_restart("supervisor-vrouter")
 
+
 @restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"],
                     "/etc/contrail/contrail-vrouter-nodemgr.conf": ["contrail-vrouter-nodemgr"]})
 def write_config():
     write_vrouter_config()
     write_vnc_api_config()
     write_nodemgr_config()
+
+
+def main():
+    try:
+        hooks.execute(sys.argv)
+    except UnregisteredHookError as e:
+        log("Unknown hook {} - skipping.".format(e))
+
 
 if __name__ == "__main__":
     main()

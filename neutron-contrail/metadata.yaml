@@ -30,10 +30,8 @@ requires:
   container:
     interface: juju-info
     scope: container
-  contrail-api:
-    interface: contrail-api
-  contrail-control:
-    interface: contrail-control
+  contrail-controller:
+    interface: contrail-controller
   contrail-analytics:
     interface: contrail-analytics
   identity-admin:
