@@ -17,6 +17,8 @@ requires:
     interface: keystone-admin
   contrail-analytics:
     interface: contrail-analytics
+  contrail-analyticsdb:
+    interface: contrail-analyticsdb
 resources:
   contrail-controller:
     type: file
