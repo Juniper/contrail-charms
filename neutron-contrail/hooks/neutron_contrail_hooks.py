@@ -18,7 +18,8 @@ from charmhelpers.core.hookenv import (
     log,
     relation_get,
     relation_ids,
-    relation_set
+    relation_set,
+    related_units,
 )
 
 from charmhelpers.core.host import (
@@ -49,7 +50,6 @@ from neutron_contrail_utils import (
     modprobe,
     provision_local_metadata,
     provision_vrouter,
-    units,
     unprovision_local_metadata,
     unprovision_vrouter,
     write_nodemgr_config,
@@ -86,7 +86,7 @@ def install():
     apt_install(PACKAGES, fatal=True)
 
     fix_permissions()
-    #fix_nodemgr()
+    fix_nodemgr()
     try:
         modprobe("vrouter")
     except CalledProcessError:
@@ -96,6 +96,12 @@ def install():
     modprobe("vrouter", True, True)
     configure_vrouter()
     service_restart("nova-compute")
+
+
+def units(relation):
+    """Return a list of units for the specified relation"""
+    return [unit for rid in relation_ids(relation)
+                 for unit in related_units(rid)]
 
 
 def check_local_metadata():

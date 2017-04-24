@@ -49,23 +49,6 @@ CONTRAIL_VERSION = dpkg_version("contrail-vrouter-agent")
 OPENSTACK_VERSION = dpkg_version("nova-compute")
 
 
-def set_status():
-    version  = dpkg_version("contrail-vrouter-agent")
-    application_version_set(version)
-    output = check_output("contrail-status", shell=True)
-    for line in output.splitlines()[2:]:
-        if len(line) > 0:
-            lst = line.decode().split()
-            service_name = lst[0].strip()
-            service_status = lst[1].strip()
-            if 'contrail-vrouter-agent' in service_name \
-                and 'active' in service_status:
-                status_set("active", "Unit is ready")
-                break
-            else:
-                status_set("waiting", "vrouter-agent is not up")
-
-
 def retry(f=None, timeout=10, delay=2):
     """Retry decorator.
 
@@ -108,6 +91,24 @@ def retry(f=None, timeout=10, delay=2):
                 sleep(remaining)
                 raise error
     return func
+
+
+def set_status():
+    version = dpkg_version("contrail-vrouter-agent")
+    application_version_set(version)
+    output = check_output("contrail-status", shell=True)
+    for line in output.splitlines()[2:]:
+        if len(line) == 0:
+            return
+        lst = line.decode().split()
+        service_name = lst[0].strip()
+        service_status = lst[1].strip()
+        if 'contrail-vrouter-agent' in service_name \
+            and 'active' in service_status:
+            status_set("active", "Unit is ready")
+            break
+        else:
+            status_set("waiting", "vrouter-agent is not up")
 
 
 def configure_vrouter():
@@ -232,12 +233,6 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
                 continue
             log("DKMS auto installing for kernel {}".format(kernel))
             check_call(["dkms", "autoinstall", "-k", kernel])
-
-
-def units(relation):
-    """Return a list of units for the specified relation"""
-    return [unit for rid in relation_ids(relation)
-                 for unit in related_units(rid)]
 
 
 @retry(timeout=300)
