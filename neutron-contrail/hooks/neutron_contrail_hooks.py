@@ -34,10 +34,9 @@ from charmhelpers.fetch import (
 )
 from subprocess import (
     CalledProcessError,
-    check_output
 )
 from neutron_contrail_utils import (
-    OPENSTACK_VERSION,
+    get_openstack_version,
     configure_vrouter,
     disable_vrouter_vgw,
     drop_caches,
@@ -299,8 +298,8 @@ def neutron_metadata_relation():
 def neutron_plugin_joined():
     # create plugin config
     section = []
-    if version_compare(OPENSTACK_VERSION, "1:2015.1~") < 0:
-        if version_compare(OPENSTACK_VERSION, "1:2014.2") >= 0:
+    if version_compare(get_openstack_version(), "1:2015.1~") < 0:
+        if version_compare(get_openstack_version(), "1:2014.2") >= 0:
             section.append(("network_api_class", "nova_contrail_vif.contrailvif.ContrailNetworkAPI"))
         else:
             section.append(("libvirt_vif_driver", "nova_contrail_vif.contrailvif.VRouterVIFDriver"))

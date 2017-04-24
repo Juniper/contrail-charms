@@ -38,17 +38,6 @@ apt_pkg.init()
 config = config()
 
 
-def dpkg_version(pkg):
-    try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
-    except CalledProcessError:
-        return None
-
-
-CONTRAIL_VERSION = dpkg_version("contrail-vrouter-agent")
-OPENSTACK_VERSION = dpkg_version("nova-compute")
-
-
 def retry(f=None, timeout=10, delay=2):
     """Retry decorator.
 
@@ -93,8 +82,37 @@ def retry(f=None, timeout=10, delay=2):
     return func
 
 
+def _dpkg_version(pkg):
+    try:
+        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
+    except CalledProcessError:
+        return None
+
+
+_OPENSTACK_VERSION = None
+
+
+def get_openstack_version():
+    global _OPENSTACK_VERSION
+    if _OPENSTACK_VERSION:
+        return _OPENSTACK_VERSION
+    _OPENSTACK_VERSION = _dpkg_version("nova-compute")
+    return _OPENSTACK_VERSION
+
+
+_CONTRAIL_VERSION = None
+
+
+def get_contrail_version():
+    global _CONTRAIL_VERSION
+    if _CONTRAIL_VERSION:
+        return _CONTRAIL_VERSION
+    _CONTRAIL_VERSION = _dpkg_version("contrail-vrouter-agent")
+    return _CONTRAIL_VERSION
+
+
 def set_status():
-    version = dpkg_version("contrail-vrouter-agent")
+    version = get_contrail_version()
     application_version_set(version)
     output = check_output("contrail-status", shell=True)
     for line in output.splitlines()[2:]:
@@ -148,7 +166,7 @@ def fix_nodemgr():
     # add files missing from contrail-nodemgr package
     dest = "/etc/contrail/supervisord_vrouter_files/" \
            + ("contrail-vrouter-nodemgr.ini" \
-              if version_compare(CONTRAIL_VERSION, "3.1") >= 0 \
+              if version_compare(get_contrail_version(), "3.1") >= 0 \
               else "contrail-nodemgr-vrouter.ini")
     shutil.copy("files/contrail-nodemgr-vrouter.ini", dest)
     pw = pwd.getpwnam("contrail")
@@ -160,7 +178,7 @@ def fix_nodemgr():
              pw.pw_uid, pw.pw_gid)
 
     src = "files/contrail-vrouter-nodemgr-3.1" \
-          if version_compare(CONTRAIL_VERSION, "3.1") >= 0 \
+          if version_compare(get_contrail_version(), "3.1") >= 0 \
           else "files/contrail-vrouter-nodemgr"
     shutil.copy(src, "/etc/init.d/contrail-vrouter-nodemgr")
     os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0o755)
