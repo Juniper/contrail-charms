@@ -116,18 +116,21 @@ def set_status():
     version = get_contrail_version()
     application_version_set(version)
     output = check_output("contrail-status", shell=True)
-    for line in output.splitlines()[2:]:
+    for line in output.splitlines()[1:]:
         if len(line) == 0:
             return
         lst = line.decode().split()
-        service_name = lst[0].strip()
-        service_status = lst[1].strip()
-        if 'contrail-vrouter-agent' in service_name \
-            and 'active' in service_status:
-            status_set("active", "Unit is ready")
+        if len(lst) < 2:
+            continue
+        s_name = lst[0].strip()
+        s_status = lst[1].strip()
+        if 'contrail-vrouter-agent' in s_name:
+            if 'active' in s_status or 'initializing' in s_status:
+                status_set("active", "Unit is ready")
+            else:
+                # TODO: rework this
+                status_set("waiting", "vrouter-agent is not up")
             break
-        else:
-            status_set("waiting", "vrouter-agent is not up")
 
 
 def configure_vrouter():
