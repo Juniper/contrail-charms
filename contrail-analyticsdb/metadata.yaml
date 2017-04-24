@@ -15,10 +15,6 @@ provides:
 requires:
   identity-admin:
     interface: keystone-admin
-  contrail-controller:
-    interface: contrail-controller
-  contrail-analytics:
-    interface: contrail-analytics
 resources:
   contrail-analyticsdb:
     type: file

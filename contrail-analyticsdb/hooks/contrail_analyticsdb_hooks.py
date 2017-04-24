@@ -54,16 +54,11 @@ def config_changed():
     update_charm_status()
 
 
-@hooks.hook("contrail-controller-relation-joined")
-@hooks.hook("contrail-controller-relation-departed")
+@hooks.hook("contrail-analyticsdb-relation-joined")
+@hooks.hook("contrail-analyticsdb-relation-changed")
+@hooks.hook("contrail-analyticsdb-relation-broken")
+@hooks.hook("contrail-analyticsdb-relation-departed")
 def controller_relation():
-    update_charm_status()
-
-
-@hooks.hook("contrail-analytics-relation-joined")
-@hooks.hook("contrail-analytics-relation-departed")
-@hooks.hook("contrail-analytics-relation-broken")
-def analytics_relation():
     update_charm_status()
 
 
