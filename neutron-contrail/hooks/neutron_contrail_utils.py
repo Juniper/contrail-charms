@@ -121,58 +121,11 @@ def configure_vrouter():
     check_call(args, cwd="scripts")
 
 
-def contrail_api_ctx():
-    ip = config.get("contrail-api-ip")
-    if ip:
-        port = config.get("contrail-api-port")
-        return {"api_server": ip,
-                "api_port": port if port is not None else 8082}
-
-    ctxs = [{"api_server": gethostbyname(relation_get("private-address", unit, rid)),
-             "api_port": port}
-            for rid in relation_ids("contrail-controller")
-            for unit, port in
-            ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-            if port]
-    return ctxs[0] if ctxs else {}
-
-
-@retry(timeout=300)
-def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
-                                 service_port, fabric_ip, fabric_port, op,
-                                 user, password):
-    check_call(["contrail-provision-linklocal",
-                "--api_server_ip", api_ip,
-                "--api_server_port", str(api_port),
-                "--linklocal_service_name", service_name,
-                "--linklocal_service_ip", service_ip,
-                "--linklocal_service_port", str(service_port),
-                "--ipfabric_service_ip", fabric_ip,
-                "--ipfabric_service_port", str(fabric_port),
-                "--oper", op,
-                "--admin_user", user,
-                "--admin_password", password])
-
-
-@retry(timeout=300)
-def contrail_provision_vrouter(hostname, ip, api_ip, api_port, op,
-                               user, password, tenant):
-    check_call(["contrail-provision-vrouter",
-                "--host_name", hostname,
-                "--host_ip", ip,
-                "--api_server_ip", api_ip,
-                "--api_server_port", str(api_port),
-                "--oper", op,
-                "--admin_user", user,
-                "--admin_password", password,
-                "--admin_tenant_name", tenant])
-
-
-def control_node_ctx():
-    return {"control_nodes":
-        [gethostbyname(relation_get("private-address", unit, rid))
-         for rid in relation_ids("contrail-control")
-         for unit in related_units(rid)]}
+def enable_vrouter_vgw():
+    if not os.path.exists("/etc/sysctl.d/60-vrouter-vgw.conf"):
+        # set sysctl options
+        shutil.copy("files/60-vrouter-vgw.conf", "/etc/sysctl.d")
+        service_start("procps")
 
 
 def disable_vrouter_vgw():
@@ -188,13 +141,6 @@ def drop_caches():
     check_call(["sync"])
     with open("/proc/sys/vm/drop_caches", "w") as f:
         f.write("3\n")
-
-
-def enable_vrouter_vgw():
-    if not os.path.exists("/etc/sysctl.d/60-vrouter-vgw.conf"):
-        # set sysctl options
-        shutil.copy("files/60-vrouter-vgw.conf", "/etc/sysctl.d")
-        service_start("procps")
 
 
 def fix_nodemgr():
@@ -233,20 +179,6 @@ def fix_vrouter_scripts():
         os.symlink("/bin/true", "/opt/contrail/bin/vrouter-pre-start.sh")
         os.symlink("/bin/true", "/opt/contrail/bin/vrouter-post-start.sh")
         os.symlink("/bin/true", "/opt/contrail/bin/vrouter-pre-stop.sh")
-
-
-def identity_admin_ctx():
-    ctxs = [{"auth_host": gethostbyname(hostname),
-             "auth_port": relation_get("service_port", unit, rid),
-             "admin_user": relation_get("service_username", unit, rid),
-             "admin_password": relation_get("service_password", unit, rid),
-             "admin_tenant_name": relation_get("service_tenant_name", unit, rid),
-             "auth_region": relation_get("service_region", unit, rid)}
-            for rid in relation_ids("identity-admin")
-            for unit, hostname in
-            ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-            if hostname]
-    return ctxs[0] if ctxs else {}
 
 
 def ifdown(interfaces=None):
@@ -302,28 +234,27 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
             check_call(["dkms", "autoinstall", "-k", kernel])
 
 
-def analytics_node_ctx():
-    """Get the ipaddres of all contrail analytics nodes"""
-    analytics_ip_list = [gethostbyname(relation_get("private-address", unit, rid))
-                         for rid in relation_ids("contrail-analytics")
-                         for unit in related_units(rid)]
-    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    return {"analytics_nodes": analytics_ip_list}
+def units(relation):
+    """Return a list of units for the specified relation"""
+    return [unit for rid in relation_ids(relation)
+                 for unit in related_units(rid)]
 
 
-def network_ctx():
-    iface = config.get("control-interface")
-    return {"control_network_ip": netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"]}
-
-
-def neutron_metadata_ctx():
-    if "local-metadata-secret" in config:
-        return {"metadata_secret": config["local-metadata-secret"]}
-
-    ctxs = [{"metadata_secret": relation_get("shared-secret", unit, rid)}
-            for rid in relation_ids("neutron-metadata")
-            for unit in related_units(rid)]
-    return ctxs[0] if ctxs else {}
+@retry(timeout=300)
+def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
+                                 service_port, fabric_ip, fabric_port, op,
+                                 user, password):
+    check_call(["contrail-provision-linklocal",
+                "--api_server_ip", api_ip,
+                "--api_server_port", str(api_port),
+                "--linklocal_service_name", service_name,
+                "--linklocal_service_ip", service_ip,
+                "--linklocal_service_port", str(service_port),
+                "--ipfabric_service_ip", fabric_ip,
+                "--ipfabric_service_port", str(fabric_port),
+                "--oper", op,
+                "--admin_user", user,
+                "--admin_password", password])
 
 
 def provision_local_metadata():
@@ -349,39 +280,6 @@ def provision_local_metadata():
     contrail_provision_linklocal(api_ip, api_port, "metadata",
                                  "169.254.169.254", 80, "127.0.0.1", 8775,
                                  "add", user, password)
-
-
-def provision_vrouter():
-    hostname = gethostname()
-    ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
-    api_port = None
-    api_ip = config.get("contrail-api-ip")
-    if api_ip:
-        api_port = config.get("contrail-api-port")
-        if api_port is None:
-            api_port = 8082
-    else:
-        api_ip, api_port = [(gethostbyname(relation_get("private-address", unit, rid)),
-                             port)
-                            for rid in relation_ids("contrail-controller")
-                            for unit, port in
-                            ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-                            if port][0]
-    user, password, tenant = [(relation_get("service_username", unit, rid),
-                               relation_get("service_password", unit, rid),
-                               relation_get("service_tenant_name", unit, rid))
-                              for rid in relation_ids("identity-admin")
-                              for unit in related_units(rid)
-                              if relation_get("service_hostname", unit, rid)][0]
-    log("Provisioning vrouter {}".format(ip))
-    contrail_provision_vrouter(hostname, ip, api_ip, api_port, "add",
-                               user, password, tenant)
-
-
-def units(relation):
-    """Return a list of units for the specified relation"""
-    return [unit for rid in relation_ids(relation)
-                 for unit in related_units(rid)]
 
 
 def unprovision_local_metadata():
@@ -416,6 +314,47 @@ def unprovision_local_metadata():
     contrail_provision_linklocal(api_ip, api_port, "metadata",
                                  "169.254.169.254", 80, "127.0.0.1", 8775,
                                  "del", user, password)
+
+
+@retry(timeout=300)
+def contrail_provision_vrouter(hostname, ip, api_ip, api_port, op,
+                               user, password, tenant):
+    check_call(["contrail-provision-vrouter",
+                "--host_name", hostname,
+                "--host_ip", ip,
+                "--api_server_ip", api_ip,
+                "--api_server_port", str(api_port),
+                "--oper", op,
+                "--admin_user", user,
+                "--admin_password", password,
+                "--admin_tenant_name", tenant])
+
+
+def provision_vrouter():
+    hostname = gethostname()
+    ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
+    api_port = None
+    api_ip = config.get("contrail-api-ip")
+    if api_ip:
+        api_port = config.get("contrail-api-port")
+        if api_port is None:
+            api_port = 8082
+    else:
+        api_ip, api_port = [(gethostbyname(relation_get("private-address", unit, rid)),
+                             port)
+                            for rid in relation_ids("contrail-controller")
+                            for unit, port in
+                            ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
+                            if port][0]
+    user, password, tenant = [(relation_get("service_username", unit, rid),
+                               relation_get("service_password", unit, rid),
+                               relation_get("service_tenant_name", unit, rid))
+                              for rid in relation_ids("identity-admin")
+                              for unit in related_units(rid)
+                              if relation_get("service_hostname", unit, rid)][0]
+    log("Provisioning vrouter {}".format(ip))
+    contrail_provision_vrouter(hostname, ip, api_ip, api_port, "add",
+                               user, password, tenant)
 
 
 def unprovision_vrouter():
@@ -479,6 +418,67 @@ def vhost_ip(iface):
 def vhost_phys():
     # run external script to determine physical interface of vhost0
     return check_output(["scripts/vhost-phys.sh"]).rstrip()
+
+
+def contrail_api_ctx():
+    ip = config.get("contrail-api-ip")
+    if ip:
+        port = config.get("contrail-api-port")
+        return {"api_server": ip,
+                "api_port": port if port is not None else 8082}
+
+    ctxs = [{"api_server": gethostbyname(relation_get("private-address", unit, rid)),
+             "api_port": port}
+            for rid in relation_ids("contrail-controller")
+            for unit, port in
+            ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
+            if port]
+    return ctxs[0] if ctxs else {}
+
+
+def control_node_ctx():
+    return {"control_nodes":
+        [gethostbyname(relation_get("private-address", unit, rid))
+         for rid in relation_ids("contrail-controller")
+         for unit in related_units(rid)]}
+
+
+def identity_admin_ctx():
+    ctxs = [{"auth_host": gethostbyname(hostname),
+             "auth_port": relation_get("service_port", unit, rid),
+             "admin_user": relation_get("service_username", unit, rid),
+             "admin_password": relation_get("service_password", unit, rid),
+             "admin_tenant_name": relation_get("service_tenant_name", unit, rid),
+             "auth_region": relation_get("service_region", unit, rid)}
+            for rid in relation_ids("identity-admin")
+            for unit, hostname in
+            ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
+            if hostname]
+    return ctxs[0] if ctxs else {}
+
+
+def analytics_node_ctx():
+    """Get the ipaddres of all contrail analytics nodes"""
+    analytics_ip_list = [gethostbyname(relation_get("private-address", unit, rid))
+                         for rid in relation_ids("contrail-analytics")
+                         for unit in related_units(rid)]
+    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    return {"analytics_nodes": analytics_ip_list}
+
+
+def network_ctx():
+    iface = config.get("control-interface")
+    return {"control_network_ip": netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"]}
+
+
+def neutron_metadata_ctx():
+    if "local-metadata-secret" in config:
+        return {"metadata_secret": config["local-metadata-secret"]}
+
+    ctxs = [{"metadata_secret": relation_get("shared-secret", unit, rid)}
+            for rid in relation_ids("neutron-metadata")
+            for unit in related_units(rid)]
+    return ctxs[0] if ctxs else {}
 
 
 def vrouter_ctx():

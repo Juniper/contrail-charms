@@ -39,7 +39,6 @@ from neutron_contrail_utils import (
     OPENSTACK_VERSION,
     configure_vrouter,
     disable_vrouter_vgw,
-    dpkg_version,
     drop_caches,
     enable_vrouter_vgw,
     fix_nodemgr,
