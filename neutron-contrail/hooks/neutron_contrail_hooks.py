@@ -73,16 +73,13 @@ config = config()
 @hooks.hook()
 def install():
     # set apt preferences
-    shutil.copy('files/40contrail', '/etc/apt/preferences.d')
+    #shutil.copy('files/40contrail', '/etc/apt/preferences.d')
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
 
     # bug in 2.0+20141015.1 packages
-    fix_vrouter_scripts()
+    #fix_vrouter_scripts()
 
-    cmd = "apt-cache policy nova-common"
-    output = check_output(cmd, shell=True)
-    print (output)
     apt_install(PACKAGES, fatal=True)
 
     fix_permissions()
@@ -95,7 +92,7 @@ def install():
         modprobe("vrouter")
     modprobe("vrouter", True, True)
     configure_vrouter()
-    service_restart("nova-compute")
+    #service_restart("nova-compute")
 
 
 def units(relation):
@@ -146,8 +143,8 @@ def config_changed():
     configure_virtual_gateways()
     write_config()
     if not units("contrail-controller"):
-        config["contrail-api-ready"] = True if config.get("contrail-api-ip") \
-                                            else False
+        config["contrail-api-ready"] = (
+            True if config.get("contrail-api-ip") else False)
     check_vrouter()
     check_local_metadata()
     set_status
@@ -159,7 +156,7 @@ def configure_local_metadata():
             # generate secret
             secret = str(uuid.uuid4())
             config["local-metadata-secret"] = secret
-            settings = { "metadata-shared-secret": secret }
+            settings = {"metadata-shared-secret": secret}
             # inform relations
             for rid in relation_ids("neutron-plugin"):
                 relation_set(relation_id=rid, relation_settings=settings)
