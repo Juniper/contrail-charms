@@ -1,4 +1,0 @@
-Explanation: Use nova version of nova-common
-Package: nova-common
-Pin:  origin ubuntu-cloud.archive.canonical.com
-Pin-Priority: 1001

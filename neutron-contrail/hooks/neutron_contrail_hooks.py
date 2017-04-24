@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
 from apt_pkg import version_compare
 import json
 import uuid
 import yaml
-import shutil
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -42,8 +42,6 @@ from neutron_contrail_utils import (
     drop_caches,
     enable_vrouter_vgw,
     fix_nodemgr,
-    fix_permissions,
-    fix_vrouter_scripts,
     ifdown,
     ifup,
     modprobe,
@@ -71,18 +69,14 @@ config = config()
 
 @hooks.hook()
 def install():
-    # set apt preferences
-    #shutil.copy('files/40contrail', '/etc/apt/preferences.d')
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
-
-    # bug in 2.0+20141015.1 packages
-    #fix_vrouter_scripts()
-
     apt_install(PACKAGES, fatal=True)
 
-    fix_permissions()
+    os.chmod("/etc/contrail", 0o755)
+    os.chown("/etc/contrail", 0, 0)
     fix_nodemgr()
+
     try:
         modprobe("vrouter")
     except CalledProcessError:
@@ -91,7 +85,6 @@ def install():
         modprobe("vrouter")
     modprobe("vrouter", True, True)
     configure_vrouter()
-    #service_restart("nova-compute")
 
 
 def units(relation):
@@ -300,10 +293,16 @@ def neutron_plugin_joined():
     section = []
     if version_compare(get_openstack_version(), "1:2015.1~") < 0:
         if version_compare(get_openstack_version(), "1:2014.2") >= 0:
-            section.append(("network_api_class", "nova_contrail_vif.contrailvif.ContrailNetworkAPI"))
+            section.append(
+                ("network_api_class",
+                 "nova_contrail_vif.contrailvif.ContrailNetworkAPI"))
         else:
-            section.append(("libvirt_vif_driver", "nova_contrail_vif.contrailvif.VRouterVIFDriver"))
-    section.append(("firewall_driver", "nova.virt.firewall.NoopFirewallDriver"))
+            section.append(
+                ("libvirt_vif_driver",
+                 "nova_contrail_vif.contrailvif.VRouterVIFDriver"))
+    section.append(
+        ("firewall_driver",
+         "nova.virt.firewall.NoopFirewallDriver"))
     conf = {
       "nova-compute": {
         "/etc/nova/nova.conf": {

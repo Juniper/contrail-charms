@@ -61,6 +61,7 @@ def retry(f=None, timeout=10, delay=2):
     """
     if not f:
         return functools.partial(retry, timeout=timeout, delay=delay)
+
     @functools.wraps(f)
     def func(*args, **kwargs):
         start = time()
@@ -184,20 +185,6 @@ def fix_nodemgr():
     os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0o755)
 
     service_restart("supervisor-vrouter")
-
-
-def fix_permissions():
-    os.chmod("/etc/contrail", 0o755)
-    os.chown("/etc/contrail", 0, 0)
-
-
-def fix_vrouter_scripts():
-    # certain files need to be present for packages
-    if not os.path.exists("/opt/contrail/bin"):
-        os.makedirs("/opt/contrail/bin")
-        os.symlink("/bin/true", "/opt/contrail/bin/vrouter-pre-start.sh")
-        os.symlink("/bin/true", "/opt/contrail/bin/vrouter-post-start.sh")
-        os.symlink("/bin/true", "/opt/contrail/bin/vrouter-pre-stop.sh")
 
 
 def ifdown(interfaces=None):
