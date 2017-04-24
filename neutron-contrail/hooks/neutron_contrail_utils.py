@@ -35,11 +35,18 @@ from charmhelpers.core.host import service_restart, service_start
 from charmhelpers.core.templating import render
 
 apt_pkg.init()
+config = config()
+
+
+def dpkg_version(pkg):
+    try:
+        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
+    except CalledProcessError:
+        return None
+
 
 CONTRAIL_VERSION = dpkg_version("contrail-vrouter-agent")
 OPENSTACK_VERSION = dpkg_version("nova-compute")
-
-config = config()
 
 
 def set_status():
@@ -57,13 +64,6 @@ def set_status():
                 break
             else:
                 status_set("waiting", "vrouter-agent is not up")
-
-
-def dpkg_version(pkg):
-    try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
-    except CalledProcessError:
-        return None
 
 
 def retry(f=None, timeout=10, delay=2):
