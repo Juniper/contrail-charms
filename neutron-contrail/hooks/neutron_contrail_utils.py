@@ -12,11 +12,11 @@ from time import sleep, time
 
 import apt_pkg
 from apt_pkg import version_compare
+import json
 import yaml
 
 import netaddr
 import netifaces
-import struct
 
 from charmhelpers.core.hookenv import (
     config,
@@ -85,7 +85,8 @@ def retry(f=None, timeout=10, delay=2):
 
 def _dpkg_version(pkg):
     try:
-        return check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
+        return check_output(
+            ["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
     except CalledProcessError:
         return None
 
@@ -462,11 +463,8 @@ def identity_admin_ctx():
 
 def analytics_node_ctx():
     """Get the ipaddres of all contrail analytics nodes"""
-    analytics_ip_list = [gethostbyname(relation_get("private-address", unit, rid))
-                         for rid in relation_ids("contrail-analytics")
-                         for unit in related_units(rid)]
-    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    return {"analytics_nodes": analytics_ip_list}
+    data = config.get("analytics-servers")
+    return {"analytics_nodes": json.loads(data) if data else []}
 
 
 def network_ctx():

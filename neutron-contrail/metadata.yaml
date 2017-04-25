@@ -32,8 +32,6 @@ requires:
     scope: container
   contrail-controller:
     interface: contrail-controller
-  contrail-analytics:
-    interface: contrail-analytics
   identity-admin:
     interface: keystone-admin
   neutron-metadata:

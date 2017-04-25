@@ -207,7 +207,6 @@ relations:
   - [ "neutron-contrail", "nova-compute" ]
   - [ "neutron-contrail", "keystone" ]
   - [ "neutron-contrail", "contrail-control"]
-  - [ "neutron-contrail", "contrail-analytics"]
 
 machines:
   "1":

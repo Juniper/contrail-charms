@@ -80,7 +80,8 @@ def install():
     try:
         modprobe("vrouter")
     except CalledProcessError:
-        log("vrouter kernel module failed to load, clearing pagecache and retrying")
+        log("vrouter kernel module failed to load,"
+            " clearing pagecache and retrying")
         drop_caches()
         modprobe("vrouter")
     modprobe("vrouter", True, True)
@@ -119,7 +120,7 @@ def check_vrouter():
     # check relation dependencies
     if config.get("contrail-api-ready") \
        and config.get("control-node-ready") \
-       and config.get("analytics-node-ready") \
+       and config.get("analytics-servers") \
        and config.get("identity-admin-ready"):
         if not config.get("vrouter-provisioned"):
             provision_vrouter()
@@ -139,7 +140,7 @@ def config_changed():
             True if config.get("contrail-api-ip") else False)
     check_vrouter()
     check_local_metadata()
-    set_status
+    set_status()
 
 
 def configure_local_metadata():
@@ -175,9 +176,10 @@ def configure_virtual_gateways():
     previous_interfaces = {gateway["interface"]: set(gateway["subnets"])
                            for gateway in yaml.safe_load(previous_gateways)} \
                           if previous_gateways else {}
-    ifaces = [interface for interface, subnets in previous_interfaces.iteritems()
-              if interface not in interfaces
-              or subnets != interfaces[interface]]
+    ifaces = [
+        interface for interface, subnets in previous_interfaces.iteritems()
+        if interface not in interfaces
+        or subnets != interfaces[interface]]
     if ifaces:
         ifdown(ifaces)
 
@@ -197,31 +199,6 @@ def configure_virtual_gateways():
     config["virtual-gateways-prev"] = gateways
 
 
-@hooks.hook("contrail-analytics-relation-joined")
-def contrail_analytics_joined():
-    config["analytics-node-ready"] = True
-    contrail_analytics_relation()
-    check_vrouter()
-    check_local_metadata()
-
-
-@hooks.hook("contrail-analytics-relation-departed")
-@hooks.hook("contrail-analytics-relation-broken")
-def contrail_analytics_departed():
-    if not units("contrail-analytics"):
-        config["analytics-node-ready"] = False
-        check_vrouter()
-        check_local_metadata()
-    contrail_analytics_relation()
-
-
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"],
-                    "/etc/contrail/contrail-vrouter-nodemgr.conf": ["contrail-vrouter-nodemgr"]})
-def contrail_analytics_relation():
-    write_vrouter_config()
-    write_nodemgr_config()
-
-
 @hooks.hook("contrail-controller-relation-departed")
 @hooks.hook("contrail-controller-relation-broken")
 def contrail_controller_node_departed():
@@ -229,12 +206,13 @@ def contrail_controller_node_departed():
         config["control-node-ready"] = False
         check_vrouter()
         check_local_metadata()
-    control_node_relation()
     write_vnc_api_config()
+    control_node_relation()
 
 
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
+    config["analytics-servers"] = relation_get("analytics-server")
     if not relation_get("port"):
         log("Relation not ready")
         return
@@ -246,9 +224,13 @@ def contrail_controller_changed():
     check_local_metadata()
 
 
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"]})
+@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
+                        ["contrail-vrouter-agent"],
+                    "/etc/contrail/contrail-vrouter-nodemgr.conf":
+                        ["contrail-vrouter-nodemgr"]})
 def control_node_relation():
     write_vrouter_config()
+    write_nodemgr_config()
 
 
 @hooks.hook("identity-admin-relation-changed")
@@ -282,7 +264,8 @@ def neutron_metadata_changed():
 
 @hooks.hook("neutron-metadata-relation-departed")
 @hooks.hook("neutron-metadata-relation-broken")
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"]})
+@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
+                        ["contrail-vrouter-agent"]})
 def neutron_metadata_relation():
     write_vrouter_config()
 
@@ -332,8 +315,10 @@ def upgrade_charm():
     service_restart("supervisor-vrouter")
 
 
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf": ["contrail-vrouter-agent"],
-                    "/etc/contrail/contrail-vrouter-nodemgr.conf": ["contrail-vrouter-nodemgr"]})
+@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
+                        ["contrail-vrouter-agent"],
+                    "/etc/contrail/contrail-vrouter-nodemgr.conf":
+                        ["contrail-vrouter-nodemgr"]})
 def write_config():
     write_vrouter_config()
     write_vnc_api_config()

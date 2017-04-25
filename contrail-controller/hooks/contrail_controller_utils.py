@@ -42,8 +42,23 @@ def get_control_ip():
     return gethostbyname(unit_get("private-address"))
 
 
+def get_analytics_list():
+    analytics_ip_list = []
+    for rid in relation_ids("contrail-analytics"):
+        for unit in related_units(rid):
+            ip = gethostbyname(relation_get("private-address", unit, rid))
+            analytics_ip_list.append(ip)
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
+    return analytics_ip_list
+
+
 def controller_ctx():
-    """Get the ipaddres of all contrail controller nodes"""
+    ctx = {}
+    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
+    ctx["default_log_level"] = config.get("log_level")
+    ctx["multi_tenancy"] = config.get("multi_tenancy")
+
     controller_ip_list = []
     for rid in relation_ids("controller-cluster"):
         for unit in related_units(rid):
@@ -53,6 +68,7 @@ def controller_ctx():
     controller_ip_list.append(gethostbyname(unit_get("private-address")))
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
+    ctx["controller_servers"] = controller_ip_list
 
     ext_zk_list = yaml.load(config.get("external_zookeeper_servers")) if \
        config.get("external_zookeeper_servers") else []
@@ -60,28 +76,15 @@ def controller_ctx():
        config.get("external_rabbitmq_servers") else []
     ext_configdb_list = yaml.load(config.get("external_configdb_servers")) if \
        config.get("external_configdb_servers") else []
-
-    ctx = {}
-    ctx["multi_tenancy"] = config.get("multi_tenancy")
-    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
-    ctx["default_log_level"] = config.get("log_level")
     ctx["external_zookeeper_servers"] = ext_zk_list
     ctx["external_rabbitmq_servers"] = ext_rabbitmq_list
     ctx["external_configdb_servers"] = ext_configdb_list
-    ctx["controller_servers"] = controller_ip_list
     return ctx
 
 
 def analytics_ctx():
     """Get the ipaddres of all contrail nodes"""
-    analytics_ip_list = []
-    for rid in relation_ids("contrail-analytics"):
-        for unit in related_units(rid):
-            ip = gethostbyname(relation_get("private-address", unit, rid))
-            analytics_ip_list.append(ip)
-    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
-    analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
-    return {"analytics_servers": analytics_ip_list}
+    return {"analytics_servers": get_analytics_list()}
 
 
 def identity_admin_ctx():

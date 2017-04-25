@@ -26,6 +26,7 @@ from contrail_controller_utils import (
     get_control_ip,
     update_charm_status,
     CONTAINER_NAME,
+    get_analytics_list,
 )
 
 from docker_utils import (
@@ -66,7 +67,7 @@ def config_changed():
         relation_set(relation_id=rid, relation_settings=settings)
 
 
-def relations_set_all(rid=None):
+def update_northbound_relations(rid=None):
     settings = {
         "multi-tenancy": config.get("multi_tenancy"),
         "auth-info": config.get("auth_info")
@@ -82,13 +83,20 @@ def relations_set_all(rid=None):
         relation_set(relation_id=rid, relation_settings=settings)
 
 
-@hooks.hook("contrail-controller-relation-joined")
-def contrail_controller_joined():
+def update_southbound_relations(rid=None):
     settings = {
-        "private-address": get_control_ip(),
-        "port": 8082
+        "port": 8082,
+        "analytics-server": json.dumps(get_analytics_list())
     }
     relation_set(relation_settings=settings)
+    for rid in ([rid] if rid else relation_ids("contrail-analytics")):
+        relation_set(relation_id=rid, relation_settings=settings)
+
+
+@hooks.hook("contrail-controller-relation-joined")
+def contrail_controller_joined():
+    if is_leader():
+        update_southbound_relations(rid=relation_id())
 
 
 @hooks.hook("controller-cluster-relation-joined")
@@ -99,19 +107,22 @@ def cluster_joined():
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
     if is_leader():
-        relations_set_all(rid=relation_id())
+        update_northbound_relations(rid=relation_id())
+        update_southbound_relations()
     update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
-def analytics_broken():
+def analytics_departed():
     update_charm_status()
+    if is_leader():
+        update_southbound_relations()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
     if is_leader():
-        relations_set_all(rid=relation_id())
+        update_northbound_relations(rid=relation_id())
 
 
 @hooks.hook("identity-admin-relation-changed")
@@ -127,7 +138,7 @@ def identity_admin_changed():
 
     config["auth_info"] = auth_info
     if is_leader():
-        relations_set_all()
+        update_northbound_relations()
     update_charm_status()
 
 
@@ -142,7 +153,7 @@ def identity_admin_departed():
     auth_info = "{}"
     config["auth_info"] = auth_info
     if is_leader():
-        relations_set_all()
+        update_northbound_relations()
     update_charm_status()
 
 
