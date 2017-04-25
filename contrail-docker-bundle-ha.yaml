@@ -215,8 +215,6 @@ relations:
   - [ "contrail-controller", "contrail-analyticsdb" ]
   - [ "contrail-controller", "neutron-api-contrail" ]
   - [ "contrail-controller", "keystone" ]
-  - [ "contrail-analytics", "keystone" ]
-  - [ "contrail-analyticsdb", "keystone" ]
   - [ "nova-compute", "neutron-contrail" ]
   - [ "neutron-contrail", "keystone" ]
   - [ "neutron-contrail", "contrail-controller"]

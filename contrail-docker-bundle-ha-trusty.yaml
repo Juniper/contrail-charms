@@ -200,8 +200,6 @@ relations:
   - [ "neutron-api", "neutron-api-contrail" ]
   - [ "neutron-api-contrail", "keystone" ]
   - [ "contrail-controller", "keystone" ]
-  - [ "contrail-analytics", "keystone" ]
-  - [ "contrail-analyticsdb", "keystone" ]
   - [ "contrail-controller", "neutron-api-contrail" ]
   - [ "contrail-analytics", "contrail-analyticsdb" ]
   - [ "contrail-controller", "contrail-analytics" ]
