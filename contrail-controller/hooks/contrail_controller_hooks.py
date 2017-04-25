@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import sys
 
 from charmhelpers.core.hookenv import (
@@ -11,6 +12,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_set,
+    relation_id,
+    related_units,
 )
 
 from charmhelpers.fetch import (
@@ -62,10 +65,20 @@ def config_changed():
     for rid in relation_ids("contrail-controller"):
         relation_set(relation_id=rid, relation_settings=settings)
 
+
+def relations_set_all(rid=None):
     settings = {
-        "multi-tenancy": config.get("multi_tenancy")
+        "multi-tenancy": config.get("multi_tenancy"),
+        "auth-info": config.get("auth_info")
     }
+
+    if rid:
+        relation_set(relation_id=rid, relation_settings=settings)
+        return
+
     for rid in relation_ids("contrail-analytics"):
+        relation_set(relation_id=rid, relation_settings=settings)
+    for rid in relation_ids("contrail-analyticsdb"):
         relation_set(relation_id=rid, relation_settings=settings)
 
 
@@ -86,23 +99,50 @@ def cluster_joined():
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
     if is_leader():
-        settings = {"multi-tenancy": config.get("multi_tenancy")}
-        relation_set(relation_settings=settings)
+        relations_set_all(rid=relation_id())
     update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
-@hooks.hook("contrail-analytics-relation-broken")
 def analytics_broken():
     update_charm_status()
 
 
+@hooks.hook("contrail-analyticsdb-relation-joined")
+def analyticsdb_joined():
+    if is_leader():
+        relations_set_all(rid=relation_id())
+
+
 @hooks.hook("identity-admin-relation-changed")
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
 def identity_admin_changed():
-    if not relation_get("service_hostname"):
-        log("Relation not ready")
+    auth_info = {
+        "keystone_protocol": relation_get("service_protocol"),
+        "keystone_ip": relation_get("service_hostname"),
+        "keystone_public_port": relation_get("service_port"),
+        "keystone_admin_user": relation_get("service_username"),
+        "keystone_admin_password": relation_get("service_password"),
+        "keystone_admin_tenant": relation_get("service_tenant_name")}
+    auth_info = json.dumps(auth_info)
+
+    config["auth_info"] = auth_info
+    if is_leader():
+        relations_set_all()
+    update_charm_status()
+
+
+@hooks.hook("identity-admin-relation-departed")
+def identity_admin_departed():
+    count = 0
+    for rid in relation_ids("identity-admin"):
+        count += len(related_units(rid))
+    if count > 0:
+        return
+
+    auth_info = "{}"
+    config["auth_info"] = auth_info
+    if is_leader():
+        relations_set_all()
     update_charm_status()
 
 

@@ -3,6 +3,7 @@ import struct
 import time
 
 import apt_pkg
+import json
 import yaml
 import platform
 import six
@@ -86,18 +87,8 @@ def analyticsdb_ctx():
 
 
 def identity_admin_ctx():
-    ctxs = [
-        {"keystone_ip": gethostbyname(hostname),
-         "keystone_public_port": relation_get("service_port", unit, rid),
-         "keystone_admin_user": relation_get("service_username", unit, rid),
-         "keystone_admin_password": relation_get("service_password", unit, rid),
-         "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-         "keystone_auth_protocol": relation_get("service_protocol", unit, rid)}
-        for rid in relation_ids("identity-admin")
-        for unit, hostname in
-        ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-        if hostname]
-    return ctxs[0] if ctxs else {}
+    auth_info = config.get("auth_info")
+    return (json.load(auth_info) if auth_info else {})
 
 
 def get_context():
@@ -141,11 +132,13 @@ def update_charm_status(update_config=True):
         missing_relations.append("contrail-controller")
     if not ctx.get("analyticsdb_servers"):
         missing_relations.append("contrail-analyticsdb")
-    if not ctx.get("keystone_ip"):
-        missing_relations.append("identity")
     if missing_relations:
         status_set('waiting',
                    'Missing relations: ' + ', '.join(missing_relations))
+        return
+    if not ctx.get("keystone_ip"):
+        status_set('waiting',
+                   'Missing auth info in relation with contrail-controller.')
         return
     # TODO: what should happens if relation departed?
 

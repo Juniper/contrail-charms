@@ -49,32 +49,27 @@ def config_changed():
     update_charm_status()
 
 
-@hooks.hook("contrail-analytics-relation-joined")
-@hooks.hook("contrail-analytics-relation-departed")
-def contrail_analytics_relation():
-    update_charm_status()
-
-
 @hooks.hook("contrail-analytics-relation-changed")
 def contrail_analytics_changed():
     multi_tenancy = relation_get("multi-tenancy")
     if multi_tenancy is not None:
         config["multi_tenancy"] = multi_tenancy
+    auth_info = relation_get("auth-info")
+    if auth_info is not None:
+        config["auth_info"] = auth_info
+    update_charm_status()
+
+
+@hooks.hook("contrail-analytics-relation-departed")
+def contrail_analytics_departed():
+    # charm does not change multi_tenancy and auth_info in config in this
+    # hook even if there are no units on this relation
     update_charm_status()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 @hooks.hook("contrail-analyticsdb-relation-departed")
 def contrail_analyticsdb_relation():
-    update_charm_status()
-
-
-@hooks.hook("identity-admin-relation-changed")
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-def identity_admin_relation():
-    if not relation_get("service_hostname"):
-        log("Keystone relation not ready")
     update_charm_status()
 
 

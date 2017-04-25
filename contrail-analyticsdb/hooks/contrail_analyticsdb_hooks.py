@@ -8,7 +8,6 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     relation_get,
-    ERROR,
 )
 
 from charmhelpers.fetch import (
@@ -54,11 +53,18 @@ def config_changed():
     update_charm_status()
 
 
-@hooks.hook("contrail-analyticsdb-relation-joined")
 @hooks.hook("contrail-analyticsdb-relation-changed")
-@hooks.hook("contrail-analyticsdb-relation-broken")
+def analyticsdb_changed():
+    auth_info = relation_get("auth-info")
+    if auth_info is not None:
+        config["auth_info"] = auth_info
+    update_charm_status()
+
+
 @hooks.hook("contrail-analyticsdb-relation-departed")
-def controller_relation():
+def analyticsdb_departed():
+    # charm does not change auth_info in config in this
+    # hook even if there are no units on this relation
     update_charm_status()
 
 

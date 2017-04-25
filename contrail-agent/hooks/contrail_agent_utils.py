@@ -38,7 +38,7 @@ def identity_admin_ctx():
              "keystone_admin_user": relation_get("service_username", unit, rid),
              "keystone_admin_password": relation_get("service_password", unit, rid),
              "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-             "keystone_auth_protocol": relation_get("service_protocol", unit, rid) }
+             "keystone_protocol": relation_get("service_protocol", unit, rid) }
             for rid in relation_ids("identity-admin")
             for unit, hostname in
             ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))

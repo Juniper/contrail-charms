@@ -12,9 +12,6 @@ peers:
 provides:
   contrail-analyticsdb:
     interface: contrail-analyticsdb
-requires:
-  identity-admin:
-    interface: keystone-admin
 resources:
   contrail-analyticsdb:
     type: file
