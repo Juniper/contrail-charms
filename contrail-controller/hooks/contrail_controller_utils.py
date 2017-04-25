@@ -86,7 +86,7 @@ def analytics_ctx():
 
 def identity_admin_ctx():
     auth_info = config.get("auth_info")
-    return (json.load(auth_info) if auth_info else {})
+    return (json.loads(auth_info) if auth_info else {})
 
 
 def get_context():
