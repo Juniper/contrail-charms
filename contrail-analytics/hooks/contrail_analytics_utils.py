@@ -35,59 +35,68 @@ CONTAINER_NAME = "contrail-analytics"
 CONFIG_NAME = "analytics"
 
 
-def lb_ctx():
-    for rid in relation_ids("contrail-controller"):
-        for unit in related_units(rid):
-            return {"lb_vip": gethostbyname(relation_get("private-address", unit, rid))}
-    return {}
-
-
 def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
     mt = config.get("multi_tenancy")
     if mt is None:
         return {}
-    controller_ip_list = [gethostbyname(relation_get("private-address", unit, rid))
-                          for rid in relation_ids("contrail-controller")
-                          for unit in related_units(rid)]
-    controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    if isinstance(mt, six.string_types):
+        mt = yaml.load(mt)
+
+    controller_ip_list = []
+    for rid in relation_ids("contrail-analytics"):
+        for unit in related_units(rid):
+            if unit.startswith("contrail-controller"):
+                ip = gethostbyname(relation_get("private-address", unit, rid))
+                controller_ip_list.append(ip)
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    controller_ip_list = sorted(controller_ip_list, key=sort_key)
     return {
-        "multi_tenancy": yaml.load(mt) if isinstance(mt, six.string_types) else mt,
+        "multi_tenancy": mt,
         "controller_servers": controller_ip_list,
+        "lb_vip": controller_ip_list[0] if controller_ip_list else ""
     }
 
 
 def analytics_ctx():
     """Get the ipaddress of all analytics control nodes"""
-    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                          for rid in relation_ids("analytics-cluster")
-                          for unit in related_units(rid) ]
+    analytics_ip_list = []
+    for rid in relation_ids("analytics-cluster"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            analytics_ip_list.append(ip)
     # add it's own ip address
     analytics_ip_list.append(gethostbyname(unit_get("private-address")))
-    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
     return {"analytics_servers": analytics_ip_list}
 
 
 def analyticsdb_ctx():
     """Get the ipaddress of all contrail analyticsdb nodes"""
-    analyticsdb_ip_list = [gethostbyname(relation_get("private-address", unit, rid))
-                           for rid in relation_ids("contrail-analyticsdb")
-                           for unit in related_units(rid)]
-    analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
+    analyticsdb_ip_list = []
+    for rid in relation_ids("contrail-analyticsdb"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            analyticsdb_ip_list.append(ip)
+
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=sort_key)
     return {"analyticsdb_servers": analyticsdb_ip_list}
 
 
 def identity_admin_ctx():
-    ctxs = [{"keystone_ip": gethostbyname(hostname),
-             "keystone_public_port": relation_get("service_port", unit, rid),
-             "keystone_admin_user": relation_get("service_username", unit, rid),
-             "keystone_admin_password": relation_get("service_password", unit, rid),
-             "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-             "keystone_auth_protocol": relation_get("service_protocol", unit, rid)}
-            for rid in relation_ids("identity-admin")
-            for unit, hostname in
-            ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-            if hostname]
+    ctxs = [
+        {"keystone_ip": gethostbyname(hostname),
+         "keystone_public_port": relation_get("service_port", unit, rid),
+         "keystone_admin_user": relation_get("service_username", unit, rid),
+         "keystone_admin_password": relation_get("service_password", unit, rid),
+         "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
+         "keystone_auth_protocol": relation_get("service_protocol", unit, rid)}
+        for rid in relation_ids("identity-admin")
+        for unit, hostname in
+        ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
+        if hostname]
     return ctxs[0] if ctxs else {}
 
 
@@ -97,7 +106,6 @@ def get_context():
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
-    ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
     return ctx
 

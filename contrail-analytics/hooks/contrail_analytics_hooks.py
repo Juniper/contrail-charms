@@ -7,7 +7,6 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     relation_get,
-    ERROR
 )
 
 from charmhelpers.fetch import (
@@ -50,14 +49,14 @@ def config_changed():
     update_charm_status()
 
 
-@hooks.hook("contrail-controller-relation-joined")
-@hooks.hook("contrail-controller-relation-departed")
-def contrail_controller_relation():
+@hooks.hook("contrail-analytics-relation-joined")
+@hooks.hook("contrail-analytics-relation-departed")
+def contrail_analytics_relation():
     update_charm_status()
 
 
-@hooks.hook("contrail-controller-relation-changed")
-def contrail_controller_changed():
+@hooks.hook("contrail-analytics-relation-changed")
+def contrail_analytics_changed():
     multi_tenancy = relation_get("multi-tenancy")
     if multi_tenancy is not None:
         config["multi_tenancy"] = multi_tenancy

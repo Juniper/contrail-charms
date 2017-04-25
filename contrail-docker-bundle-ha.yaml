@@ -210,18 +210,16 @@ relations:
   #contrail
   - [ "neutron-api", "neutron-api-contrail" ]
   - [ "neutron-api-contrail", "keystone" ]
-  - [ "contrail-analyticsdb", "contrail-analytics:contrail-analyticsdb" ]
-  - [ "contrail-analytics", "contrail-analyticsdb:contrail-analytics" ]
-  - [ "contrail-controller", "contrail-analytics:contrail-controller" ]
-  - [ "contrail-controller", "contrail-analytics:contrail-analytics" ]
-  - [ "contrail-controller", "contrail-analyticsdb:contrail-controller" ]
+  - [ "contrail-analytics", "contrail-analyticsdb" ]
+  - [ "contrail-controller", "contrail-analytics" ]
+  - [ "contrail-controller", "contrail-analyticsdb" ]
   - [ "contrail-controller", "neutron-api-contrail" ]
   - [ "contrail-controller", "keystone" ]
   - [ "contrail-analytics", "keystone" ]
   - [ "contrail-analyticsdb", "keystone" ]
   - [ "nova-compute", "neutron-contrail" ]
   - [ "neutron-contrail", "keystone" ]
-  - [ "neutron-contrail:contrail-controller", "contrail-controller:contrail-controller"]
+  - [ "neutron-contrail", "contrail-controller"]
   - [ "neutron-contrail", "contrail-analytics"]
 
 machines:

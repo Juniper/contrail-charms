@@ -11,7 +11,6 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     relation_set,
-    ERROR,
 )
 
 from charmhelpers.fetch import (
@@ -53,14 +52,21 @@ def install():
 def config_changed():
     update_charm_status()
 
-    if is_leader():
-        settings = {
-            "private-address": get_control_ip(),
-            "port": 8082,
-            "multi-tenancy": config.get("multi_tenancy")
-        }
-        for rid in relation_ids("contrail-controller"):
-            relation_set(relation_id=rid, relation_settings=settings)
+    if not is_leader():
+        return
+
+    settings = {
+        "private-address": get_control_ip(),
+        "port": 8082,
+    }
+    for rid in relation_ids("contrail-controller"):
+        relation_set(relation_id=rid, relation_settings=settings)
+
+    settings = {
+        "multi-tenancy": config.get("multi_tenancy")
+    }
+    for rid in relation_ids("contrail-analytics"):
+        relation_set(relation_id=rid, relation_settings=settings)
 
 
 @hooks.hook("contrail-controller-relation-joined")
@@ -69,8 +75,6 @@ def contrail_controller_joined():
         "private-address": get_control_ip(),
         "port": 8082
     }
-    if is_leader():
-        settings["multi-tenancy"] = config.get("multi_tenancy")
     relation_set(relation_settings=settings)
 
 
@@ -80,9 +84,16 @@ def cluster_joined():
 
 
 @hooks.hook("contrail-analytics-relation-joined")
+def analytics_joined():
+    if is_leader():
+        settings = {"multi-tenancy": config.get("multi_tenancy")}
+        relation_set(relation_settings=settings)
+    update_charm_status()
+
+
 @hooks.hook("contrail-analytics-relation-departed")
 @hooks.hook("contrail-analytics-relation-broken")
-def analytics_relation():
+def analytics_broken():
     update_charm_status()
 
 
