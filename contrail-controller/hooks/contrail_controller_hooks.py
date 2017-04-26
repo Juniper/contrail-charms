@@ -150,8 +150,7 @@ def identity_admin_departed():
     if count > 0:
         return
 
-    auth_info = "{}"
-    config["auth_info"] = auth_info
+    del config["auth_info"]
     if is_leader():
         update_northbound_relations()
     update_charm_status()

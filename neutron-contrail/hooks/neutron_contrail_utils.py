@@ -2,7 +2,7 @@ import functools
 import os
 import pwd
 import shutil
-from socket import gethostbyname, gethostname, inet_aton
+from socket import gethostbyname, gethostname
 from subprocess import (
     CalledProcessError,
     check_call,
@@ -244,6 +244,17 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
             check_call(["dkms", "autoinstall", "-k", kernel])
 
 
+def get_controller_address():
+    for rid in relation_ids("contrail-controller"):
+        for unit in related_units(rid):
+            port = relation_get("port", unit, rid)
+            if not port:
+                continue
+            ip = gethostbyname(relation_get("private-address", unit, rid))
+            return (ip, port)
+    return (None, None)
+
+
 @retry(timeout=300)
 def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
                                  service_port, fabric_ip, fabric_port, op,
@@ -262,16 +273,10 @@ def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
 
 
 def provision_local_metadata():
-    api_ip, api_port = [(gethostbyname(relation_get("private-address", unit, rid)), port)
-                        for rid in relation_ids("contrail-controller")
-                        for unit, port in
-                        ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-                        if port][0]
-    user, password = [(relation_get("service_username", unit, rid),
-                       relation_get("service_password", unit, rid))
-                      for rid in relation_ids("identity-admin")
-                      for unit in related_units(rid)
-                      if relation_get("service_hostname", unit, rid)][0]
+    api_ip, api_port = get_controller_address()
+    identity = identity_admin_ctx()
+    user = identity.get("admin_user")
+    password = identity.get("admin_password")
     log("Provisioning local metadata service 127.0.0.1:8775")
     contrail_provision_linklocal(api_ip, api_port, "metadata",
                                  "169.254.169.254", 80, "127.0.0.1", 8775,
@@ -280,26 +285,19 @@ def provision_local_metadata():
 
 def unprovision_local_metadata():
     relation = relation_type()
-    if relation and not remote_unit():
-        return
     if relation == "contrail-controller":
         api_ip = gethostbyname(relation_get("private-address"))
         api_port = relation_get("port")
     else:
-        api_ip, api_port = [(gethostbyname(relation_get("private-address", unit, rid)),
-                             relation_get("port", unit, rid))
-                            for rid in relation_ids("contrail-controller")
-                            for unit in related_units(rid)][0]
-    user = None
-    password = None
+        api_ip, api_port = get_controller_address()
     if relation == "identity-admin":
+        # get info from relation. info in config has been deleted.
         user = relation_get("service_username")
         password = relation_get("service_password")
     else:
-        user, password = [(relation_get("service_username", unit, rid),
-                           relation_get("service_password", unit, rid))
-                          for rid in relation_ids("identity-admin")
-                          for unit in related_units(rid)][0]
+        identity = identity_admin_ctx()
+        user = identity.get("admin_user")
+        password = identity.get("admin_password")
     log("Unprovisioning local metadata service 127.0.0.1:8775")
     contrail_provision_linklocal(api_ip, api_port, "metadata",
                                  "169.254.169.254", 80, "127.0.0.1", 8775,
@@ -323,17 +321,11 @@ def contrail_provision_vrouter(hostname, ip, api_ip, api_port, op,
 def provision_vrouter():
     hostname = gethostname()
     ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
-    api_ip, api_port = [(gethostbyname(relation_get("private-address", unit, rid)), port)
-                        for rid in relation_ids("contrail-controller")
-                        for unit, port in
-                        ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-                        if port][0]
-    user, password, tenant = [(relation_get("service_username", unit, rid),
-                               relation_get("service_password", unit, rid),
-                               relation_get("service_tenant_name", unit, rid))
-                              for rid in relation_ids("identity-admin")
-                              for unit in related_units(rid)
-                              if relation_get("service_hostname", unit, rid)][0]
+    api_ip, api_port = get_controller_address()
+    identity = identity_admin_ctx()
+    user = identity.get("admin_user")
+    password = identity.get("admin_password")
+    tenant = identity.get("admin_tenant_name")
     log("Provisioning vrouter {}".format(ip))
     contrail_provision_vrouter(hostname, ip, api_ip, api_port, "add",
                                user, password, tenant)
@@ -341,31 +333,23 @@ def provision_vrouter():
 
 def unprovision_vrouter():
     relation = relation_type()
-    if relation and not remote_unit():
-        return
     hostname = gethostname()
     ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
     if relation == "contrail-controller":
         api_ip = gethostbyname(relation_get("private-address"))
         api_port = relation_get("port")
     else:
-        api_ip, api_port = [(gethostbyname(relation_get("private-address", unit, rid)),
-                             relation_get("port", unit, rid))
-                            for rid in relation_ids("contrail-controller")
-                            for unit in related_units(rid)][0]
-    user = None
-    password = None
-    tenant = None
+        api_ip, api_port = get_controller_address()
     if relation == "identity-admin":
+        # get info from relation. info in config has been deleted.
         user = relation_get("service_username")
         password = relation_get("service_password")
         tenant = relation_get("service_tenant_name")
     else:
-        user, password, tenant = [(relation_get("service_username", unit, rid),
-                                   relation_get("service_password", unit, rid),
-                                   relation_get("service_tenant_name", unit, rid))
-                                  for rid in relation_ids("identity-admin")
-                                  for unit in related_units(rid)][0]
+        identity = identity_admin_ctx()
+        user = identity.get("admin_user")
+        password = identity.get("admin_password")
+        tenant = identity.get("admin_tenant_name")
     log("Unprovisioning vrouter {}".format(ip))
     contrail_provision_vrouter(hostname, ip, api_ip, api_port, "del",
                                user, password, tenant)
@@ -397,13 +381,8 @@ def vhost_phys():
 
 
 def contrail_api_ctx():
-    ctxs = [{"api_server": gethostbyname(relation_get("private-address", unit, rid)),
-             "api_port": port}
-            for rid in relation_ids("contrail-controller")
-            for unit, port in
-            ((unit, relation_get("port", unit, rid)) for unit in related_units(rid))
-            if port]
-    return ctxs[0] if ctxs else {}
+    ip, port = get_controller_address()
+    return ({"api_server": ip, "api_port": port} if ip and port else {})
 
 
 def control_node_ctx():
@@ -414,17 +393,8 @@ def control_node_ctx():
 
 
 def identity_admin_ctx():
-    ctxs = [{"auth_host": gethostbyname(hostname),
-             "auth_port": relation_get("service_port", unit, rid),
-             "admin_user": relation_get("service_username", unit, rid),
-             "admin_password": relation_get("service_password", unit, rid),
-             "admin_tenant_name": relation_get("service_tenant_name", unit, rid),
-             "auth_region": relation_get("service_region", unit, rid)}
-            for rid in relation_ids("identity-admin")
-            for unit, hostname in
-            ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-            if hostname]
-    return ctxs[0] if ctxs else {}
+    auth_info = config.get("auth_info")
+    return (json.loads(auth_info) if auth_info else {})
 
 
 def analytics_node_ctx():

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from socket import gethostbyname
 import sys
 
 from apt_pkg import version_compare
@@ -57,11 +58,12 @@ from neutron_contrail_utils import (
 )
 
 PACKAGES = ["python", "python-yaml", "python-apt",
-            "python3-netaddr", "python3-netifaces",
+            "python-netaddr", "python-netifaces", "python-jinja2",
             "contrail-vrouter-dkms", "contrail-vrouter-agent",
-            "contrail-utils", "python-jinja2",
-            "contrail-vrouter-common", "contrail-vrouter-init",
-            "contrail-nodemgr"]
+            "contrail-vrouter-common"]
+
+PACKAGES_DKMS_INIT = ["contrail-vrouter-init"]
+PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk-init"]
 
 hooks = Hooks()
 config = config()
@@ -71,7 +73,11 @@ config = config()
 def install():
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
-    apt_install(PACKAGES, fatal=True)
+    packages = list()
+    packages.extend(PACKAGES)
+    # TODO: support dpdk config option
+    packages.extend(PACKAGES_DKMS_INIT)
+    apt_install(packages, fatal=True)
 
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
@@ -118,10 +124,9 @@ def check_local_metadata():
 
 def check_vrouter():
     # check relation dependencies
-    if config.get("contrail-api-ready") \
-       and config.get("control-node-ready") \
+    if config.get("controller-ready") \
        and config.get("analytics-servers") \
-       and config.get("identity-admin-ready"):
+       and config.get("auth_info"):
         if not config.get("vrouter-provisioned"):
             provision_vrouter()
             config["vrouter-provisioned"] = True
@@ -135,7 +140,6 @@ def config_changed():
     configure_local_metadata()
     configure_virtual_gateways()
     write_config()
-    config["contrail-api-ready"] = not not units("contrail-controller")
     check_vrouter()
     check_local_metadata()
     set_status()
@@ -197,17 +201,6 @@ def configure_virtual_gateways():
     config["virtual-gateways-prev"] = gateways
 
 
-@hooks.hook("contrail-controller-relation-departed")
-@hooks.hook("contrail-controller-relation-broken")
-def contrail_controller_node_departed():
-    if not units("contrail-controller"):
-        config["control-node-ready"] = False
-        check_vrouter()
-        check_local_metadata()
-    write_vnc_api_config()
-    control_node_relation()
-
-
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     config["analytics-servers"] = relation_get("analytics-server")
@@ -217,9 +210,20 @@ def contrail_controller_changed():
 
     write_vnc_api_config()
     control_node_relation()
-    config["control-node-ready"] = True
+    config["controller-ready"] = True
     check_vrouter()
     check_local_metadata()
+
+
+@hooks.hook("contrail-controller-relation-departed")
+def contrail_controller_node_departed():
+    if not units("contrail-controller"):
+        del config["analytics-servers"]
+        config["controller-ready"] = False
+        check_vrouter()
+        check_local_metadata()
+    write_vnc_api_config()
+    control_node_relation()
 
 
 @restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
@@ -236,17 +240,26 @@ def identity_admin_changed():
     if not relation_get("service_hostname"):
         log("Relation not ready")
         return
+
+    auth_info = {
+        "auth_host": gethostbyname(relation_get("service_hostname")),
+        "auth_port": relation_get("service_port"),
+        "admin_user": relation_get("service_username"),
+        "admin_password": relation_get("service_password"),
+        "admin_tenant_name": relation_get("service_tenant_name"),
+        "auth_region": relation_get("service_region")}
+    auth_info = json.dumps(auth_info)
+    config["auth_info"] = auth_info
+
     write_vnc_api_config()
-    config["identity-admin-ready"] = True
     check_vrouter()
     check_local_metadata()
 
 
 @hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
 def identity_admin_departed():
     if not units("identity-admin"):
-        config["identity-admin-ready"] = False
+        del config["auth_info"]
         check_vrouter()
         check_local_metadata()
     write_vnc_api_config()
