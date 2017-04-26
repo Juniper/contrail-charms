@@ -105,8 +105,8 @@ services:
     options:
       cluster_count: 3
     num_units: 0
-  neutron-api-contrail:
-    charm: /home/ubuntu/neutron-api-contrail
+  contrail-openstack-neutron-api:
+    charm: /home/ubuntu/contrail-openstack-neutron-api
     num_units: 0
     options:
       install-keys: |
@@ -131,8 +131,8 @@ services:
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
         - "deb http://192.168.1.1:8080/newton/3034 /"
-  neutron-contrail:
-    charm: /home/ubuntu/neutron-contrail
+  contrail-openstack-compute:
+    charm: /home/ubuntu/contrail-openstack-compute
     num_units: 0
     series: xenial
     options:
@@ -208,16 +208,16 @@ relations:
   - [ openstack-dashboard, dashboard-hacluster ]
 
   #contrail
-  - [ "neutron-api", "neutron-api-contrail" ]
-  - [ "neutron-api-contrail", "keystone" ]
+  - [ "neutron-api", "contrail-openstack-neutron-api" ]
+  - [ "contrail-openstack-neutron-api", "keystone" ]
   - [ "contrail-analytics", "contrail-analyticsdb" ]
   - [ "contrail-controller", "contrail-analytics" ]
   - [ "contrail-controller", "contrail-analyticsdb" ]
-  - [ "contrail-controller", "neutron-api-contrail" ]
+  - [ "contrail-controller", "contrail-openstack-neutron-api" ]
   - [ "contrail-controller", "keystone" ]
-  - [ "nova-compute", "neutron-contrail" ]
-  - [ "neutron-contrail", "keystone" ]
-  - [ "neutron-contrail", "contrail-controller"]
+  - [ "nova-compute", "contrail-openstack-compute" ]
+  - [ "contrail-openstack-compute", "keystone" ]
+  - [ "contrail-openstack-compute", "contrail-controller"]
 
 machines:
   "1":

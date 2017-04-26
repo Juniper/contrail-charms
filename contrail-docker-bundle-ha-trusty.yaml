@@ -104,8 +104,8 @@ services:
     options:
       cluster_count: 3
     num_units: 0
-  neutron-api-contrail:
-    charm: /home/ubuntu/neutron-api-contrail
+  contrail-openstack-neutron-api:
+    charm: /home/ubuntu/contrail-openstack-neutron-api
     num_units: 0
     options:
       install-keys: |
@@ -129,9 +129,9 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3038 /"
-  neutron-contrail:
-    charm: /home/ubuntu/neutron-contrail
+        - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3038 /"
+  contrail-openstack-compute:
+    charm: /home/ubuntu/contrail-openstack-compute
     num_units: 0
     options:
       install-keys: |
@@ -155,7 +155,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/neutron-api-contrail-pkgs/3038 /"
+        - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3038 /"
   contrail-analytics:
     charm: /home/ubuntu/contrail-analytics
     num_units: 3
@@ -197,16 +197,16 @@ relations:
   - [ openstack-dashboard, dashboard-hacluster ]
 
   #contrail
-  - [ "neutron-api", "neutron-api-contrail" ]
-  - [ "neutron-api-contrail", "keystone" ]
+  - [ "neutron-api", "contrail-openstack-neutron-api" ]
+  - [ "contrail-openstack-neutron-api", "keystone" ]
   - [ "contrail-controller", "keystone" ]
-  - [ "contrail-controller", "neutron-api-contrail" ]
+  - [ "contrail-controller", "contrail-openstack-neutron-api" ]
   - [ "contrail-analytics", "contrail-analyticsdb" ]
   - [ "contrail-controller", "contrail-analytics" ]
   - [ "contrail-controller", "contrail-analyticsdb" ]
-  - [ "neutron-contrail", "nova-compute" ]
-  - [ "neutron-contrail", "keystone" ]
-  - [ "neutron-contrail", "contrail-control"]
+  - [ "contrail-openstack-compute", "nova-compute" ]
+  - [ "contrail-openstack-compute", "keystone" ]
+  - [ "contrail-openstack-compute", "contrail-control"]
 
 machines:
   "1":

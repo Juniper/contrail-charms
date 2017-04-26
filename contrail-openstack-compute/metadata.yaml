@@ -1,0 +1,36 @@
+name: contrail-openstack-compute
+summary: OpenStack Contrail Agent
+maintainer: Robert Ayres <robert.ayres@ubuntu.com>
+description: |
+  Neutron is a virtual network service for Openstack, and a part of
+  Netstack. Just like OpenStack Nova provides an API to dynamically
+  request and configure virtual servers, Neutron provides an API to
+  dynamically request and configure virtual networks. These networks
+  connect "interfaces" from other OpenStack services (e.g., virtual NICs
+  from Nova VMs). The Neutron API supports extensions to provide
+  advanced network capabilities (e.g., QoS, ACLs, network monitoring,
+  etc.)
+  .
+  This charm provides the OpenStack Neutron OpenContrail agent, managing
+  L2 connectivity on nova-compute services.
+categories:
+  - openstack
+series:
+  - xenial
+  - trusty
+subordinate: true
+peers:
+  cluster:
+    interface: contrail-cluster
+provides:
+  neutron-plugin:
+    interface: neutron-plugin
+    scope: container
+requires:
+  container:
+    interface: juju-info
+    scope: container
+  contrail-controller:
+    interface: contrail-controller
+  identity-admin:
+    interface: keystone-admin
