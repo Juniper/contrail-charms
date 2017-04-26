@@ -38,10 +38,6 @@ CONTAINER_NAME = "contrail-controller"
 CONFIG_NAME = "controller"
 
 
-def get_control_ip():
-    return gethostbyname(unit_get("private-address"))
-
-
 def get_analytics_list():
     analytics_ip_list = []
     for rid in relation_ids("contrail-analytics"):

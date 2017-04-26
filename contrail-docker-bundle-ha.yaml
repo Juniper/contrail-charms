@@ -208,8 +208,7 @@ relations:
   - [ openstack-dashboard, dashboard-hacluster ]
 
   #contrail
-  - [ "neutron-api", "contrail-openstack-neutron-api" ]
-  - [ "contrail-openstack-neutron-api", "keystone" ]
+  - [ "contrail-openstack-neutron-api", "neutron-api"]
   - [ "contrail-analytics", "contrail-analyticsdb" ]
   - [ "contrail-controller", "contrail-analytics" ]
   - [ "contrail-controller", "contrail-analyticsdb" ]

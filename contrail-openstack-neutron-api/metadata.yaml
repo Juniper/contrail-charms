@@ -1,6 +1,6 @@
 name: contrail-openstack-neutron-api
 summary: OpenStack Neutron API Contrail plugin
-maintainer: Robert Ayres <robert.ayres@ubuntu.com>
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
   Neutron is a virtual network service for Openstack, and a part of
   Netstack. Just like OpenStack Nova provides an API to dynamically
@@ -29,5 +29,3 @@ requires:
     scope: container
   contrail-controller:
     interface: contrail-controller
-  identity-admin:
-    interface: keystone-admin

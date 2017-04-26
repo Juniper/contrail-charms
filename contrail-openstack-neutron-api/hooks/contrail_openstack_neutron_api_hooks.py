@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from subprocess import check_output
 
-from apt_pkg import version_compare
 import json
 
 from charmhelpers.core.hookenv import (
@@ -11,7 +9,9 @@ from charmhelpers.core.hookenv import (
     UnregisteredHookError,
     config,
     log,
+    related_units,
     relation_get,
+    relation_ids,
     relation_set
 )
 
@@ -27,14 +27,11 @@ from charmhelpers.fetch import (
 )
 
 from contrail_openstack_neutron_api_utils import (
-    CONTRAIL_VERSION,
-    OPENSTACK_VERSION,
     write_plugin_config,
-    dpkg_version,
     set_status
 )
 
-PACKAGES = [ "python", "python-yaml", "python-apt", "neutron-plugin-contrail" ]
+PACKAGES = ["python", "python-yaml", "python-apt", "neutron-plugin-contrail"]
 
 
 hooks = Hooks()
@@ -47,32 +44,28 @@ def config_changed():
 
 
 @hooks.hook("contrail-controller-relation-changed")
-def contrail_api_changed():
+@restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
+                        ["neutron-server"]})
+def contrail_controller_changed():
     if not relation_get("port"):
         log("Relation not ready")
         return
-    contrail_api_relation()
-
-
-@hooks.hook("contrail-controller-relation-departed")
-@hooks.hook("contrail-controller-relation-broken")
-@restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"]})
-def contrail_api_relation():
+    auth_info = relation_get("auth-info")
+    if auth_info is not None:
+        config["auth_info"] = auth_info
+    else:
+        config.pop("auth_info", None)
     write_plugin_config()
 
 
-@hooks.hook("identity-admin-relation-changed")
-def identity_admin_changed():
-    if not relation_get("service_hostname"):
-        log("Relation not ready")
-        return
-    identity_admin_relation()
-
-
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-@restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"]})
-def identity_admin_relation():
+@hooks.hook("contrail-controller-relation-departed")
+@restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
+                        ["neutron-server"]})
+def contrail_cotroller_departed():
+    units = [unit for rid in relation_ids("contrail-controller")
+                  for unit in related_units(rid)]
+    if not units:
+        config.pop("auth_info", None)
     write_plugin_config()
 
 
@@ -86,17 +79,12 @@ def install():
 @hooks.hook("neutron-plugin-api-subordinate-relation-joined")
 def neutron_plugin_joined():
     # create plugin config
-    plugin = "neutron_plugin_contrail.plugins.opencontrail.contrail_plugin.NeutronPluginContrailCoreV2" \
-             if version_compare(CONTRAIL_VERSION, "1.20~") >= 0 \
-             else "neutron_plugin_contrail.plugins.opencontrail.contrail_plugin_core.NeutronPluginContrailCoreV2"
-    service_plugins = "neutron_plugin_contrail.plugins.opencontrail.loadbalancer.v2.plugin.LoadBalancerPluginV2" \
-                      if version_compare(CONTRAIL_VERSION, "3.0.2.0-34") >= 0 \
-                         and version_compare(OPENSTACK_VERSION, "2:7.0.0") >= 0 \
-                      else " "
-    extensions = [ "/usr/lib/python2.7/dist-packages/neutron_plugin_contrail/extensions" ]
-    if version_compare(CONTRAIL_VERSION, "3.0.2.0-34") >= 0 \
-       and version_compare(OPENSTACK_VERSION, "2:7.0.0") >= 0:
-        extensions.append("/usr/lib/python2.7/dist-packages/neutron_lbaas/extensions")
+    base = "neutron_plugin_contrail.plugins.opencontrail"
+    plugin = base + ".contrail_plugin.NeutronPluginContrailCoreV2"
+    service_plugins = base + ".loadbalancer.v2.plugin.LoadBalancerPluginV2"
+    extensions = [
+        "/usr/lib/python2.7/dist-packages/neutron_plugin_contrail/extensions",
+        "/usr/lib/python2.7/dist-packages/neutron_lbaas/extensions"]
     conf = {
       "neutron-api": {
         "/etc/neutron/neutron.conf": {
@@ -108,12 +96,14 @@ def neutron_plugin_joined():
         }
       }
     }
-    settings = { "neutron-plugin": "contrail",
-                 "core-plugin": plugin,
-                 "neutron-plugin-config": "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
-                 "service-plugins": service_plugins,
-                 "quota-driver": "neutron_plugin_contrail.plugins.opencontrail.quota.driver.QuotaDriver",
-                 "subordinate_configuration": json.dumps(conf) }
+    settings = {
+        "neutron-plugin": "contrail",
+        "core-plugin": plugin,
+        "neutron-plugin-config":
+            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
+        "service-plugins": service_plugins,
+        "quota-driver": base + ".opencontrail.quota.driver.QuotaDriver",
+        "subordinate_configuration": json.dumps(conf)}
     relation_set(relation_settings=settings)
 
 

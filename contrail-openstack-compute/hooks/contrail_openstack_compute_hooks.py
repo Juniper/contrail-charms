@@ -158,7 +158,7 @@ def configure_local_metadata():
     else:
         if "local-metadata-secret" in config:
             # remove secret
-            del config["local-metadata-secret"]
+            config.pop("local-metadata-secret", None)
             settings = {"metadata-shared-secret": None}
             # inform relations
             for rid in relation_ids("neutron-plugin"):
@@ -218,7 +218,7 @@ def contrail_controller_changed():
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_controller_node_departed():
     if not units("contrail-controller"):
-        del config["analytics-servers"]
+        config.pop("analytics-servers", None)
         config["controller-ready"] = False
         check_vrouter()
         check_local_metadata()
@@ -259,7 +259,7 @@ def identity_admin_changed():
 @hooks.hook("identity-admin-relation-departed")
 def identity_admin_departed():
     if not units("identity-admin"):
-        del config["auth_info"]
+        config.pop("auth_info", None)
         check_vrouter()
         check_local_metadata()
     write_vnc_api_config()

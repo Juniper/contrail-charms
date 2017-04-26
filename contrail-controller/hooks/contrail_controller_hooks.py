@@ -23,7 +23,6 @@ from charmhelpers.fetch import (
 )
 
 from contrail_controller_utils import (
-    get_control_ip,
     update_charm_status,
     CONTAINER_NAME,
     get_analytics_list,
@@ -59,12 +58,7 @@ def config_changed():
     if not is_leader():
         return
 
-    settings = {
-        "private-address": get_control_ip(),
-        "port": 8082,
-    }
-    for rid in relation_ids("contrail-controller"):
-        relation_set(relation_id=rid, relation_settings=settings)
+    update_southbound_relations()
 
 
 def update_northbound_relations(rid=None):
@@ -86,10 +80,10 @@ def update_northbound_relations(rid=None):
 def update_southbound_relations(rid=None):
     settings = {
         "port": 8082,
-        "analytics-server": json.dumps(get_analytics_list())
+        "analytics-server": json.dumps(get_analytics_list()),
+        "auth-info": config.get("auth_info")
     }
-    relation_set(relation_settings=settings)
-    for rid in ([rid] if rid else relation_ids("contrail-analytics")):
+    for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)
 
 
@@ -135,10 +129,11 @@ def identity_admin_changed():
         "keystone_admin_password": relation_get("service_password"),
         "keystone_admin_tenant": relation_get("service_tenant_name")}
     auth_info = json.dumps(auth_info)
-
     config["auth_info"] = auth_info
+
     if is_leader():
         update_northbound_relations()
+        update_southbound_relations()
     update_charm_status()
 
 
@@ -149,10 +144,11 @@ def identity_admin_departed():
         count += len(related_units(rid))
     if count > 0:
         return
+    config.pop("auth_info", None)
 
-    del config["auth_info"]
     if is_leader():
         update_northbound_relations()
+        update_southbound_relations()
     update_charm_status()
 
 

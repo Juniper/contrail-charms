@@ -58,22 +58,17 @@ def analyticsdb_changed():
     auth_info = relation_get("auth-info")
     if auth_info is not None:
         config["auth_info"] = auth_info
+    else:
+        config.pop("auth_info", None)
     update_charm_status()
 
 
 @hooks.hook("contrail-analyticsdb-relation-departed")
 def analyticsdb_departed():
-    # charm does not change auth_info in config in this
-    # hook even if there are no units on this relation
-    update_charm_status()
-
-
-@hooks.hook("identity-admin-relation-changed")
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-def identity_admin_changed():
-    if not relation_get("service_hostname"):
-        log("Keystone relation not ready")
+    units = [unit for rid in relation_ids("contrail-controller")
+                  for unit in related_units(rid)]
+    if not units:
+        config.pop("auth_info", None)
     update_charm_status()
 
 
