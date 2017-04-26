@@ -29,9 +29,8 @@ options:
     type: boolean
     default: true
     description: |
-      Run a local instance of nova-api-metadata for serving metadata to VMs.
-      An external metadata server (neutron-metadata relation) is not required
-      when enabled.
+      Configures metadata shared secret and tells nova to run a local instance
+      of nova-api-metadata for serving metadata to VMs.
   remove-juju-bridge:
     type: boolean
     default: true
@@ -59,10 +58,3 @@ options:
       // make any network available to virtual subnet 10.0.10.0/24 on
       // admin:public network using local interface vgw to route
       [ { project: admin, network: public, interface: vgw, subnets: [ 10.0.10.0/24 ], routes: [ 0.0.0.0/0 ] } ]
-  # development options
-  contrail-api-ip:
-    type: string
-    description: Specify contrail-api ip manually
-  contrail-api-port:
-    type: int
-    description: Specify contrail-api port manually

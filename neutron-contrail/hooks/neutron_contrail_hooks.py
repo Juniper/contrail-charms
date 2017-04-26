@@ -135,9 +135,7 @@ def config_changed():
     configure_local_metadata()
     configure_virtual_gateways()
     write_config()
-    if not units("contrail-controller"):
-        config["contrail-api-ready"] = (
-            True if config.get("contrail-api-ip") else False)
+    config["contrail-api-ready"] = not not units("contrail-controller")
     check_vrouter()
     check_local_metadata()
     set_status()
@@ -202,7 +200,7 @@ def configure_virtual_gateways():
 @hooks.hook("contrail-controller-relation-departed")
 @hooks.hook("contrail-controller-relation-broken")
 def contrail_controller_node_departed():
-    if not units("contrail-controller") and not config.get("contrail-api-ip"):
+    if not units("contrail-controller"):
         config["control-node-ready"] = False
         check_vrouter()
         check_local_metadata()
@@ -252,22 +250,6 @@ def identity_admin_departed():
         check_vrouter()
         check_local_metadata()
     write_vnc_api_config()
-
-
-@hooks.hook("neutron-metadata-relation-changed")
-def neutron_metadata_changed():
-    if not relation_get("shared-secret"):
-        log("Relation not ready")
-        return
-    neutron_metadata_relation()
-
-
-@hooks.hook("neutron-metadata-relation-departed")
-@hooks.hook("neutron-metadata-relation-broken")
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
-                        ["contrail-vrouter-agent"]})
-def neutron_metadata_relation():
-    write_vrouter_config()
 
 
 @hooks.hook("neutron-plugin-relation-joined")

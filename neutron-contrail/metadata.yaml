@@ -34,5 +34,3 @@ requires:
     interface: contrail-controller
   identity-admin:
     interface: keystone-admin
-  neutron-metadata:
-    interface: neutron-metadata
