@@ -13,8 +13,8 @@ provides:
   contrail-controller:
     interface: contrail-controller
 requires:
-  identity-admin:
-    interface: keystone-admin
+  contrail-auth:
+    interface: contrail-auth
   contrail-analytics:
     interface: contrail-analytics
   contrail-analyticsdb:

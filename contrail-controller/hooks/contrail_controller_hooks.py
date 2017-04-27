@@ -119,19 +119,10 @@ def analyticsdb_joined():
         update_northbound_relations(rid=relation_id())
 
 
-@hooks.hook("identity-admin-relation-changed")
-def identity_admin_changed():
-    ip = relation_get("service_hostname")
-    if ip:
-        auth_info = {
-            "keystone_protocol": relation_get("service_protocol"),
-            "keystone_ip": ip,
-            "keystone_public_port": relation_get("service_port"),
-            "keystone_admin_user": relation_get("service_username"),
-            "keystone_admin_password": relation_get("service_password"),
-            "keystone_admin_tenant": relation_get("service_tenant_name"),
-            "keystone_region": relation_get("service_region")}
-        auth_info = json.dumps(auth_info)
+@hooks.hook("contrail-auth-relation-changed")
+def contrail_auth_changed():
+    auth_info = relation_get("auth-info")
+    if auth_info is not None:
         config["auth_info"] = auth_info
     else:
         config.pop("auth_info", None)
@@ -142,10 +133,10 @@ def identity_admin_changed():
     update_charm_status()
 
 
-@hooks.hook("identity-admin-relation-departed")
-def identity_admin_departed():
+@hooks.hook("contrail-auth-relation-departed")
+def contrail_auth_departed():
     count = 0
-    for rid in relation_ids("identity-admin"):
+    for rid in relation_ids("contrail-auth"):
         count += len(related_units(rid))
     if count > 0:
         return
