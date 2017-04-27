@@ -102,7 +102,7 @@ def neutron_plugin_joined():
         "neutron-plugin-config":
             "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
         "service-plugins": service_plugins,
-        "quota-driver": base + ".opencontrail.quota.driver.QuotaDriver",
+        "quota-driver": base + ".quota.driver.QuotaDriver",
         "subordinate_configuration": json.dumps(conf)}
     relation_set(relation_settings=settings)
 
