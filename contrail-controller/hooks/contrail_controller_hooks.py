@@ -121,16 +121,20 @@ def analyticsdb_joined():
 
 @hooks.hook("identity-admin-relation-changed")
 def identity_admin_changed():
-    auth_info = {
-        "keystone_protocol": relation_get("service_protocol"),
-        "keystone_ip": relation_get("service_hostname"),
-        "keystone_public_port": relation_get("service_port"),
-        "keystone_admin_user": relation_get("service_username"),
-        "keystone_admin_password": relation_get("service_password"),
-        "keystone_admin_tenant": relation_get("service_tenant_name"),
-        "keystone_region": relation_get("service_region")}
-    auth_info = json.dumps(auth_info)
-    config["auth_info"] = auth_info
+    ip = relation_get("service_hostname")
+    if ip:
+        auth_info = {
+            "keystone_protocol": relation_get("service_protocol"),
+            "keystone_ip": ip,
+            "keystone_public_port": relation_get("service_port"),
+            "keystone_admin_user": relation_get("service_username"),
+            "keystone_admin_password": relation_get("service_password"),
+            "keystone_admin_tenant": relation_get("service_tenant_name"),
+            "keystone_region": relation_get("service_region")}
+        auth_info = json.dumps(auth_info)
+        config["auth_info"] = auth_info
+    else:
+        config.pop("auth_info", None)
 
     if is_leader():
         update_northbound_relations()

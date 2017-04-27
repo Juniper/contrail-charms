@@ -131,7 +131,7 @@ def launch_docker_image(name, additional_args=[]):
             "--net=host",
             "--cap-add=AUDIT_WRITE",
             "--privileged",
-            "--restart unless-stopped",
+            "--restart=unless-stopped",
             "--env='CLOUD_ORCHESTRATOR=%s'" % (orchestrator),
             "--volume=/etc/contrailctl:/etc/contrailctl",
             "--name=%s" % name]
