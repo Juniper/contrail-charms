@@ -4,7 +4,6 @@ import os
 from socket import gethostbyname
 import sys
 
-from apt_pkg import version_compare
 import json
 import uuid
 import yaml
@@ -37,7 +36,6 @@ from subprocess import (
     CalledProcessError,
 )
 from contrail_openstack_compute_utils import (
-    get_openstack_version,
     configure_vrouter,
     disable_vrouter_vgw,
     drop_caches,
@@ -123,6 +121,7 @@ def check_local_metadata():
 
 
 def check_vrouter():
+    # TODO: support authentication-less
     # check relation dependencies
     if config.get("controller-ready") \
        and config.get("analytics-servers") \
@@ -139,7 +138,7 @@ def check_vrouter():
 def config_changed():
     configure_local_metadata()
     configure_virtual_gateways()
-    write_config()
+    write_configs()
     check_vrouter()
     check_local_metadata()
     set_status()
@@ -204,12 +203,18 @@ def configure_virtual_gateways():
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     config["analytics-servers"] = relation_get("analytics-server")
+    auth_info = relation_get("auth-info")
+    if auth_info is not None:
+        config["auth_info"] = auth_info
+    else:
+        config.pop("auth_info", None)
     if not relation_get("port"):
         log("Relation not ready")
         return
+    config["api_ip"] = gethostbyname(relation_get("private-address"))
+    config["api_port"] = relation_get("port")
 
-    write_vnc_api_config()
-    control_node_relation()
+    write_configs()
     config["controller-ready"] = True
     check_vrouter()
     check_local_metadata()
@@ -218,74 +223,24 @@ def contrail_controller_changed():
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_controller_node_departed():
     if not units("contrail-controller"):
-        config.pop("analytics-servers", None)
         config["controller-ready"] = False
         check_vrouter()
         check_local_metadata()
-    write_vnc_api_config()
-    control_node_relation()
-
-
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
-                        ["contrail-vrouter-agent"],
-                    "/etc/contrail/contrail-vrouter-nodemgr.conf":
-                        ["contrail-vrouter-nodemgr"]})
-def control_node_relation():
-    write_vrouter_config()
-    write_nodemgr_config()
-
-
-@hooks.hook("identity-admin-relation-changed")
-def identity_admin_changed():
-    if not relation_get("service_hostname"):
-        log("Relation not ready")
-        return
-
-    auth_info = {
-        "auth_host": gethostbyname(relation_get("service_hostname")),
-        "auth_port": relation_get("service_port"),
-        "admin_user": relation_get("service_username"),
-        "admin_password": relation_get("service_password"),
-        "admin_tenant_name": relation_get("service_tenant_name"),
-        "auth_region": relation_get("service_region")}
-    auth_info = json.dumps(auth_info)
-    config["auth_info"] = auth_info
-
-    write_vnc_api_config()
-    check_vrouter()
-    check_local_metadata()
-
-
-@hooks.hook("identity-admin-relation-departed")
-def identity_admin_departed():
-    if not units("identity-admin"):
+        config.pop("analytics-servers", None)
         config.pop("auth_info", None)
-        check_vrouter()
-        check_local_metadata()
-    write_vnc_api_config()
+    write_configs()
 
 
 @hooks.hook("neutron-plugin-relation-joined")
 def neutron_plugin_joined():
     # create plugin config
-    section = []
-    if version_compare(get_openstack_version(), "1:2015.1~") < 0:
-        if version_compare(get_openstack_version(), "1:2014.2") >= 0:
-            section.append(
-                ("network_api_class",
-                 "nova_contrail_vif.contrailvif.ContrailNetworkAPI"))
-        else:
-            section.append(
-                ("libvirt_vif_driver",
-                 "nova_contrail_vif.contrailvif.VRouterVIFDriver"))
-    section.append(
-        ("firewall_driver",
-         "nova.virt.firewall.NoopFirewallDriver"))
     conf = {
       "nova-compute": {
         "/etc/nova/nova.conf": {
           "sections": {
-            "DEFAULT": section
+            "DEFAULT": [
+                ("firewall_driver", "nova.virt.firewall.NoopFirewallDriver")
+            ]
           }
         }
       }
@@ -304,9 +259,7 @@ def update_status():
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
-    write_vrouter_config()
-    write_vnc_api_config()
-    write_nodemgr_config()
+    write_configs()
     service_restart("supervisor-vrouter")
 
 
@@ -314,7 +267,7 @@ def upgrade_charm():
                         ["contrail-vrouter-agent"],
                     "/etc/contrail/contrail-vrouter-nodemgr.conf":
                         ["contrail-vrouter-nodemgr"]})
-def write_config():
+def write_configs():
     write_vrouter_config()
     write_vnc_api_config()
     write_nodemgr_config()

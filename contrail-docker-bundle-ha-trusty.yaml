@@ -204,7 +204,6 @@ relations:
   - [ "contrail-controller", "contrail-analytics" ]
   - [ "contrail-controller", "contrail-analyticsdb" ]
   - [ "contrail-openstack-compute", "nova-compute" ]
-  - [ "contrail-openstack-compute", "keystone" ]
   - [ "contrail-openstack-compute", "contrail-control"]
 
 machines:

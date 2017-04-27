@@ -32,5 +32,3 @@ requires:
     scope: container
   contrail-controller:
     interface: contrail-controller
-  identity-admin:
-    interface: keystone-admin

@@ -11,7 +11,6 @@ from subprocess import (
 from time import sleep, time
 
 import apt_pkg
-from apt_pkg import version_compare
 import json
 import yaml
 
@@ -24,8 +23,6 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_get,
     relation_ids,
-    relation_type,
-    remote_unit,
     status_set,
     application_version_set
 )
@@ -91,30 +88,8 @@ def _dpkg_version(pkg):
         return None
 
 
-_OPENSTACK_VERSION = None
-
-
-def get_openstack_version():
-    global _OPENSTACK_VERSION
-    if _OPENSTACK_VERSION:
-        return _OPENSTACK_VERSION
-    _OPENSTACK_VERSION = _dpkg_version("nova-compute")
-    return _OPENSTACK_VERSION
-
-
-_CONTRAIL_VERSION = None
-
-
-def get_contrail_version():
-    global _CONTRAIL_VERSION
-    if _CONTRAIL_VERSION:
-        return _CONTRAIL_VERSION
-    _CONTRAIL_VERSION = _dpkg_version("contrail-vrouter-agent")
-    return _CONTRAIL_VERSION
-
-
 def set_status():
-    version = get_contrail_version()
+    version = _dpkg_version("contrail-vrouter-agent")
     application_version_set(version)
     output = check_output("contrail-status", shell=True)
     for line in output.splitlines()[1:]:
@@ -169,23 +144,19 @@ def drop_caches():
 
 def fix_nodemgr():
     # add files missing from contrail-nodemgr package
-    dest = "/etc/contrail/supervisord_vrouter_files/" \
-           + ("contrail-vrouter-nodemgr.ini" \
-              if version_compare(get_contrail_version(), "3.1") >= 0 \
-              else "contrail-nodemgr-vrouter.ini")
+    etc_dir = "/etc/contrail"
+    dest = etc_dir + "/supervisord_vrouter_files/contrail-vrouter-nodemgr.ini"
     shutil.copy("files/contrail-nodemgr-vrouter.ini", dest)
     pw = pwd.getpwnam("contrail")
     os.chown(dest, pw.pw_uid, pw.pw_gid)
 
     shutil.copy("files/contrail-vrouter.rules",
-                "/etc/contrail/supervisord_vrouter_files")
-    os.chown("/etc/contrail/supervisord_vrouter_files/contrail-vrouter.rules",
+                etc_dir + "/supervisord_vrouter_files")
+    os.chown(etc_dir + "/supervisord_vrouter_files/contrail-vrouter.rules",
              pw.pw_uid, pw.pw_gid)
 
-    src = "files/contrail-vrouter-nodemgr-3.1" \
-          if version_compare(get_contrail_version(), "3.1") >= 0 \
-          else "files/contrail-vrouter-nodemgr"
-    shutil.copy(src, "/etc/init.d/contrail-vrouter-nodemgr")
+    shutil.copy("files/contrail-vrouter-nodemgr",
+                "/etc/init.d/contrail-vrouter-nodemgr")
     os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0o755)
 
     service_restart("supervisor-vrouter")
@@ -245,6 +216,10 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
 
 
 def get_controller_address():
+    ip = config.get("api_ip")
+    port = config.get("api_port")
+    if ip and port:
+        return (ip, port)
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             port = relation_get("port", unit, rid)
@@ -275,8 +250,8 @@ def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
 def provision_local_metadata():
     api_ip, api_port = get_controller_address()
     identity = identity_admin_ctx()
-    user = identity.get("admin_user")
-    password = identity.get("admin_password")
+    user = identity.get("keystone_admin_user")
+    password = identity.get("keystone_admin_password")
     log("Provisioning local metadata service 127.0.0.1:8775")
     contrail_provision_linklocal(api_ip, api_port, "metadata",
                                  "169.254.169.254", 80, "127.0.0.1", 8775,
@@ -284,20 +259,10 @@ def provision_local_metadata():
 
 
 def unprovision_local_metadata():
-    relation = relation_type()
-    if relation == "contrail-controller":
-        api_ip = gethostbyname(relation_get("private-address"))
-        api_port = relation_get("port")
-    else:
-        api_ip, api_port = get_controller_address()
-    if relation == "identity-admin":
-        # get info from relation. info in config has been deleted.
-        user = relation_get("service_username")
-        password = relation_get("service_password")
-    else:
-        identity = identity_admin_ctx()
-        user = identity.get("admin_user")
-        password = identity.get("admin_password")
+    api_ip, api_port = get_controller_address()
+    identity = identity_admin_ctx()
+    user = identity.get("keystone_admin_user")
+    password = identity.get("keystone_admin_password")
     log("Unprovisioning local metadata service 127.0.0.1:8775")
     contrail_provision_linklocal(api_ip, api_port, "metadata",
                                  "169.254.169.254", 80, "127.0.0.1", 8775,
@@ -323,33 +288,22 @@ def provision_vrouter():
     ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
     api_ip, api_port = get_controller_address()
     identity = identity_admin_ctx()
-    user = identity.get("admin_user")
-    password = identity.get("admin_password")
-    tenant = identity.get("admin_tenant_name")
+    user = identity.get("keystone_admin_user")
+    password = identity.get("keystone_admin_password")
+    tenant = identity.get("keystone_admin_tenant")
     log("Provisioning vrouter {}".format(ip))
     contrail_provision_vrouter(hostname, ip, api_ip, api_port, "add",
                                user, password, tenant)
 
 
 def unprovision_vrouter():
-    relation = relation_type()
     hostname = gethostname()
     ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
-    if relation == "contrail-controller":
-        api_ip = gethostbyname(relation_get("private-address"))
-        api_port = relation_get("port")
-    else:
-        api_ip, api_port = get_controller_address()
-    if relation == "identity-admin":
-        # get info from relation. info in config has been deleted.
-        user = relation_get("service_username")
-        password = relation_get("service_password")
-        tenant = relation_get("service_tenant_name")
-    else:
-        identity = identity_admin_ctx()
-        user = identity.get("admin_user")
-        password = identity.get("admin_password")
-        tenant = identity.get("admin_tenant_name")
+    api_ip, api_port = get_controller_address()
+    identity = identity_admin_ctx()
+    user = identity.get("keystone_admin_user")
+    password = identity.get("keystone_admin_password")
+    tenant = identity.get("keystone_admin_tenant")
     log("Unprovisioning vrouter {}".format(ip))
     contrail_provision_vrouter(hostname, ip, api_ip, api_port, "del",
                                user, password, tenant)
