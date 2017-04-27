@@ -1,4 +1,4 @@
-from socket import gethostbyname
+import json
 from subprocess import check_call
 import time
 
@@ -33,23 +33,15 @@ CONFIG_NAME = "agent"
 
 
 def identity_admin_ctx():
-    ctxs = [{"keystone_ip": gethostbyname(hostname),
-             "keystone_public_port": relation_get("service_port", unit, rid),
-             "keystone_admin_user": relation_get("service_username", unit, rid),
-             "keystone_admin_password": relation_get("service_password", unit, rid),
-             "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-             "keystone_protocol": relation_get("service_protocol", unit, rid) }
-            for rid in relation_ids("identity-admin")
-            for unit, hostname in
-            ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-            if hostname ]
-    return ctxs[0] if ctxs else {}
+    auth_info = config.get("auth_info")
+    return (json.loads(auth_info) if auth_info else {})
 
 
 def lb_ctx():
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
-            return {"controller_ip": relation_get("private-address", unit, rid)}
+            return {"controller_ip":
+                        relation_get("private-address", unit, rid)}
     return {}
 
 

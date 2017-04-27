@@ -8,6 +8,8 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     relation_get,
+    related_units,
+    relation_ids,
 )
 
 from charmhelpers.fetch import (
@@ -50,19 +52,22 @@ def config_changed():
     update_charm_status()
 
 
-@hooks.hook("identity-admin-relation-changed")
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-def identity_admin_changed():
-    if not relation_get("service_hostname"):
-        log("Relation not ready")
+@hooks.hook("contrail-controller-relation-changed")
+def contrail_controller_changed():
+    auth_info = relation_get("auth-info")
+    if auth_info is not None:
+        config["auth_info"] = auth_info
+    else:
+        config.pop("auth_info", None)
     update_charm_status()
 
 
-@hooks.hook("contrail-controller-relation-joined")
-@hooks.hook("contrail-controller-relation-changed")
 @hooks.hook("contrail-controller-relation-departed")
-def contrail_control_relation():
+def contrail_controller_departed():
+    units = [unit for rid in relation_ids("contrail-controller")
+                  for unit in related_units(rid)]
+    if not units:
+        config.pop("auth_info", None)
     update_charm_status()
 
 

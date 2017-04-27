@@ -8,6 +8,8 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     relation_get,
+    related_units,
+    relation_ids,
 )
 
 from charmhelpers.fetch import (

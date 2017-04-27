@@ -22,8 +22,6 @@ series:
   - xenial
   - trusty
 requires:
-  identity-admin:
-    interface: keystone-admin
   contrail-controller:
     interface: contrail-controller
 resources:
