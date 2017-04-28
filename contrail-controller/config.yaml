@@ -10,8 +10,23 @@ options:
     default: admin
     description: |
       Role name in keystone for users that have full access to everything.
-  global-read-only-role
+  global-read-only-role:
     type: string
     default: guest
     description: |
       Role name in keystone for users that have read-only access to everything.
+  ssl_cert:
+    type: string
+    default:
+    description: |
+      SSL certificate to install and use for API ports.
+  ssl_key:
+    type: string
+    default:
+    description: SSL key to use with certificate specified as ssl_cert.
+  ssl_ca:
+    type: string
+    default:
+    description: |
+      SSL CA to use with the certificate and key provided - this is only
+      required if you are providing a privately signed ssl_cert and ssl_key.
