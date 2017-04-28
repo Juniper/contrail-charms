@@ -25,7 +25,7 @@ options:
     description: |
       Specify the interface to use for the control channel.
       Default is to use vRouter interface that will be created.
-  local-metadata-server:
+  enable-metadata-server:
     type: boolean
     default: true
     description: |

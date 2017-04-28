@@ -111,7 +111,7 @@ def check_local_metadata():
             leader_set({"local-metadata-provisioned": ""})
         return
 
-    if config["local-metadata-server"]:
+    if config["enable-metadata-server"]:
         if not leader_get("local-metadata-provisioned"):
             provision_local_metadata()
             leader_set({"local-metadata-provisioned": True})
@@ -145,7 +145,7 @@ def config_changed():
 
 
 def configure_local_metadata():
-    if config["local-metadata-server"]:
+    if config["enable-metadata-server"]:
         if "local-metadata-secret" not in config:
             # generate secret
             secret = str(uuid.uuid4())
@@ -247,7 +247,7 @@ def neutron_plugin_joined():
     }
     relation_set(subordinate_configuration=json.dumps(conf))
 
-    if config["local-metadata-server"]:
+    if config["enable-metadata-server"]:
         settings = {"metadata-shared-secret": config["local-metadata-secret"]}
         relation_set(relation_settings=settings)
 

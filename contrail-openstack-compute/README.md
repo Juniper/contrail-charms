@@ -62,7 +62,7 @@ be registered. Registration allows OpenContrail to create the appropriate
 network config to proxy requests from instances to a nova-api service on the
 network.
 
-Option 'local-metadata-server' controls if a local nova-api-metadata service is
+Option 'enable-metadata-server' controls if a local nova-api-metadata service is
 started (per Compute Node) and registered to serve metadata requests. It is
 the recommended approach for serving metadata to instances and is enabled by
 default.
