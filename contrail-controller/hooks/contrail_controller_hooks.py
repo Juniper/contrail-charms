@@ -14,9 +14,8 @@ from charmhelpers.core.hookenv import (
     relation_set,
     relation_id,
     related_units,
-    relation_type,
     status_set,
-)
+    remote_unit)
 
 from charmhelpers.fetch import (
     apt_install,
@@ -93,7 +92,7 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    if relation_type().startswith("contrail-openstack-compute"):
+    if remote_unit().startswith("contrail-openstack-compute"):
         config["cloud_orchestrator"] = "openstack"
     # TODO: add other orchestrators
     # TODO: set error if orchestrator is changing and container was started
