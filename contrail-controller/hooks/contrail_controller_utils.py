@@ -125,11 +125,13 @@ def update_charm_status(update_config=True):
     missing_relations = []
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
-    if not ctx.get("keystone_ip"):
-        missing_relations.append("identity")
     if missing_relations:
         status_set('waiting',
                    'Missing relations: ' + ', '.join(missing_relations))
+        return
+    if not ctx.get("keystone_ip"):
+        status_set('waiting',
+                   'Missing auth info in relation with contrail-auth.')
         return
     # TODO: what should happens if relation departed?
 
