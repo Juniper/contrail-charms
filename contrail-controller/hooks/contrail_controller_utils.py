@@ -66,15 +66,6 @@ def controller_ctx():
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
     ctx["controller_servers"] = controller_ip_list
 
-    ext_zk_list = yaml.load(config.get("external_zookeeper_servers")) if \
-       config.get("external_zookeeper_servers") else []
-    ext_rabbitmq_list = yaml.load(config.get("external_rabbitmq_servers")) if \
-       config.get("external_rabbitmq_servers") else []
-    ext_configdb_list = yaml.load(config.get("external_configdb_servers")) if \
-       config.get("external_configdb_servers") else []
-    ctx["external_zookeeper_servers"] = ext_zk_list
-    ctx["external_rabbitmq_servers"] = ext_rabbitmq_list
-    ctx["external_configdb_servers"] = ext_configdb_list
     return ctx
 
 
