@@ -14,6 +14,7 @@ from charmhelpers.core.hookenv import (
     relation_set,
     relation_id,
     related_units,
+    status_set,
 )
 
 hooks = Hooks()
@@ -32,12 +33,14 @@ def update_relations(rid=None):
 def config_changed():
     if is_leader():
         update_relations()
+    update_status()
 
 
 @hooks.hook("contrail-auth-relation-joined")
 def contrail_auth_joined():
     if is_leader():
         update_relations(rid=relation_id())
+    update_status()
 
 
 @hooks.hook("identity-admin-relation-changed")
@@ -59,6 +62,7 @@ def identity_admin_changed():
 
     if is_leader():
         update_relations()
+    update_status()
 
 
 @hooks.hook("identity-admin-relation-departed")
@@ -72,6 +76,16 @@ def identity_admin_departed():
 
     if is_leader():
         update_relations()
+    update_status()
+
+
+@hooks.hook("update-status")
+def update_status():
+    auth_info = config.get("auth_info")
+    if not auth_info:
+        status_set('waiting', 'Missing relations: identity')
+    else:
+        status_set("active", "Unit ready")
 
 
 def main():
