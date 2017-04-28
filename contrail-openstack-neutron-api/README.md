@@ -12,12 +12,14 @@ instances plug into.
 
 This subordinate charm provides the Neutron API component which configures
 neutron-server for OpenContrail.
-Only OpenStack Icehouse or newer is supported.
+Only OpenStack Mitaka or newer is supported.
+Only for Contrail 4.0 for now.
+Juju 2.0 is required.
 
 Usage
 -----
 
-Neutron API, Contrail Configuration and Keystone are prerequisite services to
+Neutron API, Contrail Controller are prerequisite services to
 deploy.
 
 Neutron API should be deployed with legacy plugin management set to false:
@@ -30,7 +32,6 @@ Once ready, deploy and relate as follows:
     juju deploy contrail-openstack-neutron-api
     juju add-relation neutron-api contrail-openstack-neutron-api
     juju add-relation contrail-openstack-neutron-api contrail-controller
-    juju add-relation contrail-openstack-neutron-api keystone
 
 Install Sources
 ---------------

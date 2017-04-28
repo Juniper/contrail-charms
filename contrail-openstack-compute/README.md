@@ -12,13 +12,14 @@ instances plug into.
 
 This subordinate charm provides the Nova Compute vRouter component which
 contains the contrail-vrouter-agent service.
-Only OpenStack Icehouse or newer is supported.
-Juju 1.23.2+ required.
+Only OpenStack Mitaka or newer is supported.
+Only for Contrail 4.0 for now.
+Juju 2.0 is required.
 
 Usage
 -----
 
-Nova Compute, Contrail Configuration and Keystone are prerequisite services to
+Nova Compute, Contrail Controller are prerequisite services to
 deploy.
 
 Nova Compute should be deployed with legacy plugin management set to false:
@@ -28,11 +29,9 @@ Nova Compute should be deployed with legacy plugin management set to false:
 
 Once ready, deploy and relate as follows:
 
-    juju deploy neutron-contrail
-    juju add-relation nova-compute neutron-contrail
-    juju add-relation neutron-contrail:contrail-discovery contrail-configuration:contrail-discovery
-    juju add-relation neutron-contrail:contrail-api contrail-configuration:contrail-api
-    juju add-relation neutron-contrail keystone
+    juju deploy contrail-openstack-compute
+    juju add-relation nova-compute contrail-openstack-compute
+    juju add-relation contrail-openstack-compute contrail-controller
 
 Install Sources
 ---------------
@@ -44,15 +43,9 @@ Deb repositories.
 Control Node Relation
 ---------------------
 
-This charm is typically related to contrail-configuration:contrail-discovery.
-This instructs the Contrail vRouter agent to use the discovery service for
-locating control nodes. This is the recommended approach.
-
-Should the user wish to use vRouter configuration that specifies the location
-of control nodes explicitly, not using the discovery service, they can relate
-to a contrail-control charm:
-
-    juju add-relation neutron-contrail contrail-control
+This charm is typically related to contrail-controller.
+This instructs the Contrail vRouter agent to use the API endpoints for
+locating needed information.
 
 Nova Metadata
 -------------
@@ -66,16 +59,6 @@ Option 'enable-metadata-server' controls if a local nova-api-metadata service is
 started (per Compute Node) and registered to serve metadata requests. It is
 the recommended approach for serving metadata to instances and is enabled by
 default.
-
-Alternatively, relating to a charm implementing neutron-metadata interface will
-use this external metadata service:
-
-    juju add-relation neutron-contrail neutron-metadata-charm
-
-contrail-configuration charm also needs to be related to the same charm to
-register the metadata service:
-
-    juju add-relation contrail-configuration neutron-metadata-charm
 
 Virtual Gateways
 ----------------
@@ -116,11 +99,6 @@ network:
 
     // assuming it's a linux box
     sudo ip route add 10.0.10.0/24 via <compute ip>
-
-The virtual-gateways option can be used with 'floating-ip-pools' option of the
-contrail-configuration charm to create a typical Neutron setup of launched
-instances attached to a private network, each with an assigned public/external
-floating IP.
 
 Using the running example above, you would use Neutron to create an external
 network with subnet 10.0.10.0/24 and a private network of 10.0.5.0/24. You would
