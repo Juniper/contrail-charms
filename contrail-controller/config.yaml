@@ -31,7 +31,7 @@ options:
       List of external cassandra servers
   multi_tenancy:
     type: boolean
-    default: False
+    default: True
     description: |
       Enable or disable multi_tenancy - True/False.
       The effects of setting this are:
