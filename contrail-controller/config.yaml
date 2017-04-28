@@ -17,12 +17,3 @@ options:
       The effects of setting this are:
       1. multi_tenancy for config_api is enabled/disabled
       2. static_auth is used in webui in case of multi_tenancy disabled
-  listen_port:
-    type: int
-    default: 8082
-    description: |
-      contrail-api listen port 
-  listen_address:
-    type: string
-    description: |
-      contrail-api listen ipaddress 
