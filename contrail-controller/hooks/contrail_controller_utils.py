@@ -107,7 +107,10 @@ def update_charm_status(update_config=True):
         status_set("active", "Unit ready")
         if update_config:
             render_config()
-            apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
+            try:
+                apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
+            except Exception:
+                pass
         return
 
     if is_container_present(CONTAINER_NAME):
