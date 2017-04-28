@@ -1,9 +1,6 @@
 options:
   install-sources:
     type: string
-    default: |
-      - "ppa:opencontrail/ppa"
-      - "ppa:opencontrail/r2.20"
     description: Package sources for install
   install-keys:
     type: string

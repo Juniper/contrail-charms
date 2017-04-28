@@ -51,10 +51,6 @@ def get_analytics_list():
 
 def controller_ctx():
     ctx = {}
-    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
-    ctx["default_log_level"] = config.get("log_level")
-    ctx["multi_tenancy"] = config.get("multi_tenancy")
-
     controller_ip_list = []
     for rid in relation_ids("controller-cluster"):
         for unit in related_units(rid):
@@ -65,7 +61,6 @@ def controller_ctx():
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
     ctx["controller_servers"] = controller_ip_list
-
     return ctx
 
 
@@ -81,6 +76,8 @@ def identity_admin_ctx():
 
 def get_context():
     ctx = {}
+    ctx["multi_tenancy"] = config.get("multi_tenancy")
+    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(identity_admin_ctx())
@@ -119,6 +116,9 @@ def update_charm_status(update_config=True):
     missing_relations = []
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
+    if not ctx.get("cloud_orchestrator"):
+        missing_relations.append("contrail-cloud-orchestrator"
+                                 "(contrail-openstack-compute)")
     if missing_relations:
         status_set('waiting',
                    'Missing relations: ' + ', '.join(missing_relations))

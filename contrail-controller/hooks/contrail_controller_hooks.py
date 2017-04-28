@@ -14,6 +14,8 @@ from charmhelpers.core.hookenv import (
     relation_set,
     relation_id,
     related_units,
+    relation_type,
+    status_set,
 )
 
 from charmhelpers.fetch import (
@@ -64,7 +66,8 @@ def config_changed():
 def update_northbound_relations(rid=None):
     settings = {
         "multi-tenancy": config.get("multi_tenancy"),
-        "auth-info": config.get("auth_info")
+        "auth-info": config.get("auth_info"),
+        "cloud-orchestrator": config.get("cloud_orchestrator")
     }
 
     if rid:
@@ -89,8 +92,31 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
+    if relation_type().startswith("contrail-openstack-compute"):
+        config["cloud_orchestrator"] = "openstack"
+    # TODO: add other orchestrators
+    # TODO: set error if orchestrator is changing and container was started
     if is_leader():
         update_southbound_relations(rid=relation_id())
+        update_northbound_relations()
+    update_charm_status()
+
+
+@hooks.hook("contrail-controller-relation-departed")
+def contrail_controller_departed():
+    if not relation_type().startswith("contrail-openstack-compute"):
+        return
+
+    units = [unit for rid in relation_ids("contrail-openstack-compute")
+                  for unit in related_units(rid)]
+    if units:
+        return
+    config.pop("cloud_orchestrator")
+    if is_container_launched(CONTAINER_NAME):
+        status_set(
+            "error",
+            "Container is present but cloud orchestrator was disappeared."
+            " Please kill container by yourself or restore relation.")
 
 
 @hooks.hook("controller-cluster-relation-joined")
@@ -135,10 +161,9 @@ def contrail_auth_changed():
 
 @hooks.hook("contrail-auth-relation-departed")
 def contrail_auth_departed():
-    count = 0
-    for rid in relation_ids("contrail-auth"):
-        count += len(related_units(rid))
-    if count > 0:
+    units = [unit for rid in relation_ids("contrail-auth")
+                  for unit in related_units(rid)]
+    if units:
         return
     config.pop("auth_info", None)
 

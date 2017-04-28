@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     relation_get,
     related_units,
     relation_ids,
+    status_set,
 )
 
 from charmhelpers.fetch import (
@@ -55,13 +56,20 @@ def config_changed():
     update_charm_status()
 
 
+def _value_changed(rel_key, cfg_key):
+    value = relation_get(rel_key)
+    if value is not None:
+        config[cfg_key] = value
+    else:
+        config.pop(cfg_key, None)
+
+
 @hooks.hook("contrail-analyticsdb-relation-changed")
 def analyticsdb_changed():
-    auth_info = relation_get("auth-info")
-    if auth_info is not None:
-        config["auth_info"] = auth_info
-    else:
-        config.pop("auth_info", None)
+    _value_changed("auth-info", "auth_info")
+    _value_changed("cloud-orchestrator", "cloud_orchestrator")
+    # TODO: handle changing of all values
+    # TODO: set error if orchestrator is changing and container was started
     update_charm_status()
 
 
@@ -71,6 +79,11 @@ def analyticsdb_departed():
                   for unit in related_units(rid)]
     if not units:
         config.pop("auth_info", None)
+        if is_container_launched(CONTAINER_NAME):
+            status_set(
+                "error",
+                "Container is present but cloud orchestrator was disappeared."
+                " Please kill container by yourself or restore it.")
     update_charm_status()
 
 

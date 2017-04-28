@@ -93,7 +93,7 @@ def identity_admin_ctx():
 
 def get_context():
     ctx = {}
-    ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
+    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
@@ -135,6 +135,11 @@ def update_charm_status(update_config=True):
     if missing_relations:
         status_set('waiting',
                    'Missing relations: ' + ', '.join(missing_relations))
+        return
+    if not ctx.get("cloud_orchestrator"):
+        status_set('waiting',
+                   'Missing cloud_orchestrator info in relation '
+                   'with contrail-controller.')
         return
     if not ctx.get("keystone_ip"):
         status_set('waiting',
