@@ -76,7 +76,7 @@ def identity_admin_ctx():
 
 def get_context():
     ctx = {}
-    ctx["multi_tenancy"] = config.get("multi_tenancy")
+    ctx["multi_tenancy"] = (config.get("auth-mode") == 'rbac')
     ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())

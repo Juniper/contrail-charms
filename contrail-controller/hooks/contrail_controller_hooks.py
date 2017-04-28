@@ -64,8 +64,9 @@ def config_changed():
 
 
 def update_northbound_relations(rid=None):
+    # TODO: support auth modes
     settings = {
-        "multi-tenancy": config.get("multi_tenancy"),
+        "multi-tenancy": (config.get("auth-mode") == 'rbac'),
         "auth-info": config.get("auth_info"),
         "cloud-orchestrator": config.get("cloud_orchestrator")
     }
