@@ -38,9 +38,11 @@ CONFIG_NAME = "analyticsdb"
 
 def get_ip(iface=None):
     if not iface:
-        data = check_output("ip route get 8.8.8.8", shell=True).split()
-        idev = data.index('dev')
-        iface = data[idev + 1]
+        if hasattr(netifaces, 'gateways'):
+            iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+        else:
+            data = check_output("ip route | grep ^default", shell=True).split()
+            iface = data[data.index('dev') + 1]
     ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
     return ip
 
