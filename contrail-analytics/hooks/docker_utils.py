@@ -1,4 +1,6 @@
+import functools
 import json
+from time import sleep, time
 
 from subprocess import (
     CalledProcessError,
@@ -10,7 +12,6 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     ERROR,
-    DEBUG,
     open_port,
 )
 
@@ -20,6 +21,51 @@ config = config()
 
 DOCKER_PACKAGES = ["docker.engine"]
 DOCKER_CLI = "/usr/bin/docker"
+
+
+def retry(f=None, timeout=10, delay=2):
+    """Retry decorator.
+
+    Provides a decorator that can be used to retry a function if it raises
+    an exception.
+
+    :param timeout: timeout in seconds (default 10)
+    :param delay: retry delay in seconds (default 2)
+
+    Examples::
+
+        # retry fetch_url function
+        @retry
+        def fetch_url():
+            # fetch url
+
+        # retry fetch_url function for 60 secs
+        @retry(timeout=60)
+        def fetch_url():
+            # fetch url
+    """
+    if not f:
+        return functools.partial(retry, timeout=timeout, delay=delay)
+
+    @functools.wraps(f)
+    def func(*args, **kwargs):
+        start = time()
+        error = None
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except Exception as e:
+                error = e
+            elapsed = time() - start
+            if elapsed >= timeout:
+                raise error
+            remaining = timeout - elapsed
+            if delay <= remaining:
+                sleep(delay)
+            else:
+                sleep(remaining)
+                raise error
+    return func
 
 
 # NOTE: this code assumes that name of container is the part of the
@@ -83,7 +129,8 @@ def load_docker_image(name):
 
 def get_docker_image_id(name):
     try:
-        output = check_output(DOCKER_CLI + ' images | grep -w ' + name, shell=True)
+        output = check_output(DOCKER_CLI + ' images | grep -w ' + name,
+                              shell=True)
     except CalledProcessError:
         return None
     output = output.decode().split('\n')
@@ -103,12 +150,14 @@ def open_ports(image_id):
                                ])
         result = result.replace("'", "")
     except CalledProcessError as e:
-        log("error in getting ExposedPorts from image. " + str(e), level=ERROR)
+        log("error in getting ExposedPorts from image. " + str(e),
+            level=ERROR)
         return
     try:
         ports = json.loads(result)
     except Exception as e:
-        log("error in decoding ExposedPorts from image: " + result, level=ERROR)
+        log("error in decoding ExposedPorts from image: " + result,
+            level=ERROR)
         log(str(e), level=ERROR)
         return
 
@@ -145,6 +194,8 @@ def docker_cp(name, src, dst):
     check_call([DOCKER_CLI, "cp", name + ":" + src, dst])
 
 
+@retry(timeout=30, delay=5)
 def apply_config_in_container(name, cfg_name):
-    cmd = DOCKER_CLI + ' exec ' + name + ' contrailctl config sync -c ' + cfg_name
+    cmd = (DOCKER_CLI + ' exec ' + name + ' contrailctl config sync -c '
+           + cfg_name)
     check_call(cmd, shell=True)

@@ -2,7 +2,7 @@ import functools
 import os
 import pwd
 import shutil
-from socket import gethostbyname, gethostname
+from socket import gethostname
 from subprocess import (
     CalledProcessError,
     check_call,
