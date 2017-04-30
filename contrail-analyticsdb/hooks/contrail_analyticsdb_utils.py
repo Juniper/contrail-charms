@@ -1,6 +1,6 @@
 from socket import gaierror, gethostbyname, gethostname, inet_aton
 import struct
-from subprocess import check_call
+from subprocess import check_call, check_output
 import time
 
 import apt_pkg
@@ -38,7 +38,9 @@ CONFIG_NAME = "analyticsdb"
 
 def get_ip(iface=None):
     if not iface:
-        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+        data = check_output("ip route get 8.8.8.8", shell=True).split()
+        idev = data.index('dev')
+        iface = data[idev + 1]
     ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
     return ip
 

@@ -1,6 +1,6 @@
 from socket import gethostbyname, inet_aton, gethostname, gaierror
 import struct
-from subprocess import check_call
+from subprocess import check_call, check_output
 import netifaces
 
 import time
@@ -15,7 +15,6 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_ids,
     relation_get,
-    unit_get,
     status_set,
     application_version_set,
 )
@@ -41,7 +40,9 @@ CONFIG_NAME = "controller"
 
 def get_ip(iface=None):
     if not iface:
-        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+        data = check_output("ip route get 8.8.8.8", shell=True).split()
+        idev = data.index('dev')
+        iface = data[idev + 1]
     ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
     return ip
 
