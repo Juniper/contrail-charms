@@ -194,7 +194,7 @@ def docker_cp(name, src, dst):
     check_call([DOCKER_CLI, "cp", name + ":" + src, dst])
 
 
-@retry(timeout=30, delay=5)
+@retry(timeout=30, delay=10)
 def apply_config_in_container(name, cfg_name):
     cmd = (DOCKER_CLI + ' exec ' + name + ' contrailctl config sync -c '
            + cfg_name)
