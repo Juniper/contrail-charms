@@ -43,12 +43,14 @@ config = config()
 
 @hooks.hook()
 def install():
-    # TODO: try to remove this call
-    fix_hostname()
     apt_upgrade(fatal=True, dist=True)
     add_docker_repo()
     apt_update(fatal=False)
     apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
+
+    # TODO: try to remove this call
+    fix_hostname()
+
     load_docker_image(CONTAINER_NAME)
     update_charm_status()
 

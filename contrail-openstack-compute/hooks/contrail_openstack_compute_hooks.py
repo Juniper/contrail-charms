@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-from socket import gethostbyname
 import sys
 
 import json
