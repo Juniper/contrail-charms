@@ -211,7 +211,7 @@ def contrail_controller_changed():
     if not relation_get("port"):
         log("Relation not ready")
         return
-    config["api_ip"] = gethostbyname(relation_get("private-address"))
+    config["api_ip"] = relation_get("private-address")
     config["api_port"] = relation_get("port")
 
     write_configs()

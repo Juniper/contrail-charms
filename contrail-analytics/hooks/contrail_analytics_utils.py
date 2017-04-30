@@ -1,6 +1,8 @@
-from socket import gethostbyname, inet_aton
+from socket import gethostbyname, inet_aton, gethostname, gaierror
 import struct
 import time
+from subprocess import check_call
+import netifaces
 
 import apt_pkg
 import json
@@ -36,6 +38,24 @@ CONTAINER_NAME = "contrail-analytics"
 CONFIG_NAME = "analytics"
 
 
+def get_ip(iface=None):
+    if not iface:
+        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+    ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+    return ip
+
+
+def fix_hostname():
+    hostname = gethostname()
+    try:
+        gethostbyname(hostname)
+    except gaierror:
+        ip = get_ip()
+        check_call(["sed", "-E", "-i", "-e",
+            ("/127.0.0.1[[:blank:]]+/a \\\n" + ip + " " + hostname),
+            "/etc/hosts"])
+
+
 def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
     mt = config.get("multi_tenancy")
@@ -48,7 +68,7 @@ def controller_ctx():
     for rid in relation_ids("contrail-analytics"):
         for unit in related_units(rid):
             if unit.startswith("contrail-controller"):
-                ip = gethostbyname(relation_get("private-address", unit, rid))
+                ip = relation_get("private-address", unit, rid)
                 controller_ip_list.append(ip)
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
@@ -67,7 +87,7 @@ def analytics_ctx():
             ip = relation_get("private-address", unit, rid)
             analytics_ip_list.append(ip)
     # add it's own ip address
-    analytics_ip_list.append(gethostbyname(unit_get("private-address")))
+    analytics_ip_list.append(get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
     return {"analytics_servers": analytics_ip_list}

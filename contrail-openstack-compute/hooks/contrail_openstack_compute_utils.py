@@ -225,7 +225,7 @@ def get_controller_address():
             port = relation_get("port", unit, rid)
             if not port:
                 continue
-            ip = gethostbyname(relation_get("private-address", unit, rid))
+            ip = relation_get("private-address", unit, rid)
             return (ip, port)
     return (None, None)
 
@@ -341,7 +341,7 @@ def contrail_api_ctx():
 
 def control_node_ctx():
     return {"control_nodes":
-        [gethostbyname(relation_get("private-address", unit, rid))
+        [relation_get("private-address", unit, rid)
          for rid in relation_ids("contrail-controller")
          for unit in related_units(rid)]}
 

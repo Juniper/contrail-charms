@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     related_units,
     status_set,
+    relation_set,
 )
 
 from charmhelpers.fetch import (
@@ -21,6 +22,8 @@ from charmhelpers.fetch import (
 from contrail_analytics_utils import (
     update_charm_status,
     CONTAINER_NAME,
+    fix_hostname,
+    get_ip
 )
 
 from docker_utils import (
@@ -39,6 +42,8 @@ config = config()
 
 @hooks.hook()
 def install():
+    # TODO: try to remove this call
+    fix_hostname()
     apt_upgrade(fatal=True, dist=True)
     add_docker_repo()
     apt_update(fatal=False)
@@ -58,6 +63,12 @@ def _value_changed(rel_key, cfg_key):
         config[cfg_key] = value
     else:
         config.pop(cfg_key, None)
+
+
+@hooks.hook("contrail-analytics-relation-joined")
+def contrail_analytics_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
 
 
 @hooks.hook("contrail-analytics-relation-changed")
@@ -94,6 +105,9 @@ def contrail_analyticsdb_relation():
 
 @hooks.hook("analytics-cluster-relation-joined")
 def analytics_cluster_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
+
     update_charm_status()
 
 

@@ -11,7 +11,7 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_ids,
     status_set,
-)
+    relation_set)
 
 from charmhelpers.fetch import (
     apt_install,
@@ -21,6 +21,7 @@ from charmhelpers.fetch import (
 
 from contrail_analyticsdb_utils import (
     fix_hostname,
+    get_ip,
     update_charm_status,
     CONTAINER_NAME,
 )
@@ -33,7 +34,7 @@ from docker_utils import (
 )
 
 
-PACKAGES = ["python", "python-yaml", "python-apt"]
+PACKAGES = ["python", "python-yaml", "python-apt", "python-netifaces"]
 
 
 hooks = Hooks()
@@ -42,6 +43,7 @@ config = config()
 
 @hooks.hook()
 def install():
+    # TODO: try to remove this call
     fix_hostname()
     apt_upgrade(fatal=True, dist=True)
     add_docker_repo()
@@ -62,6 +64,12 @@ def _value_changed(rel_key, cfg_key):
         config[cfg_key] = value
     else:
         config.pop(cfg_key, None)
+
+
+@hooks.hook("contrail-analyticsdb-relation-joined")
+def analyticsdb_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
 
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
@@ -85,6 +93,12 @@ def analyticsdb_departed():
                 "Container is present but cloud orchestrator was disappeared."
                 " Please kill container by yourself or restore it.")
     update_charm_status()
+
+
+@hooks.hook("analyticsdb-cluster-relation-joined")
+def analyticsdb_cluster_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
 
 
 @hooks.hook("update-status")

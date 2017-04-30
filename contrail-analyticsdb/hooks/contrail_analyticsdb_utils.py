@@ -1,4 +1,3 @@
-import socket
 from socket import gaierror, gethostbyname, gethostname, inet_aton
 import struct
 from subprocess import check_call
@@ -7,14 +6,13 @@ import time
 import apt_pkg
 import json
 import platform
-
+import netifaces
 
 from charmhelpers.core.hookenv import (
     config,
     related_units,
     relation_get,
     relation_ids,
-    unit_get,
     status_set,
     application_version_set,
 )
@@ -38,20 +36,21 @@ CONTAINER_NAME = "contrail-analyticsdb"
 CONFIG_NAME = "analyticsdb"
 
 
+def get_ip(iface=None):
+    if not iface:
+        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+    ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+    return ip
+
+
 def fix_hostname():
     hostname = gethostname()
     try:
         gethostbyname(hostname)
     except gaierror:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # connecting to a UDP address doesn't send packets
-        s.connect(('8.8.8.8', 53))
-        local_ip_address = s.getsockname()[0]
+        ip = get_ip()
         check_call(["sed", "-E", "-i", "-e",
-            ("/127.0.0.1[[:blank:]]+/a \\\n"
-             + local_ip_address
-             + " "
-             + hostname),
+            ("/127.0.0.1[[:blank:]]+/a \\\n" + ip + " " + hostname),
             "/etc/hosts"])
 
 
@@ -60,7 +59,7 @@ def servers_ctx():
     analytics_ip_list = []
     for rid in relation_ids("contrail-analyticsdb"):
         for unit in related_units(rid):
-            ip = gethostbyname(relation_get("private-address", unit, rid))
+            ip = relation_get("private-address", unit, rid)
             if unit.startswith("contrail-controller"):
                 controller_ip_list.append(ip)
             if unit.startswith("contrail-analytics"):
@@ -77,11 +76,11 @@ def servers_ctx():
 def analyticsdb_ctx():
     """Get the ipaddres of all analyticsdb nodes"""
     analyticsdb_ip_list = [
-        gethostbyname(relation_get("private-address", unit, rid))
+        relation_get("private-address", unit, rid)
         for rid in relation_ids("analyticsdb-cluster")
         for unit in related_units(rid)]
     # add it's own ip address
-    analyticsdb_ip_list.append(gethostbyname(unit_get("private-address")))
+    analyticsdb_ip_list.append(get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=sort_key)
     return {"analyticsdb_servers": analyticsdb_ip_list}

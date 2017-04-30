@@ -47,7 +47,7 @@ def contrail_api_ctx():
             port = relation_get("port", unit, rid)
             if not port:
                 continue
-            ip = gethostbyname(relation_get("private-address", unit, rid))
+            ip = relation_get("private-address", unit, rid)
             return {"api_server": ip, "api_port": port}
     return {}
 

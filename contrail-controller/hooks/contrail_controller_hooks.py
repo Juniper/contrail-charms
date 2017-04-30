@@ -27,6 +27,8 @@ from contrail_controller_utils import (
     update_charm_status,
     CONTAINER_NAME,
     get_analytics_list,
+    fix_hostname,
+    get_ip
 )
 
 from docker_utils import (
@@ -44,6 +46,8 @@ config = config()
 
 @hooks.hook()
 def install():
+    # TODO: try to remove this call
+    fix_hostname()
     apt_upgrade(fatal=True, dist=True)
     add_docker_repo()
     apt_update(fatal=False)
@@ -92,6 +96,9 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
+
     if remote_unit().startswith("contrail-openstack-compute"):
         config["cloud_orchestrator"] = "openstack"
     # TODO: add other orchestrators
@@ -104,7 +111,7 @@ def contrail_controller_joined():
 
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_controller_departed():
-    if not relation_type().startswith("contrail-openstack-compute"):
+    if not remote_unit().startswith("contrail-openstack-compute"):
         return
 
     units = [unit for rid in relation_ids("contrail-openstack-compute")
@@ -121,11 +128,15 @@ def contrail_controller_departed():
 
 @hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
     update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
         update_southbound_relations()
@@ -141,6 +152,8 @@ def analytics_departed():
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
 

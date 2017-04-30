@@ -1,11 +1,12 @@
-from socket import gethostbyname, inet_aton
+from socket import gethostbyname, inet_aton, gethostname, gaierror
 import struct
+from subprocess import check_call
+import netifaces
 
 import time
 
 import apt_pkg
 import json
-import yaml
 import platform
 
 
@@ -38,11 +39,29 @@ CONTAINER_NAME = "contrail-controller"
 CONFIG_NAME = "controller"
 
 
+def get_ip(iface=None):
+    if not iface:
+        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+    ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+    return ip
+
+
+def fix_hostname():
+    hostname = gethostname()
+    try:
+        gethostbyname(hostname)
+    except gaierror:
+        ip = get_ip()
+        check_call(["sed", "-E", "-i", "-e",
+            ("/127.0.0.1[[:blank:]]+/a \\\n" + ip + " " + hostname),
+            "/etc/hosts"])
+
+
 def get_analytics_list():
     analytics_ip_list = []
     for rid in relation_ids("contrail-analytics"):
         for unit in related_units(rid):
-            ip = gethostbyname(relation_get("private-address", unit, rid))
+            ip = relation_get("private-address", unit, rid)
             analytics_ip_list.append(ip)
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
@@ -54,10 +73,10 @@ def controller_ctx():
     controller_ip_list = []
     for rid in relation_ids("controller-cluster"):
         for unit in related_units(rid):
-            ip = gethostbyname(relation_get("private-address", unit, rid))
+            ip = relation_get("private-address", unit, rid)
             controller_ip_list.append(ip)
     # add it's own ip address
-    controller_ip_list.append(gethostbyname(unit_get("private-address")))
+    controller_ip_list.append(get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
     ctx["controller_servers"] = controller_ip_list
