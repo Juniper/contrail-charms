@@ -1,27 +1,16 @@
-#!/usr/bin/env python3
-from subprocess import (
-    CalledProcessError,
-    check_call,
-    check_output
-)
+#!/usr/bin/env python
 import sys
-
-#import yaml
-from socket import gaierror, gethostbyname, gethostname
 
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
     config,
-    resource_get,
     log,
-    status_set,
-    related_units,
     relation_get,
     relation_ids,
-    relation_ids,
-    unit_get,
-    application_version_set
+    related_units,
+    status_set,
+    relation_set,
 )
 
 from charmhelpers.fetch import (
@@ -30,148 +19,132 @@ from charmhelpers.fetch import (
     apt_update
 )
 
-
 from contrail_analytics_utils import (
+    update_charm_status,
+    CONTAINER_NAME,
     fix_hostname,
-    write_analytics_config,
-    launch_docker_image,
-    units,
-    dpkg_version,
-    is_already_launched
+    get_ip
 )
 
-#PACKAGES = [ "python", "python-yaml", "python-apt", "docker.io" ]
-PACKAGES = [ "python", "python-yaml", "python-apt", "docker-engine" ]
+from docker_utils import (
+    add_docker_repo,
+    DOCKER_PACKAGES,
+    is_container_launched,
+    load_docker_image,
+)
+
+
+PACKAGES = []
 
 hooks = Hooks()
 config = config()
 
+
+@hooks.hook("install.real")
+def install():
+    status_set('maintenance', 'Installing...')
+
+    # TODO: try to remove this call
+    fix_hostname()
+
+    apt_upgrade(fatal=True, dist=True)
+    add_docker_repo()
+    apt_update(fatal=False)
+    apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
+
+    load_docker_image(CONTAINER_NAME)
+    update_charm_status()
+
+
 @hooks.hook("config-changed")
 def config_changed():
-    set_status()
-    return None
+    update_charm_status()
 
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
 
-def set_status():
-  try:
-      if is_already_launched():
-          version = dpkg_version("contrail-analytics")
-          application_version_set(version)
-      result = check_output(["/usr/bin/docker",
-                             "inspect",
-                             "-f",
-                             "{{.State.Running}}",
-                             "contrail-analytics"
-                             ])
-  except CalledProcessError:
-      status_set("waiting", "Waiting for container to be launched")
-      return
-  if result:
-      status_set("active", "Unit ready")
-  else:
-      status_set("blocked", "Control container is not running")
+def _value_changed(rel_key, cfg_key):
+    value = relation_get(rel_key)
+    if value is not None:
+        config[cfg_key] = value
+    else:
+        config.pop(cfg_key, None)
 
-def load_docker_image():
-    img_path = resource_get("contrail-analytics")
-    check_call(["/usr/bin/docker",
-                "load",
-                "-i",
-                img_path,
-                ])
 
-def setup_docker_env():
-    import platform
-    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
-    check_output(cmd, shell=True)
-    dist = platform.linux_distribution()[2].strip()
-    cmd = "add-apt-repository "+ \
-          "\"deb https://apt.dockerproject.org/repo/ " + \
-          "ubuntu-%s "%(dist) +\
-          "main\""
-    check_output(cmd, shell=True)
+@hooks.hook("contrail-analytics-relation-joined")
+def contrail_analytics_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
 
-@hooks.hook()
-def install():
-    fix_hostname()
-    apt_upgrade(fatal=True, dist=True)
-    setup_docker_env()
-    apt_update(fatal=False)
-    apt_install(PACKAGES, fatal=True)
-    load_docker_image()
-    #launch_docker_image()
 
-@hooks.hook("contrail-control-relation-joined")
-def contrail_control_joined():
-   print ("NUM CONTROL UNITS: ", len(units("contrail-control")))
-   if len(units("contrail-control")) == config.get("control_units"):
-       config["control-ready"] = True
-   write_analytics_config()
+@hooks.hook("contrail-analytics-relation-changed")
+def contrail_analytics_changed():
+    _value_changed("multi-tenancy", "multi_tenancy")
+    _value_changed("auth-info", "auth_info")
+    _value_changed("cloud-orchestrator", "cloud_orchestrator")
+    # TODO: handle changing of all values
+    # TODO: set error if orchestrator is changing and container was started
+    update_charm_status()
+
+
+@hooks.hook("contrail-analytics-relation-departed")
+def contrail_analytics_departed():
+    units = [unit for rid in relation_ids("contrail-controller")
+                  for unit in related_units(rid)]
+    if not units:
+        config.pop("auth_info", None)
+        config.pop("multi_tenancy", None)
+        config.pop("cloud_orchestrator", None)
+        if is_container_launched(CONTAINER_NAME):
+            status_set(
+                "error",
+                "Container is present but cloud orchestrator was disappeared."
+                " Please kill container by yourself or restore it.")
+    update_charm_status()
+
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
-def contrail_analyticsdb_joined():
-   print ("NUM ANALYTICSDB UNITS: ", len(units("contrail-analyticsdb")))
-   if len(units("contrail-analyticsdb")) == config.get("analyticsdb_units"):
-       config["analyticsdb-ready"] = True
-   write_analytics_config()
-
-@hooks.hook("contrail-lb-relation-joined")
-def contrail_lb_joined():
-   config["lb-ready"] = True
-   print ("LB RELATION JOINED")
-   write_analytics_config()
-
-@hooks.hook("contrail-control-relation-departed")
-def contrail_control_departed():
-   config["control-ready"] = False
-
 @hooks.hook("contrail-analyticsdb-relation-departed")
-def contrail_analyticsdb_departed():
-   config["analyticsdb-ready"] = False
+def contrail_analyticsdb_relation():
+    update_charm_status()
 
-@hooks.hook("contrail-lb-relation-departed")
-def contrail_lb_departed():
-   config["lb-ready"] = False
-
-@hooks.hook("identity-admin-relation-changed")
-def identity_admin_changed():
-   if not relation_get("service_hostname"):
-        log("Keystone relation not ready")
-        return
-   print ("KEYSTONE RELATION JOINED")
-   config["identity-admin-ready"] = True
-   write_analytics_config()
-
-@hooks.hook("identity-admin-relation-departed")
-@hooks.hook("identity-admin-relation-broken")
-def identity_admin_broken():
-   config["identity-admin-ready"] = False
 
 @hooks.hook("analytics-cluster-relation-joined")
 def analytics_cluster_joined():
-    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                                     for rid in relation_ids("analytics-cluster")
-                                     for unit in related_units(rid) ]
-    # add it's own ip address
-    analytics_ip_list.append(gethostbyname(unit_get("private-address")))
-    print ("CLUSTER RELATION JOINED: ", analytics_ip_list)
-    if len(analytics_ip_list) == config.get("control_units"):
-        config["analytics-ready"] = True
-    write_analytics_config()
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
+
+    update_charm_status()
+
 
 @hooks.hook("update-status")
 def update_status():
-  set_status()
-                
+    update_charm_status(update_config=False)
+
+
+@hooks.hook("upgrade-charm")
+def upgrade_charm():
+    if not is_container_launched(CONTAINER_NAME):
+        load_docker_image(CONTAINER_NAME)
+        # NOTE: image can not be deleted if container is running.
+        # TODO: think about killing the container
+
+    # TODO: this hook can be fired when either resource changed or charm code
+    # changed. so if code was changed then we may need to update config
+    update_charm_status()
+
+
+@hooks.hook("start")
+@hooks.hook("stop")
+def todo():
+    # TODO: think about it
+    pass
+
+
 def main():
     try:
         hooks.execute(sys.argv)
     except UnregisteredHookError as e:
         log("Unknown hook {} - skipping.".format(e))
+
 
 if __name__ == "__main__":
     main()

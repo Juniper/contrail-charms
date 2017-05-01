@@ -105,8 +105,8 @@ services:
     options:
       cluster_count: 3
     num_units: 0
-  neutron-api-contrail:
-    charm: /home/ubuntu/neutron-api-contrail
+  contrail-openstack-neutron-api:
+    charm: /home/ubuntu/contrail-openstack-neutron-api
     num_units: 0
     options:
       install-keys: |
@@ -131,8 +131,8 @@ services:
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
         - "deb http://192.168.1.1:8080/newton/3034 /"
-  neutron-contrail:
-    charm: /home/ubuntu/neutron-contrail
+  contrail-openstack-compute:
+    charm: /home/ubuntu/contrail-openstack-compute
     num_units: 0
     series: xenial
     options:
@@ -173,12 +173,10 @@ services:
     series: xenial
     num_units: 3
     to: [ "1", "2", "3" ]
-  contrail-lb:
-    charm: /home/ubuntu/contrail-lb
-    series: xenial
+  contrail-keystone-auth:
+    charm: /home/ubuntu/contrail-keystone-auth
     num_units: 1
-    to:
-      - '5'
+    to: "lxd:1"
 
 relations:
   # openstack
@@ -199,8 +197,6 @@ relations:
   - [ "neutron-api", "nova-cloud-controller" ]
   - [ "neutron-api", "keystone" ]
   - [ neutron-api, neutron-hacluster ]
-  - [ "neutron-api", "neutron-api-contrail" ]
-  - [ "neutron-api-contrail", "keystone" ]
   - [ "nova-compute:shared-db", "mysql:shared-db" ]
   - [ "nova-compute:amqp", "rabbitmq-server:amqp" ]
   - [ "nova-compute", "glance" ]
@@ -210,25 +206,15 @@ relations:
   - [ openstack-dashboard, dashboard-hacluster ]
 
   #contrail
-  - [ "contrail-lb", "contrail-control:contrail-lb"]
-  - [ "contrail-control", "contrail-lb:contrail-control" ]
-  - [ "contrail-analytics", "contrail-lb:contrail-analytics" ]
-  - [ "contrail-lb", "contrail-analytics:contrail-lb" ]
-  - [ "contrail-analyticsdb", "contrail-analytics:contrail-analyticsdb" ]
-  - [ "contrail-analytics", "contrail-analyticsdb:contrail-analytics" ]
-  - [ "contrail-control", "contrail-analytics:contrail-control" ]
-  - [ "contrail-control", "contrail-analytics:contrail-analytics" ]
-  - [ "contrail-control", "contrail-analyticsdb:contrail-control" ]
-  - [ "contrail-control", "neutron-api-contrail" ]
-  - [ "contrail-lb", "contrail-analyticsdb:contrail-lb" ]
-  - [ "contrail-control", "keystone" ]
-  - [ "contrail-analytics", "keystone" ]
-  - [ "contrail-analyticsdb", "keystone" ]
-  - [ "nova-compute", "neutron-contrail" ]
-  - [ "neutron-contrail", "keystone" ]
-  - [ "neutron-contrail:contrail-control", "contrail-control:contrail-control"]
-  - [ "neutron-contrail:contrail-api", "contrail-control:contrail-api"]
-  - [ "neutron-contrail", "contrail-analytics"]
+  - [ "contrail-openstack-neutron-api", "neutron-api"]
+  - [ "contrail-analytics", "contrail-analyticsdb" ]
+  - [ "contrail-controller", "contrail-analytics" ]
+  - [ "contrail-controller", "contrail-analyticsdb" ]
+  - [ "contrail-controller", "contrail-openstack-neutron-api" ]
+  - [ "contrail-controller", "contrail-keystone-auth" ]
+  - [ "contrail-keystone-auth", "keystone" ]
+  - [ "contrail-openstack-compute", "nova-compute" ]
+  - [ "contrail-openstack-compute", "contrail-controller"]
 
 machines:
   "1":

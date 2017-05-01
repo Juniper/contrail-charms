@@ -1,220 +1,183 @@
-import functools
-import os
-import pwd
-import shutil
-import socket
-from socket import gaierror, gethostbyname, gethostname, inet_aton
+from socket import gethostbyname, inet_aton, gethostname, gaierror
 import struct
-from subprocess import (
-    CalledProcessError,
-    check_call,
-    check_output
-)
-from time import sleep, time
+import time
+from subprocess import check_call, check_output
+import netifaces
 
 import apt_pkg
+import json
 import yaml
 import platform
-
-try:
-  import netaddr
-  import netifaces
-except ImportError:
-  pass
+import six
 
 from charmhelpers.core.hookenv import (
     config,
-    log,
     related_units,
     relation_get,
     relation_ids,
-    relation_type,
-    remote_unit,
-    unit_get
+    status_set,
+    application_version_set,
 )
-
-from charmhelpers.core.host import service_restart, service_start
-
 from charmhelpers.core.templating import render
 
+from docker_utils import (
+    is_container_launched,
+    is_container_present,
+    apply_config_in_container,
+    launch_docker_image,
+    dpkg_version,
+    get_docker_image_id
+)
+
 apt_pkg.init()
-
-def dpkg_version(pkg):
-    try:
-        return check_output(["docker",
-                              "exec",
-                              "contrail-analytics",
-                              "dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
-    except CalledProcessError:
-        return None
-
 config = config()
 
-def retry(f=None, timeout=10, delay=2):
-    """Retry decorator.
 
-    Provides a decorator that can be used to retry a function if it raises
-    an exception.
+CONTAINER_NAME = "contrail-analytics"
+CONFIG_NAME = "analytics"
 
-    :param timeout: timeout in seconds (default 10)
-    :param delay: retry delay in seconds (default 2)
 
-    Examples::
+def get_ip(iface=None):
+    if not iface:
+        if hasattr(netifaces, 'gateways'):
+            iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+        else:
+            data = check_output("ip route | grep ^default", shell=True).split()
+            iface = data[data.index('dev') + 1]
+    ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+    return ip
 
-        # retry fetch_url function
-        @retry
-        def fetch_url():
-            # fetch url
-
-        # retry fetch_url function for 60 secs
-        @retry(timeout=60)
-        def fetch_url():
-            # fetch url
-    """
-    if not f:
-        return functools.partial(retry, timeout=timeout, delay=delay)
-    @functools.wraps(f)
-    def func(*args, **kwargs):
-        start = time()
-        error = None
-        while True:
-            try:
-                return f(*args, **kwargs)
-            except Exception as e:
-                error = e
-            elapsed = time() - start
-            if elapsed >= timeout:
-                raise error
-            remaining = timeout - elapsed
-            if delay <= remaining:
-                sleep(delay)
-            else:
-                sleep(remaining)
-                raise error
-    return func
 
 def fix_hostname():
     hostname = gethostname()
     try:
         gethostbyname(hostname)
     except gaierror:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 53))  # connecting to a UDP address doesn't send packets
-        local_ip_address = s.getsockname()[0]
+        ip = get_ip()
         check_call(["sed", "-E", "-i", "-e",
-                    "/127.0.0.1[[:blank:]]+/a \\\n"+ local_ip_address+" " + hostname,
-                    "/etc/hosts"])
+            ("/127.0.0.1[[:blank:]]+/a \\\n" + ip + " " + hostname),
+            "/etc/hosts"])
 
-def units(relation):
-    """Return a list of units for the specified relation"""
-    return [ unit for rid in relation_ids(relation)
-                  for unit in related_units(rid) ]
-def config_get(key):
-    try:
-        return config[key]
-    except KeyError:
-        return None
-
-def lb_ctx():
-   lb_vip = None
-   for rid in relation_ids("contrail-lb"):
-        for unit in related_units(rid):
-           lb_vip = gethostbyname(relation_get("private-address", unit, rid))
-   return { "lb_vip": lb_vip}
 
 def controller_ctx():
-    print ("INSIDE CONTROLLER CTX")
     """Get the ipaddress of all contrail control nodes"""
-    controller_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                               for rid in relation_ids("contrail-control")
-                               for unit in related_units(rid) ]
-    controller_ip_list = sorted(controller_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    return { "controller_servers": controller_ip_list }
+    mt = config.get("multi_tenancy")
+    if mt is None:
+        return {}
+    if isinstance(mt, six.string_types):
+        mt = yaml.load(mt)
+
+    controller_ip_list = []
+    for rid in relation_ids("contrail-analytics"):
+        for unit in related_units(rid):
+            if unit.startswith("contrail-controller"):
+                ip = relation_get("private-address", unit, rid)
+                controller_ip_list.append(ip)
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    controller_ip_list = sorted(controller_ip_list, key=sort_key)
+    return {
+        "multi_tenancy": mt,
+        "controller_servers": controller_ip_list,
+        "lb_vip": controller_ip_list[0] if controller_ip_list else ""
+    }
+
 
 def analytics_ctx():
     """Get the ipaddress of all analytics control nodes"""
-    analytics_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                                     for rid in relation_ids("analytics-cluster")
-                                     for unit in related_units(rid) ]
+    analytics_ip_list = []
+    for rid in relation_ids("analytics-cluster"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            analytics_ip_list.append(ip)
     # add it's own ip address
-    analytics_ip_list.append(gethostbyname(unit_get("private-address")))
-    analytics_ip_list = sorted(analytics_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-    return { "analytics_servers": analytics_ip_list }
+    analytics_ip_list.append(get_ip())
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
+    return {"analytics_servers": analytics_ip_list}
+
 
 def analyticsdb_ctx():
-  """Get the ipaddress of all contrail analyticsdb nodes"""
-  analyticsdb_ip_list = [ gethostbyname(relation_get("private-address", unit, rid))
-                            for rid in relation_ids("contrail-analyticsdb")
-                            for unit in related_units(rid) ]
-  analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=lambda ip: struct.unpack("!L", inet_aton(ip))[0])
-  return { "analyticsdb_servers": analyticsdb_ip_list }
+    """Get the ipaddress of all contrail analyticsdb nodes"""
+    analyticsdb_ip_list = []
+    for rid in relation_ids("contrail-analyticsdb"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            analyticsdb_ip_list.append(ip)
+
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=sort_key)
+    return {"analyticsdb_servers": analyticsdb_ip_list}
+
 
 def identity_admin_ctx():
-   ctxs = [ { "keystone_ip": gethostbyname(hostname),
-               "keystone_public_port": relation_get("service_port", unit, rid),
-               "keystone_admin_user": relation_get("service_username", unit, rid),
-               "keystone_admin_password": relation_get("service_password", unit, rid),
-               "keystone_admin_tenant": relation_get("service_tenant_name", unit, rid),
-               "keystone_auth_protocol": relation_get("service_protocol", unit, rid) }
-             for rid in relation_ids("identity-admin")
-             for unit, hostname in
-             ((unit, relation_get("service_hostname", unit, rid)) for unit in related_units(rid))
-             if hostname ]
-   return ctxs[0] if ctxs else {}
+    auth_info = config.get("auth_info")
+    return (json.loads(auth_info) if auth_info else {})
 
-def apply_analytics_config():
-    cmd = '/usr/bin/docker exec contrail-analytics contrailctl config sync -c analytics'
-    check_call(cmd, shell=True)
 
-def launch_docker_image():
-    image_id = None
-    orchestrator = config.get("cloud_orchestrator")
-    output =  check_output(["docker",
-                            "images",
-                            ])
-    output = output.decode().split('\n')[:-1]
-    for line in output:
-        if "contrail-analytics" in line.split()[0]:
-            image_id = line.split()[2].strip()
-    if image_id:
-        dist = platform.linux_distribution()[2].strip()
-        cmd = "/usr/bin/docker "+ \
-              "run "+ \
-              "--net=host "+ \
-              "--cap-add=AUDIT_WRITE "+ \
-              "--privileged "+ \
-              "--env='CLOUD_ORCHESTRATOR=%s' "%(orchestrator)+ \
-              "--volume=/etc/contrailctl:/etc/contrailctl "+ \
-              "--name=contrail-analytics "
-        if dist == "trusty":
-            cmd = cmd + "--pid=host "
-        cmd = cmd +"-itd "+ image_id
-        check_call(cmd, shell=True)
-    else:
-        log("contrail-analytics docker image is not available")
-
-def is_already_launched():
-    cmd = 'docker ps | grep -w contrail-analytics'
-    try:
-        output =  check_output(cmd, shell=True)
-        return True
-    except CalledProcessError:
-        return False
- 
-def write_analytics_config():
-    """Render the configuration entries in the analytics.conf file"""
+def get_context():
     ctx = {}
-    ctx.update({"cloud_orchestrator": config.get("cloud_orchestrator")})
+    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
-    ctx.update(lb_ctx())
     ctx.update(identity_admin_ctx())
+    return ctx
+
+
+def render_config(ctx=None):
+    if not ctx:
+        ctx = get_context()
     render("analytics.conf", "/etc/contrailctl/analytics.conf", ctx)
-    if config_get("control-ready") and config_get("lb-ready") \
-       and config_get("identity-admin-ready") and config_get("analyticsdb-ready") \
-       and config_get("analytics-ready")and not is_already_launched():
-        #apply_analytics_config()
-        print ("LAUNCHING THE ANALYTICS CONTAINER")
-        print ("CTX: ", ctx)
-        launch_docker_image()
+
+
+def update_charm_status(update_config=True):
+    if is_container_launched(CONTAINER_NAME):
+        status_set("active", "Unit ready")
+        if update_config:
+            render_config()
+            apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
+        return
+
+    if is_container_present(CONTAINER_NAME):
+        status_set(
+            "error",
+            "Container is present but is not running. Run or remove it.")
+        return
+
+    image_id = get_docker_image_id(CONTAINER_NAME)
+    if not image_id:
+        status_set('waiting', 'Awaiting for container resource')
+        return
+
+    ctx = get_context()
+    missing_relations = []
+    if not ctx.get("controller_servers"):
+        missing_relations.append("contrail-controller")
+    if not ctx.get("analyticsdb_servers"):
+        missing_relations.append("contrail-analyticsdb")
+    if missing_relations:
+        status_set('waiting',
+                   'Missing relations: ' + ', '.join(missing_relations))
+        return
+    if not ctx.get("cloud_orchestrator"):
+        status_set('waiting',
+                   'Missing cloud_orchestrator info in relation '
+                   'with contrail-controller.')
+        return
+    if not ctx.get("keystone_ip"):
+        status_set('waiting',
+                   'Missing auth info in relation with contrail-controller.')
+        return
+    # TODO: what should happens if relation departed?
+
+    render_config(ctx)
+    args = []
+    if platform.linux_distribution()[2].strip() == "trusty":
+        args.append("--pid=host")
+    launch_docker_image(CONTAINER_NAME, args)
+    # TODO: find a way to do not use 'sleep'
+    time.sleep(5)
+
+    version = dpkg_version(CONTAINER_NAME, "contrail-analytics")
+    application_version_set(version)
+    status_set("active", "Unit ready")

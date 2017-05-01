@@ -1,0 +1,7 @@
+options:
+  install-sources:
+    type: string
+    description: Package sources for install
+  install-keys:
+    type: string
+    description: Apt keys for package install sources

@@ -1,54 +1,32 @@
 options:
-  cloud_orchestrator:
+  auth-mode:
     type: string
-    default: openstack
+    default: rbac
     description: |
-      cloud_orchestrator - what cloud orchestrator is being used. Valid
-      options are kubernetes, openstack, mesos.
-  control_units:
-    type: int
-    default: 3
-    description: |
-      Minimum number of units required in control peer relation
-      TEMPORARY ENTRY. SHOULD BE REMOVED AFTER THE FIX IS PUT IN CONTRAIL
-  log_level:
+      'rbac', 'cloud-admin' or 'no-auth'
+      Authentication mode. Detailed information can be found in the Contrail documentation.
+  cloud-admin-role:
     type: string
+    default: admin
     description: |
-      log level
-  external_lb:
-    type: boolean
-    default: False
-    description: |
-      Flag to identify whether the loadbalancer is internally hosted in the lb
-      container or managed externally based on which the listen port of the
-      contrail-api will be decided. Default is false(internally hosted in lb 
-      container)
-  external_zookeeper_servers:
+      Role name in keystone for users that have full access to everything.
+  global-read-only-role:
     type: string
+    default: guest
     description: |
-      List of external zookeeper servers
-  external_rabbitmq_servers:
+      Role name in keystone for users that have read-only access to everything.
+  ssl_cert:
     type: string
+    default:
     description: |
-      List of external rabbitmq servers
-  external_configdb_servers:
+      SSL certificate to install and use for API ports.
+  ssl_key:
     type: string
-    description: |
-      List of external cassandra servers
-  multi_tenancy:
-    type: boolean
-    default: False
-    description: |
-      Enable or disable multi_tenancy - True/False.
-      The effects of setting this are:
-      1. multi_tenancy for config_api is enabled/disabled
-      2. static_auth is used in webui in case of multi_tenancy disabled
-  listen_port:
-    type: int
-    default: 8082
-    description: |
-      contrail-api listen port 
-  listen_address:
+    default:
+    description: SSL key to use with certificate specified as ssl_cert.
+  ssl_ca:
     type: string
+    default:
     description: |
-      contrail-api listen ipaddress 
+      SSL CA to use with the certificate and key provided - this is only
+      required if you are providing a privately signed ssl_cert and ssl_key.
