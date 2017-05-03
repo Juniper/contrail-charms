@@ -101,7 +101,7 @@ def set_status():
         s_name = lst[0].strip()
         s_status = lst[1].strip()
         if 'contrail-vrouter-agent' in s_name:
-            if 'active' in s_status or 'initializing' in s_status:
+            if s_status == 'active':
                 status_set("active", "Unit is ready")
             else:
                 # TODO: rework this
