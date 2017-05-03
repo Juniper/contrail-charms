@@ -202,16 +202,20 @@ def configure_virtual_gateways():
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     config["analytics-servers"] = relation_get("analytics-server")
+    config["api_ip"] = relation_get("private-address")
+    config["api_port"] = relation_get("port")
     auth_info = relation_get("auth-info")
     if auth_info is not None:
         config["auth_info"] = auth_info
     else:
         config.pop("auth_info", None)
-    if not relation_get("port"):
+    config.save()
+
+    # TODO: add reaction to change auth_info from None to not-None and back
+
+    if not relation_get("port") or auth_info is None:
         log("Relation not ready")
         return
-    config["api_ip"] = relation_get("private-address")
-    config["api_port"] = relation_get("port")
 
     write_configs()
     config["controller-ready"] = True
@@ -227,6 +231,7 @@ def contrail_controller_node_departed():
         check_local_metadata()
         config.pop("analytics-servers", None)
         config.pop("auth_info", None)
+        config.save()
     write_configs()
 
 
