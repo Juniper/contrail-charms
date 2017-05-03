@@ -106,7 +106,7 @@ services:
       cluster_count: 3
     num_units: 0
   contrail-openstack-neutron-api:
-    charm: /home/ubuntu/contrail-openstack-neutron-api
+    charm: ./contrail-openstack-neutron-api
     num_units: 0
     options:
       install-keys: |
@@ -132,7 +132,7 @@ services:
       install-sources: |
         - "deb http://192.168.1.1:8080/newton/3034 /"
   contrail-openstack-compute:
-    charm: /home/ubuntu/contrail-openstack-compute
+    charm: ./contrail-openstack-compute
     num_units: 0
     series: xenial
     options:
@@ -159,22 +159,22 @@ services:
       install-sources: |
         - "deb http://192.168.1.1:8080/newton/3034 /"
   contrail-analytics:
-    charm: /home/ubuntu/contrail-analytics
+    charm: ./contrail-analytics
     num_units: 3
     series: xenial
     to: [ "1", "2", "3" ]
   contrail-analyticsdb:
-    charm: /home/ubuntu/contrail-analyticsdb
+    charm: ./contrail-analyticsdb
     num_units: 3
     series: xenial
     to: [ "1", "2", "3" ]
   contrail-control:
-    charm: /home/ubuntu/contrail-controller
+    charm: ./contrail-controller
     series: xenial
     num_units: 3
     to: [ "1", "2", "3" ]
   contrail-keystone-auth:
-    charm: /home/ubuntu/contrail-keystone-auth
+    charm: ./contrail-keystone-auth
     num_units: 1
     to: "lxd:1"
 
