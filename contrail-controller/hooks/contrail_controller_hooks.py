@@ -100,7 +100,7 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    settings = {'private-address': get_ip()}
+    settings = {'private-address': get_ip(), "port": 8082}
     relation_set(relation_settings=settings)
 
     if remote_unit().startswith("contrail-openstack-compute"):
@@ -123,6 +123,8 @@ def contrail_controller_departed():
     if units:
         return
     config.pop("cloud_orchestrator")
+    if is_leader():
+        update_northbound_relations()
     if is_container_launched(CONTAINER_NAME):
         status_set(
             "error",

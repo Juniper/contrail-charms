@@ -47,10 +47,11 @@ def config_changed():
 @restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
                         ["neutron-server"]})
 def contrail_controller_changed():
-    if not relation_get("port"):
-        log("Relation not ready")
+    data = relation_get()
+    if "auth-info" not in data:
         return
-    auth_info = relation_get("auth-info")
+
+    auth_info = data["auth-info"]
     if auth_info is not None:
         config["auth_info"] = auth_info
     else:

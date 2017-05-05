@@ -62,8 +62,12 @@ def config_changed():
     update_charm_status()
 
 
-def _value_changed(rel_key, cfg_key):
-    value = relation_get(rel_key)
+def _value_changed(rel_data, rel_key, cfg_key):
+    if rel_key not in rel_data:
+        # data is absent in relation. it means that remote charm doesn't
+        # send it due to lack of information
+        return
+    value = rel_data[rel_key]
     if value is not None:
         config[cfg_key] = value
     else:
@@ -78,8 +82,9 @@ def analyticsdb_joined():
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
 def analyticsdb_changed():
-    _value_changed("auth-info", "auth_info")
-    _value_changed("cloud-orchestrator", "cloud_orchestrator")
+    data = relation_get()
+    _value_changed(data, "auth-info", "auth_info")
+    _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     update_charm_status()

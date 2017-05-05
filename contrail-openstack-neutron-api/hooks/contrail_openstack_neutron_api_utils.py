@@ -1,5 +1,4 @@
 import json
-from socket import gethostbyname
 from subprocess import CalledProcessError, check_output
 
 import apt_pkg
@@ -45,8 +44,6 @@ def contrail_api_ctx():
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             port = relation_get("port", unit, rid)
-            if not port:
-                continue
             ip = relation_get("private-address", unit, rid)
             return {"api_server": ip, "api_port": port}
     return {}

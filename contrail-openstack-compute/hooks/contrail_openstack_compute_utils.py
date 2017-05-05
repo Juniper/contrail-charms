@@ -223,8 +223,6 @@ def get_controller_address():
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             port = relation_get("port", unit, rid)
-            if not port:
-                continue
             ip = relation_get("private-address", unit, rid)
             return (ip, port)
     return (None, None)
