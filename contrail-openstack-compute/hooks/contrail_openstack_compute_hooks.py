@@ -19,6 +19,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     relation_set,
     related_units,
+    WARNING,
 )
 
 from charmhelpers.core.host import (
@@ -129,9 +130,9 @@ def check_vrouter():
             try:
                 provision_vrouter()
                 config["vrouter-provisioned"] = True
-            except Exception:
+            except Exception as e:
                 # vrouter is not up yet
-                pass
+                log("Couldn't provision vrouter: " + str(e), level=WARNING)
     elif config.get("vrouter-provisioned"):
         unprovision_vrouter()
         config["vrouter-provisioned"] = False
@@ -220,12 +221,15 @@ def contrail_controller_changed():
 
     # TODO: add reaction to change auth_info from None to not-None and back
 
+    auth_info = config.get("auth_info")
     if auth_info is None:
         log("Relation not ready")
         return
 
     write_configs()
     config["controller-ready"] = True
+    config.save()
+
     check_vrouter()
     check_local_metadata()
     set_status()

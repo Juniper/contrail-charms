@@ -72,11 +72,7 @@ def retry(f=None, timeout=10, delay=2):
             if elapsed >= timeout:
                 raise error
             remaining = timeout - elapsed
-            if delay <= remaining:
-                sleep(delay)
-            else:
-                sleep(remaining)
-                raise error
+            sleep(delay if delay <= remaining else remaining)
     return func
 
 
@@ -228,7 +224,7 @@ def get_controller_address():
     return (None, None)
 
 
-@retry(timeout=300)
+@retry(timeout=120, delay=20)
 def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
                                  service_port, fabric_ip, fabric_port, op,
                                  user, password):
@@ -267,7 +263,7 @@ def unprovision_local_metadata():
                                  "del", user, password)
 
 
-@retry(timeout=300)
+@retry(timeout=120, delay=20)
 def contrail_provision_vrouter(hostname, ip, api_ip, api_port, op,
                                user, password, tenant):
     check_call(["contrail-provision-vrouter",
@@ -283,7 +279,8 @@ def contrail_provision_vrouter(hostname, ip, api_ip, api_port, op,
 
 def provision_vrouter():
     hostname = gethostname()
-    ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
+    iface = config.get("control-interface")
+    ip = vhost_addr(iface)["addr"]
     api_ip, api_port = get_controller_address()
     identity = identity_admin_ctx()
     user = identity.get("keystone_admin_user")
@@ -296,7 +293,8 @@ def provision_vrouter():
 
 def unprovision_vrouter():
     hostname = gethostname()
-    ip = netifaces.ifaddresses("vhost0")[netifaces.AF_INET][0]["addr"]
+    iface = config.get("control-interface")
+    ip = vhost_addr(iface)["addr"]
     api_ip, api_port = get_controller_address()
     identity = identity_admin_ctx()
     user = identity.get("keystone_admin_user")
@@ -309,27 +307,33 @@ def unprovision_vrouter():
 
 def vhost_gateway():
     # determine vhost gateway
+    iface = config.get("control-interface")
     gateway = config.get("vhost-gateway")
     if gateway == "auto":
         for line in check_output(["route", "-n"]).splitlines()[2:]:
             l = line.decode().split()
-            if "G" in l[3] and l[7] == "vhost0":
+            if "G" in l[3] and l[7] == iface:
                 return l[1]
         gateway = None
     return gateway
 
 
+def vhost_addr(iface):
+    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
+
+
 def vhost_ip(iface):
     # return a vhost formatted address and mask - x.x.x.x/xx
-    addr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
+    addr = vhost_addr(iface)
     ip = addr["addr"]
     cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
     return ip + "/" + str(cidr)
 
 
 def vhost_phys():
-    # run external script to determine physical interface of vhost0
-    return check_output(["scripts/vhost-phys.sh"]).rstrip()
+    # run external script to determine physical interface of 'vhost0'
+    iface = config.get("control-interface")
+    return check_output(["scripts/vhost-phys.sh", iface]).rstrip()
 
 
 def contrail_api_ctx():
@@ -357,8 +361,7 @@ def analytics_node_ctx():
 
 def network_ctx():
     iface = config.get("control-interface")
-    return {"control_network_ip":
-            netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"]}
+    return {"control_network_ip": vhost_addr(iface)["addr"]}
 
 
 def neutron_metadata_ctx():
@@ -368,7 +371,8 @@ def neutron_metadata_ctx():
 
 
 def vrouter_ctx():
-    return {"vhost_ip": vhost_ip("vhost0"),
+    iface = config.get("control-interface")
+    return {"vhost_ip": vhost_ip(iface),
             "vhost_gateway": vhost_gateway(),
             "vhost_physical": vhost_phys().decode()}
 

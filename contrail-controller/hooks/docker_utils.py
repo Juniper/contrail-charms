@@ -60,11 +60,7 @@ def retry(f=None, timeout=10, delay=2):
             if elapsed >= timeout:
                 raise error
             remaining = timeout - elapsed
-            if delay <= remaining:
-                sleep(delay)
-            else:
-                sleep(remaining)
-                raise error
+            sleep(delay if delay <= remaining else remaining)
     return func
 
 
