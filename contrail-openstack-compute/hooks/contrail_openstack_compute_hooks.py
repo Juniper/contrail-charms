@@ -126,8 +126,12 @@ def check_vrouter():
        and config.get("analytics-servers") \
        and config.get("auth_info"):
         if not config.get("vrouter-provisioned"):
-            provision_vrouter()
-            config["vrouter-provisioned"] = True
+            try:
+                provision_vrouter()
+                config["vrouter-provisioned"] = True
+            except Exception:
+                # vrouter is not up yet
+                pass
     elif config.get("vrouter-provisioned"):
         unprovision_vrouter()
         config["vrouter-provisioned"] = False
@@ -224,6 +228,7 @@ def contrail_controller_changed():
     config["controller-ready"] = True
     check_vrouter()
     check_local_metadata()
+    set_status()
 
 
 @hooks.hook("contrail-controller-relation-departed")
@@ -235,6 +240,7 @@ def contrail_controller_node_departed():
         config.pop("analytics-servers", None)
         config.pop("auth_info", None)
         config.save()
+        set_status()
     write_configs()
 
 
@@ -261,6 +267,8 @@ def neutron_plugin_joined():
 
 @hooks.hook("update-status")
 def update_status():
+    check_vrouter()
+    check_local_metadata()
     set_status()
 
 
@@ -268,6 +276,9 @@ def update_status():
 def upgrade_charm():
     write_configs()
     service_restart("supervisor-vrouter")
+    check_vrouter()
+    check_local_metadata()
+    set_status()
 
 
 @restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
