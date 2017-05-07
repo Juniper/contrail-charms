@@ -2,6 +2,7 @@
 
 import json
 import sys
+import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -15,7 +16,9 @@ from charmhelpers.core.hookenv import (
     relation_id,
     related_units,
     status_set,
-    remote_unit)
+    remote_unit,
+    local_unit,
+)
 
 from charmhelpers.fetch import (
     apt_install,
@@ -214,6 +217,41 @@ def upgrade_charm():
 def todo():
     # TODO: think about it
     pass
+
+
+def _http_services():
+    name = local_unit().replace("/", "-")
+    addr = get_ip()
+    return [
+        {'service_name': 'contrail-webui-http',
+         'service_host': '*',
+         'service_port': 8080,
+         'service_options': [
+            'timeout client 86400000',
+            'mode http',
+            'balance roundrobin',
+            'cookie SERVERID insert indirect nocache',
+            'timeout server 30000',
+            'timeout connect 4000',
+         ],
+         'servers': [[name, addr, 8080,
+            'cookie ' + addr + ' weight 1 maxconn 1024 check port 8082']]},
+        {'service_name': 'contrail-api',
+         'service_host': '*',
+         'service_port': 8082,
+         'service_options': [
+            'timeout client 3m',
+            'option nolinger',
+            'timeout server 3m',
+            'balance roundrobin',
+         ],
+         'servers': [[name, addr, 8082, 'check inter 2000 rise 2 fall 3']]}
+    ]
+
+
+@hooks.hook("http-services-relation-joined")
+def http_services_joined():
+    relation_set(services=yaml.dump(_http_services()))
 
 
 def main():

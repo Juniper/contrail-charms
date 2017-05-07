@@ -12,6 +12,8 @@ peers:
 provides:
   contrail-controller:
     interface: contrail-controller
+  http-services:
+    interface: http
 requires:
   contrail-auth:
     interface: contrail-auth

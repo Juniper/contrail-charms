@@ -151,7 +151,7 @@ def _http_services():
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [{"service_name": "contrail-analytics-api",
-             "service_host": "0.0.0.0",
+             "service_host": "*",
              "service_port": 8081,
              "service_options": ["option nolinger", "balance roundrobin"],
              "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
