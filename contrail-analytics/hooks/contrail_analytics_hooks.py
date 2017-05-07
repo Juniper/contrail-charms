@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -11,6 +12,8 @@ from charmhelpers.core.hookenv import (
     related_units,
     status_set,
     relation_set,
+    is_leader,
+    local_unit,
 )
 
 from charmhelpers.fetch import (
@@ -142,6 +145,22 @@ def upgrade_charm():
 def todo():
     # TODO: think about it
     pass
+
+
+def _http_services():
+    name = local_unit().replace("/", "-")
+    addr = get_ip()
+    return [{"service_name": "contrail-analytics-api",
+             "service_host": "0.0.0.0",
+             "service_port": 8081,
+             "service_options": ["option nolinger", "balance roundrobin"],
+             "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
+            }]
+
+
+@hooks.hook("http-services-relation-joined")
+def http_services_joined():
+    relation_set(services=yaml.dump(_http_services()))
 
 
 def main():

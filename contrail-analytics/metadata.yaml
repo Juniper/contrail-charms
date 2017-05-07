@@ -12,6 +12,8 @@ peers:
 provides:
   contrail-analytics:
     interface: contrail-analytics
+  http-services:
+    interface: http
 requires:
   contrail-analyticsdb:
     interface: contrail-analyticsdb
