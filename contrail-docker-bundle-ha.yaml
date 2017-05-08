@@ -107,6 +107,7 @@ services:
     num_units: 0
   contrail-openstack-neutron-api:
     charm: ./contrail-openstack-neutron-api
+    series: xenial
     num_units: 0
     options:
       install-keys: |
@@ -175,6 +176,7 @@ services:
     to: [ "1", "2", "3" ]
   contrail-keystone-auth:
     charm: ./contrail-keystone-auth
+    series: xenial
     num_units: 1
     to: [ "lxd:1" ]
 

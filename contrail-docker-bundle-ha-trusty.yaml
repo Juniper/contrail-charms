@@ -106,6 +106,7 @@ services:
     num_units: 0
   contrail-openstack-neutron-api:
     charm: ./contrail-openstack-neutron-api
+    series: trusty
     num_units: 0
     options:
       install-keys: |
@@ -132,6 +133,7 @@ services:
         - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3038 /"
   contrail-openstack-compute:
     charm: ./contrail-openstack-compute
+    series: trusty
     num_units: 0
     options:
       install-keys: |
@@ -158,18 +160,22 @@ services:
         - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3038 /"
   contrail-analytics:
     charm: ./contrail-analytics
+    series: trusty
     num_units: 3
     to: [ "1", "2", "3" ]
   contrail-analyticsdb:
     charm: ./contrail-analyticsdb
+    series: trusty
     num_units: 3
     to: [ "1", "2", "3" ]
   contrail-controller:
     charm: ./contrail-controller
+    series: trusty
     num_units: 3
     to: [ "1", "2", "3" ]
   contrail-keystone-auth:
     charm: ./contrail-keystone-auth
+    series: trusty
     num_units: 1
     to: [ "lxd:1" ]
 
