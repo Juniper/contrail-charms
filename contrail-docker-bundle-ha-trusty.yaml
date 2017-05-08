@@ -130,7 +130,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3038 /"
+        - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3065 /"
   contrail-openstack-compute:
     charm: ./contrail-openstack-compute
     series: trusty
@@ -157,7 +157,7 @@ services:
           =rMS6
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
-        - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3038 /"
+        - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3065 /"
   contrail-analytics:
     charm: ./contrail-analytics
     series: trusty
