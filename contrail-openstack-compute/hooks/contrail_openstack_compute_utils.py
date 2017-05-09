@@ -85,6 +85,13 @@ def _dpkg_version(pkg):
 
 
 def set_status():
+    """ Analyzis status 'contrail-status' utility
+
+    returns:
+    0 - active
+    1 - initialing
+    2 - other
+    """
     version = _dpkg_version("contrail-vrouter-agent")
     application_version_set(version)
     output = check_output("contrail-status", shell=True)
@@ -96,13 +103,16 @@ def set_status():
             continue
         s_name = lst[0].strip()
         s_status = lst[1].strip()
-        if 'contrail-vrouter-agent' in s_name:
-            if s_status == 'active':
-                status_set("active", "Unit is ready")
-            else:
-                # TODO: rework this
-                status_set("waiting", "vrouter-agent is not up")
-            break
+        if 'contrail-vrouter-agent' not in s_name:
+            continue
+
+        if s_status == 'active':
+            status_set("active", "Unit is ready")
+            return 0
+        else:
+            # TODO: rework this
+            status_set("waiting", "vrouter-agent is not up")
+            return 1 if s_status == "initializing" else 2
 
 
 def configure_vrouter():

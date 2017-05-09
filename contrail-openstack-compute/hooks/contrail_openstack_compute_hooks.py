@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 
 import json
 import uuid
@@ -273,7 +274,10 @@ def neutron_plugin_joined():
 def update_status():
     check_vrouter()
     check_local_metadata()
-    set_status()
+    if set_status() == 1:
+        service_restart("supervisor-vrouter")
+        time.sleep(5)
+        set_status()
 
 
 @hooks.hook("upgrade-charm")
