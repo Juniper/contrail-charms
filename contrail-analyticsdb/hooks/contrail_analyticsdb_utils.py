@@ -128,7 +128,7 @@ def update_charm_status(update_config=True):
 
     image_id = get_docker_image_id(CONTAINER_NAME)
     if not image_id:
-        status_set('waiting', 'Awaiting for container resource')
+        status_set('blocked', 'Awaiting for container resource')
         return
 
     ctx = get_context()
@@ -138,16 +138,16 @@ def update_charm_status(update_config=True):
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
     if missing_relations:
-        status_set('waiting',
+        status_set('blocked',
                    'Missing relations: ' + ', '.join(missing_relations))
         return
     if not ctx.get("cloud_orchestrator"):
-        status_set('waiting',
+        status_set('blocked',
                    'Missing cloud_orchestrator info in relation '
                    'with contrail-controller.')
         return
     if not ctx.get("keystone_ip"):
-        status_set('waiting',
+        status_set('blocked',
                    'Missing auth info in relation with contrail-controller.')
         return
     # TODO: what should happens if relation departed?
