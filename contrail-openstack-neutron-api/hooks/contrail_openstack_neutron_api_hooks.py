@@ -12,7 +12,8 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_get,
     relation_ids,
-    relation_set
+    relation_set,
+    status_set,
 )
 
 from charmhelpers.core.host import (
@@ -31,11 +32,20 @@ from contrail_openstack_neutron_api_utils import (
     set_status
 )
 
-PACKAGES = ["python", "python-yaml", "python-apt", "neutron-plugin-contrail"]
+PACKAGES = ["neutron-plugin-contrail"]
 
 
 hooks = Hooks()
 config = config()
+
+
+@hooks.hook("install.real")
+def install():
+    status_set('maintenance', 'Installing...')
+    configure_sources(True, "install-sources", "install-keys")
+    apt_upgrade(fatal=True, dist=True)
+    apt_install(PACKAGES, fatal=True)
+    status_set("waiting", "Waiting for relations.")
 
 
 @hooks.hook("config-changed")
@@ -68,13 +78,6 @@ def contrail_cotroller_departed():
     if not units:
         config.pop("auth_info", None)
     write_plugin_config()
-
-
-@hooks.hook()
-def install():
-    configure_sources(True, "install-sources", "install-keys")
-    apt_upgrade(fatal=True, dist=True)
-    apt_install(PACKAGES, fatal=True)
 
 
 @hooks.hook("neutron-plugin-api-subordinate-relation-joined")

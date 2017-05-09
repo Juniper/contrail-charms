@@ -21,6 +21,7 @@ from charmhelpers.core.hookenv import (
     relation_set,
     related_units,
     WARNING,
+    status_set,
 )
 
 from charmhelpers.core.host import (
@@ -56,9 +57,7 @@ from contrail_openstack_compute_utils import (
     set_status
 )
 
-PACKAGES = ["python", "python-yaml", "python-apt",
-            "python-netaddr", "python-netifaces", "python-jinja2",
-            "contrail-vrouter-dkms", "contrail-vrouter-agent",
+PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
             "contrail-vrouter-common"]
 
 PACKAGES_DKMS_INIT = ["contrail-vrouter-init"]
@@ -68,8 +67,10 @@ hooks = Hooks()
 config = config()
 
 
-@hooks.hook()
+@hooks.hook("install.real")
 def install():
+    status_set('maintenance', 'Installing...')
+
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
     packages = list()
@@ -78,6 +79,7 @@ def install():
     packages.extend(PACKAGES_DKMS_INIT)
     apt_install(packages, fatal=True)
 
+    status_set('maintenance', 'Configuring...')
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
     fix_nodemgr()
@@ -91,6 +93,7 @@ def install():
         modprobe("vrouter")
     modprobe("vrouter", True, True)
     configure_vrouter()
+    status_set("waiting", "Waiting for relations.")
 
 
 def units(relation):
