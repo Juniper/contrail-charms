@@ -46,10 +46,8 @@ from contrail_openstack_compute_utils import (
     ifdown,
     ifup,
     modprobe,
-    provision_local_metadata,
+    provision_linklocal,
     provision_vrouter,
-    unprovision_local_metadata,
-    unprovision_vrouter,
     write_nodemgr_config,
     write_vnc_api_config,
     write_vrouter_config,
@@ -111,16 +109,16 @@ def check_local_metadata():
             # impossible to know if current hook is firing because
             # relation or leader is being removed lp #1469731
             if not relation_ids("cluster"):
-                unprovision_local_metadata()
+                provision_linklocal("del")
             leader_set({"local-metadata-provisioned": ""})
         return
 
     if config["enable-metadata-server"]:
         if not leader_get("local-metadata-provisioned"):
-            provision_local_metadata()
+            provision_linklocal("add")
             leader_set({"local-metadata-provisioned": True})
     elif leader_get("local-metadata-provisioned"):
-        unprovision_local_metadata()
+        provision_linklocal("del")
         leader_set({"local-metadata-provisioned": ""})
 
 
@@ -132,13 +130,13 @@ def check_vrouter():
        and config.get("auth_info"):
         if not config.get("vrouter-provisioned"):
             try:
-                provision_vrouter()
+                provision_vrouter("add")
                 config["vrouter-provisioned"] = True
             except Exception as e:
                 # vrouter is not up yet
                 log("Couldn't provision vrouter: " + str(e), level=WARNING)
     elif config.get("vrouter-provisioned"):
-        unprovision_vrouter()
+        provision_vrouter("del")
         config["vrouter-provisioned"] = False
 
 

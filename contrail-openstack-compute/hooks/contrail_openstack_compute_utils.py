@@ -235,85 +235,52 @@ def get_controller_address():
     return (None, None)
 
 
-@retry(timeout=120, delay=20)
-def contrail_provision_linklocal(api_ip, api_port, service_name, service_ip,
-                                 service_port, fabric_ip, fabric_port, op,
-                                 user, password):
-    check_call(["contrail-provision-linklocal",
-                "--api_server_ip", api_ip,
-                "--api_server_port", str(api_port),
-                "--linklocal_service_name", service_name,
-                "--linklocal_service_ip", service_ip,
-                "--linklocal_service_port", str(service_port),
-                "--ipfabric_service_ip", fabric_ip,
-                "--ipfabric_service_port", str(fabric_port),
-                "--oper", op,
-                "--admin_user", user,
-                "--admin_password", password])
-
-
-def provision_local_metadata():
+def provision_linklocal(op):
     api_ip, api_port = get_controller_address()
     identity = identity_admin_ctx()
-    user = identity.get("keystone_admin_user")
-    password = identity.get("keystone_admin_password")
-    log("Provisioning local metadata service 127.0.0.1:8775")
-    contrail_provision_linklocal(api_ip, api_port, "metadata",
-                                 "169.254.169.254", 80, "127.0.0.1", 8775,
-                                 "add", user, password)
+    params = [
+        "contrail-provision-linklocal",
+        "--api_server_ip", api_ip,
+        "--api_server_port", str(api_port),
+        "--linklocal_service_name", "metadata",
+        "--linklocal_service_ip", "169.254.169.254",
+        "--linklocal_service_port", "80",
+        "--ipfabric_service_ip", "127.0.0.1",
+        "--ipfabric_service_port", "8775",
+        "--oper", op,
+        "--admin_user", identity.get("keystone_admin_user"),
+        "--admin_password", identity.get("keystone_admin_password")]
+
+    @retry(timeout=120, delay=20)
+    def _call():
+        check_call(params)
+
+    log("{} local metadata service 127.0.0.1:8775".format(op))
+    _call()
 
 
-def unprovision_local_metadata():
-    api_ip, api_port = get_controller_address()
-    identity = identity_admin_ctx()
-    user = identity.get("keystone_admin_user")
-    password = identity.get("keystone_admin_password")
-    log("Unprovisioning local metadata service 127.0.0.1:8775")
-    contrail_provision_linklocal(api_ip, api_port, "metadata",
-                                 "169.254.169.254", 80, "127.0.0.1", 8775,
-                                 "del", user, password)
-
-
-@retry(timeout=120, delay=20)
-def contrail_provision_vrouter(hostname, ip, api_ip, api_port, op,
-                               user, password, tenant):
-    check_call(["contrail-provision-vrouter",
-                "--host_name", hostname,
-                "--host_ip", ip,
-                "--api_server_ip", api_ip,
-                "--api_server_port", str(api_port),
-                "--oper", op,
-                "--admin_user", user,
-                "--admin_password", password,
-                "--admin_tenant_name", tenant])
-
-
-def provision_vrouter():
-    hostname = gethostname()
+def provision_vrouter(op):
     iface = config.get("control-interface")
     ip = vhost_addr(iface)["addr"]
     api_ip, api_port = get_controller_address()
     identity = identity_admin_ctx()
-    user = identity.get("keystone_admin_user")
-    password = identity.get("keystone_admin_password")
-    tenant = identity.get("keystone_admin_tenant")
-    log("Provisioning vrouter {}".format(ip))
-    contrail_provision_vrouter(hostname, ip, api_ip, api_port, "add",
-                               user, password, tenant)
+    params = [
+        "contrail-provision-vrouter",
+        "--host_name", gethostname(),
+        "--host_ip", ip,
+        "--api_server_ip", api_ip,
+        "--api_server_port", str(api_port),
+        "--oper", op,
+        "--admin_user", identity.get("keystone_admin_user"),
+        "--admin_password", identity.get("keystone_admin_password"),
+        "--admin_tenant_name", identity.get("keystone_admin_tenant")]
 
+    @retry(timeout=120, delay=20)
+    def _call():
+        check_call(params)
 
-def unprovision_vrouter():
-    hostname = gethostname()
-    iface = config.get("control-interface")
-    ip = vhost_addr(iface)["addr"]
-    api_ip, api_port = get_controller_address()
-    identity = identity_admin_ctx()
-    user = identity.get("keystone_admin_user")
-    password = identity.get("keystone_admin_password")
-    tenant = identity.get("keystone_admin_tenant")
-    log("Unprovisioning vrouter {}".format(ip))
-    contrail_provision_vrouter(hostname, ip, api_ip, api_port, "del",
-                               user, password, tenant)
+    log("{} vrouter {}".format(op, ip))
+    _call()
 
 
 def vhost_gateway():
