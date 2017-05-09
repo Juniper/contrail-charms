@@ -12,7 +12,6 @@ from charmhelpers.core.hookenv import (
     related_units,
     status_set,
     relation_set,
-    is_leader,
     local_unit,
 )
 
