@@ -89,7 +89,7 @@ def set_status():
 
     returns:
     0 - active
-    1 - initialing
+    1 - initializing
     2 - other
     """
     version = _dpkg_version("contrail-vrouter-agent")
@@ -106,6 +106,7 @@ def set_status():
         if 'contrail-vrouter-agent' not in s_name:
             continue
 
+        log("contrail-status: " + line)
         if s_status == 'active':
             status_set("active", "Unit is ready")
             return 0
