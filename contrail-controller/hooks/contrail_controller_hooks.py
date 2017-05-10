@@ -65,18 +65,26 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
+    auth_mode = config.get("auth-mode")
+    if auth_mode not in ('rbac', 'cloud-admin', 'no-auth'):
+        raise Exception("Config is invalid. auth-mode must one of: "
+                        "rbac, cloud-admin, no-auth.")
+
     update_charm_status()
 
     if not is_leader():
         return
 
+    update_northbound_relations()
     update_southbound_relations()
 
 
 def update_northbound_relations(rid=None):
     # TODO: support auth modes
     settings = {
-        "multi-tenancy": (config.get("auth-mode") == 'rbac'),
+        "auth-mode": config.get("auth-mode"),
+        "cloud-admin-role": config.get("cloud-admin-role"),
+        "global-read-only-role": config.get("global-read-only-role"),
         "auth-info": config.get("auth_info"),
         "cloud-orchestrator": config.get("cloud_orchestrator")
     }
@@ -95,6 +103,9 @@ def update_southbound_relations(rid=None):
     settings = {
         "port": 8082,
         "analytics-server": json.dumps(get_analytics_list()),
+        "auth-mode": config.get("auth-mode"),
+        "cloud-admin-role": config.get("cloud-admin-role"),
+        "global-read-only-role": config.get("global-read-only-role"),
         "auth-info": config.get("auth_info")
     }
     for rid in ([rid] if rid else relation_ids("contrail-controller")):

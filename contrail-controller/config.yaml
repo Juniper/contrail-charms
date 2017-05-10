@@ -3,7 +3,8 @@ options:
     type: string
     default: rbac
     description: |
-      'rbac', 'cloud-admin' or 'no-auth'
+      It represents 'aaa_mode' configuration key of Contrail.
+      Can be one of: 'rbac', 'cloud-admin' or 'no-auth'
       Authentication mode. Detailed information can be found in the Contrail documentation.
   cloud-admin-role:
     type: string

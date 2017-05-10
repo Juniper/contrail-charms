@@ -84,7 +84,9 @@ def contrail_analytics_joined():
 @hooks.hook("contrail-analytics-relation-changed")
 def contrail_analytics_changed():
     data = relation_get()
-    _value_changed(data, "multi-tenancy", "multi_tenancy")
+    _value_changed(data, "auth-mode", "auth_mode")
+    _value_changed(data, "cloud-admin-role", "cloud_admin_role")
+    _value_changed(data, "global-read-only-role", "global_read_only_role")
     _value_changed(data, "auth-info", "auth_info")
     _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
     # TODO: handle changing of all values
@@ -98,7 +100,9 @@ def contrail_analytics_departed():
                   for unit in related_units(rid)]
     if not units:
         config.pop("auth_info", None)
-        config.pop("multi_tenancy", None)
+        config.pop("auth_mode", None)
+        config.pop("cloud_admin_role", None)
+        config.pop("global_read_only_role", None)
         config.pop("cloud_orchestrator", None)
         if is_container_launched(CONTAINER_NAME):
             status_set(

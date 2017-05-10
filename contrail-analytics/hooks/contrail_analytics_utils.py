@@ -6,9 +6,7 @@ import netifaces
 
 import apt_pkg
 import json
-import yaml
 import platform
-import six
 
 from charmhelpers.core.hookenv import (
     config,
@@ -61,11 +59,9 @@ def fix_hostname():
 
 def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
-    mt = config.get("multi_tenancy")
-    if mt is None:
+    auth_mode = config.get("auth_mode")
+    if auth_mode is None:
         return {}
-    if isinstance(mt, six.string_types):
-        mt = yaml.load(mt)
 
     controller_ip_list = []
     for rid in relation_ids("contrail-analytics"):
@@ -76,7 +72,9 @@ def controller_ctx():
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
     return {
-        "multi_tenancy": mt,
+        "auth_mode": auth_mode,
+        "cloud_admin_role": config.get("cloud-admin-role"),
+        "global_read_only_role": config.get("global-read-only-role"),
         "controller_servers": controller_ip_list,
         "lb_vip": controller_ip_list[0] if controller_ip_list else ""
     }
