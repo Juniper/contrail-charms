@@ -76,7 +76,6 @@ def controller_ctx():
         "cloud_admin_role": config.get("cloud-admin-role"),
         "global_read_only_role": config.get("global-read-only-role"),
         "controller_servers": controller_ip_list,
-        "lb_vip": controller_ip_list[0] if controller_ip_list else ""
     }
 
 

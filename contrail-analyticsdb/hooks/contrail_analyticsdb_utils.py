@@ -101,8 +101,6 @@ def get_context():
     ctx.update(servers_ctx())
     ctx.update(analyticsdb_ctx())
     ctx.update(identity_admin_ctx())
-    if ctx.get("controller_servers"):
-        ctx["lb_vip"] = ctx["controller_servers"][0]
     return ctx
 
 
