@@ -1,3 +1,4 @@
+import os
 from socket import gaierror, gethostbyname, gethostname, inet_aton
 import struct
 from subprocess import check_call, check_output
@@ -16,6 +17,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     application_version_set,
 )
+from charmhelpers.core.host import write_file
 from charmhelpers.core.templating import render
 
 from docker_utils import (
@@ -98,15 +100,39 @@ def identity_admin_ctx():
 def get_context():
     ctx = {}
     ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
+
+    ssl_ca = config.get("ssl_ca")
+    ctx["ssl_ca"] = ssl_ca
+    ctx["ssl_cert"] = config.get("ssl_cert")
+    ctx["ssl_key"] = config.get("ssl_key")
+    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+
     ctx.update(servers_ctx())
     ctx.update(analyticsdb_ctx())
     ctx.update(identity_admin_ctx())
     return ctx
 
 
+def _save_file(path, data):
+    if not data:
+        os.remove(path)
+    else:
+        write_file(path, data, perms=0o400)
+
+
 def render_config(ctx=None):
     if not ctx:
         ctx = get_context()
+
+    # NOTE: store files in default paths cause no way to pass this path to
+    # some of components (sandesh)
+    ssl_ca = ctx["ssl_ca"]
+    _save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
+    ssl_cert = ctx["ssl_cert"]
+    _save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
+    ssl_key = ctx["ssl_key"]
+    _save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
+
     render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
 
 

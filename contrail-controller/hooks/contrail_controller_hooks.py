@@ -86,7 +86,10 @@ def update_northbound_relations(rid=None):
         "cloud-admin-role": config.get("cloud-admin-role"),
         "global-read-only-role": config.get("global-read-only-role"),
         "auth-info": config.get("auth_info"),
-        "cloud-orchestrator": config.get("cloud_orchestrator")
+        "cloud-orchestrator": config.get("cloud_orchestrator"),
+        "ssl-ca": config.get("ssl_ca"),
+        "ssl-cert": config.get("ssl_cert"),
+        "ssl-key": config.get("ssl_key"),
     }
 
     if rid:
@@ -106,7 +109,10 @@ def update_southbound_relations(rid=None):
         "auth-mode": config.get("auth-mode"),
         "cloud-admin-role": config.get("cloud-admin-role"),
         "global-read-only-role": config.get("global-read-only-role"),
-        "auth-info": config.get("auth_info")
+        "auth-info": config.get("auth_info"),
+        "ssl-ca": config.get("ssl_ca"),
+        "ssl-cert": config.get("ssl_cert"),
+        "ssl-key": config.get("ssl_key"),
     }
     for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)

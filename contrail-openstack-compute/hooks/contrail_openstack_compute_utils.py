@@ -27,7 +27,12 @@ from charmhelpers.core.hookenv import (
     application_version_set
 )
 
-from charmhelpers.core.host import service_restart, service_start
+from charmhelpers.core.host import (
+    restart_on_change,
+    service_restart,
+    service_start,
+    write_file,
+)
 
 from charmhelpers.core.templating import render
 
@@ -365,27 +370,52 @@ def vrouter_vgw_ctx():
     return ctx
 
 
-def write_nodemgr_config():
-    ctx = analytics_node_ctx()
-    render("contrail-vrouter-nodemgr.conf",
-           "/etc/contrail/contrail-vrouter-nodemgr.conf", ctx)
-
-
-def write_vnc_api_config():
+def get_context():
     ctx = {}
+
+    ssl_ca = config.get("ssl_ca")
+    ctx["ssl_ca"] = ssl_ca
+    ctx["ssl_cert"] = config.get("ssl_cert")
+    ctx["ssl_key"] = config.get("ssl_key")
+    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+
     ctx.update(contrail_api_ctx())
     ctx.update(identity_admin_ctx())
-    render("vnc_api_lib.ini", "/etc/contrail/vnc_api_lib.ini", ctx)
-
-
-def write_vrouter_config():
-    ctx = {}
     ctx.update(control_node_ctx())
     ctx.update(analytics_node_ctx())
     ctx.update(neutron_metadata_ctx())
     ctx.update(network_ctx())
     ctx.update(vrouter_ctx())
     ctx.update(vrouter_vgw_ctx())
+    return ctx
+
+
+def _save_file(path, data):
+    if not data:
+        os.remove(path)
+    else:
+        write_file(path, data, perms=0o400)
+
+
+# TODO: add restart if content of certificates was changed
+@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
+                        ["contrail-vrouter-agent"],
+                    "/etc/contrail/contrail-vrouter-nodemgr.conf":
+                        ["contrail-vrouter-nodemgr"]})
+def write_configs():
+    ctx = get_context()
+
+    # NOTE: store files in the same paths as in tepmlates
+    ssl_ca = ctx["ssl_ca"]
+    _save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
+    ssl_cert = ctx["ssl_cert"]
+    _save_file("/etc/contrail/ssl/certs/server.pem", ssl_cert)
+    ssl_key = ctx["ssl_key"]
+    _save_file("/etc/contrail/ssl/private/server-privkey.pem", ssl_key)
+
+    render("contrail-vrouter-nodemgr.conf",
+           "/etc/contrail/contrail-vrouter-nodemgr.conf", ctx)
+    render("vnc_api_lib.ini", "/etc/contrail/vnc_api_lib.ini", ctx)
     render("contrail-vrouter-agent.conf",
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
 

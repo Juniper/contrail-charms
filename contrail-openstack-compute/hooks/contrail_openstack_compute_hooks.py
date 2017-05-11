@@ -25,7 +25,6 @@ from charmhelpers.core.hookenv import (
 )
 
 from charmhelpers.core.host import (
-    restart_on_change,
     service_restart
 )
 
@@ -48,9 +47,7 @@ from contrail_openstack_compute_utils import (
     modprobe,
     provision_linklocal,
     provision_vrouter,
-    write_nodemgr_config,
-    write_vnc_api_config,
-    write_vrouter_config,
+    write_configs,
     write_vrouter_vgw_interfaces,
     set_status
 )
@@ -219,6 +216,9 @@ def contrail_controller_changed():
             config["auth_info"] = auth_info
         else:
             config.pop("auth_info", None)
+    config["ssl_ca"] = data.get("ssl-ca")
+    config["ssl_cert"] = data.get("ssl-cert")
+    config["ssl_key"] = data.get("ssl-key")
     config.save()
 
     # TODO: add reaction to change auth_info from None to not-None and back
@@ -245,6 +245,9 @@ def contrail_controller_node_departed():
         check_local_metadata()
         config.pop("analytics-servers", None)
         config.pop("auth_info", None)
+        config.pop("ssl_ca", None)
+        config.pop("ssl_cert", None)
+        config.pop("ssl_key", None)
         config.save()
         set_status()
     write_configs()
@@ -288,16 +291,6 @@ def upgrade_charm():
     check_vrouter()
     check_local_metadata()
     set_status()
-
-
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
-                        ["contrail-vrouter-agent"],
-                    "/etc/contrail/contrail-vrouter-nodemgr.conf":
-                        ["contrail-vrouter-nodemgr"]})
-def write_configs():
-    write_vrouter_config()
-    write_vnc_api_config()
-    write_nodemgr_config()
 
 
 def main():

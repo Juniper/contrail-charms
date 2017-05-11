@@ -89,6 +89,9 @@ def contrail_analytics_changed():
     _value_changed(data, "global-read-only-role", "global_read_only_role")
     _value_changed(data, "auth-info", "auth_info")
     _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
+    _value_changed(data, "ssl-ca", "ssl_ca")
+    _value_changed(data, "ssl-cert", "ssl_cert")
+    _value_changed(data, "ssl-key", "ssl_key")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     update_charm_status()
@@ -99,11 +102,10 @@ def contrail_analytics_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        config.pop("auth_info", None)
-        config.pop("auth_mode", None)
-        config.pop("cloud_admin_role", None)
-        config.pop("global_read_only_role", None)
-        config.pop("cloud_orchestrator", None)
+        for key in ["auth_info", "auth_mode", "cloud_admin_role",
+                    "global_read_only_role", "cloud_orchestrator",
+                    "ssl_ca", "ssl_cert", "ssl_key"]:
+            config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):
             status_set(
                 "error",

@@ -1,3 +1,4 @@
+import os
 import json
 from subprocess import CalledProcessError, check_output
 
@@ -11,7 +12,7 @@ from charmhelpers.core.hookenv import (
     application_version_set,
     status_set,
 )
-
+from charmhelpers.core.host import write_file
 from charmhelpers.core.templating import render
 
 apt_pkg.init()
@@ -54,10 +55,37 @@ def identity_admin_ctx():
     return (json.loads(auth_info) if auth_info else {})
 
 
-def write_plugin_config():
+def get_context():
     ctx = {}
     ctx.update(contrail_api_ctx())
     ctx.update(identity_admin_ctx())
+
+    ssl_ca = config.get("ssl_ca")
+    ctx["ssl_ca"] = ssl_ca
+    ctx["ssl_cert"] = config.get("ssl_cert")
+    ctx["ssl_key"] = config.get("ssl_key")
+    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    return ctx
+
+
+def _save_file(path, data):
+    if not data:
+        os.remove(path)
+    else:
+        write_file(path, data, perms=0o400)
+
+
+def write_plugin_config():
+    ctx = get_context()
+
+    # NOTE: store files in the same paths as in tepmlates
+    ssl_ca = ctx["ssl_ca"]
+    _save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
+    ssl_cert = ctx["ssl_cert"]
+    _save_file("/etc/contrail/ssl/certs/server.pem", ssl_cert)
+    ssl_key = ctx["ssl_key"]
+    _save_file("/etc/contrail/ssl/private/server-privkey.pem", ssl_key)
+
     render("ContrailPlugin.ini",
            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
            ctx, "root", "neutron", 0o440)
