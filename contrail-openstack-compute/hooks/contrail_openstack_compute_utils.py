@@ -391,10 +391,13 @@ def get_context():
 
 
 def _save_file(path, data):
-    if not data:
-        os.remove(path)
-    else:
+    if data:
+        fdir = os.path.dirname(path)
+        if not os.path.exists(fdir):
+            os.makedirs(fdir)
         write_file(path, data, perms=0o400)
+    elif os.path.exists(path):
+        os.remove(path)
 
 
 # TODO: add restart if content of certificates was changed

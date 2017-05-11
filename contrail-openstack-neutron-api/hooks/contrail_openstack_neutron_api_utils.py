@@ -69,10 +69,13 @@ def get_context():
 
 
 def _save_file(path, data):
-    if not data:
+    if data:
+        fdir = os.path.dirname(path)
+        if not os.path.exists(fdir):
+            os.makedirs(fdir)
+        write_file(path, data, perms=0o444)
+    elif os.path.exists(path):
         os.remove(path)
-    else:
-        write_file(path, data, perms=0o400)
 
 
 def write_plugin_config():
