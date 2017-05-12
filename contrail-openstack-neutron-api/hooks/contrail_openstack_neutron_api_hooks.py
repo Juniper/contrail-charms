@@ -53,7 +53,6 @@ def config_changed():
     set_status()
 
 
-# TODO: add restart if content of certificates was changed
 @hooks.hook("contrail-controller-relation-changed")
 @restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
                         ["neutron-server"]})
@@ -68,14 +67,11 @@ def contrail_controller_changed():
     else:
         config.pop("auth_info", None)
     config["ssl_ca"] = data.get("ssl-ca")
-    config["ssl_cert"] = data.get("ssl-cert")
-    config["ssl_key"] = data.get("ssl-key")
     config.save
 
     write_plugin_config()
 
 
-# TODO: add restart if content of certificates was changed
 @hooks.hook("contrail-controller-relation-departed")
 @restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
                         ["neutron-server"]})
@@ -85,8 +81,6 @@ def contrail_cotroller_departed():
     if not units:
         config.pop("auth_info", None)
         config.pop("ssl_ca", None)
-        config.pop("ssl_cert", None)
-        config.pop("ssl_key", None)
         config.save
     write_plugin_config()
 
