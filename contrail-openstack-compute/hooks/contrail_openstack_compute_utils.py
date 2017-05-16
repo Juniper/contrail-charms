@@ -32,6 +32,7 @@ from charmhelpers.core.host import (
     service_restart,
     service_start,
     write_file,
+    mkdir,
 )
 
 from charmhelpers.core.templating import render
@@ -157,6 +158,8 @@ def drop_caches():
 def fix_nodemgr():
     # add files missing from contrail-nodemgr package
     etc_dir = "/etc/contrail"
+    mkdir(etc_dir + "/supervisord_vrouter_files",
+          owner="contrail", group="contrail")
     dest = etc_dir + "/supervisord_vrouter_files/contrail-vrouter-nodemgr.ini"
     shutil.copy("files/contrail-nodemgr-vrouter.ini", dest)
     pw = pwd.getpwnam("contrail")
