@@ -157,6 +157,11 @@ def open_ports(image_id):
         log(str(e), level=ERROR)
         return
 
+    if not ports:
+        log("There is no ports defined in container image confige.",
+            level=ERROR)
+        return
+
     for pp_str in ports:
         pp = pp_str.split('/')
         open_port(pp[0], pp[1].upper())
