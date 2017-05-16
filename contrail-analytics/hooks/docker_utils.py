@@ -129,7 +129,7 @@ def get_docker_image_id(name):
                               shell=True)
     except CalledProcessError:
         return None
-    output = output.decode().split('\n')
+    output = output.decode('UTF-8').split('\n')
     for line in output:
         parts = line.split()
         if name in parts[0]:

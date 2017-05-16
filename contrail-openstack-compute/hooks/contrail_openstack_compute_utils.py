@@ -83,8 +83,8 @@ def retry(f=None, timeout=10, delay=2):
 
 def _dpkg_version(pkg):
     try:
-        return check_output(
-            ["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).decode().rstrip()
+        output = check_output(["dpkg-query", "-f", "${Version}\\n", "-W", pkg])
+        return output.decode('UTF-8').rstrip()
     except CalledProcessError:
         return None
 
@@ -103,7 +103,7 @@ def set_status():
     for line in output.splitlines()[1:]:
         if len(line) == 0:
             return
-        lst = line.decode().split()
+        lst = line.decode('UTF-8').split()
         if len(lst) < 2:
             continue
         s_name = lst[0].strip()
@@ -294,7 +294,7 @@ def vhost_gateway():
     gateway = config.get("vhost-gateway")
     if gateway == "auto":
         for line in check_output(["route", "-n"]).splitlines()[2:]:
-            l = line.decode().split()
+            l = line.decode('UTF-8').split()
             if "G" in l[3] and l[7] == iface:
                 return l[1]
         gateway = None
@@ -316,7 +316,9 @@ def vhost_ip(iface):
 def vhost_phys():
     # run external script to determine physical interface of 'vhost0'
     iface = config.get("control-interface")
-    return check_output(["scripts/vhost-phys.sh", iface]).rstrip()
+    return (check_output(["scripts/vhost-phys.sh", iface])
+                .decode('UTF-8')
+                .rstrip())
 
 
 def contrail_api_ctx():
@@ -357,7 +359,7 @@ def vrouter_ctx():
     iface = config.get("control-interface")
     return {"vhost_ip": vhost_ip(iface),
             "vhost_gateway": vhost_gateway(),
-            "vhost_physical": vhost_phys().decode()}
+            "vhost_physical": vhost_phys()}
 
 
 def vrouter_vgw_ctx():

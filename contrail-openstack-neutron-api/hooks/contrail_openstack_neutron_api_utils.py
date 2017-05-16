@@ -12,7 +12,10 @@ from charmhelpers.core.hookenv import (
     application_version_set,
     status_set,
 )
-from charmhelpers.core.host import write_file
+from charmhelpers.core.host import (
+    write_file,
+    service_running,
+)
 from charmhelpers.core.templating import render
 
 apt_pkg.init()
@@ -22,9 +25,7 @@ config = config()
 def set_status():
     version = dpkg_version("neutron-plugin-contrail")
     application_version_set(version)
-    cmd = 'service neutron-server status'
-    out = check_output(cmd, shell=True)
-    if 'running' in out.decode().split()[1].strip():
+    if service_running("neutron-server"):
         status_set("active", "Unit is ready")
     else:
         status_set("waiting", "neutron server is not running")
