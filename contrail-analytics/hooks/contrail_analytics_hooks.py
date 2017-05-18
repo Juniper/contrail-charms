@@ -32,7 +32,6 @@ from docker_utils import (
     add_docker_repo,
     DOCKER_PACKAGES,
     is_container_launched,
-    load_docker_image,
 )
 
 
@@ -54,7 +53,6 @@ def install():
     apt_update(fatal=False)
     apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
 
-    load_docker_image(CONTAINER_NAME)
     update_charm_status()
 
 
@@ -135,10 +133,8 @@ def update_status():
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
-    if not is_container_launched(CONTAINER_NAME):
-        load_docker_image(CONTAINER_NAME)
-        # NOTE: image can not be deleted if container is running.
-        # TODO: think about killing the container
+    # NOTE: image can not be deleted if container is running.
+    # TODO: so think about killing the container
 
     # TODO: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config

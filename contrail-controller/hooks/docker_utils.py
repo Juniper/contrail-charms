@@ -114,13 +114,13 @@ def dpkg_version(name, pkg):
 def load_docker_image(name):
     img_path = resource_get(name)
     if not img_path:
-        return False
+        return None
     image_id = get_docker_image_id(name)
     if image_id:
         # remove previous image
         check_call([DOCKER_CLI, "rmi", image_id])
     check_call([DOCKER_CLI, "load", "-i", img_path])
-    return True
+    return get_docker_image_id(name)
 
 
 def get_docker_image_id(name):

@@ -26,7 +26,8 @@ from docker_utils import (
     apply_config_in_container,
     launch_docker_image,
     dpkg_version,
-    get_docker_image_id
+    get_docker_image_id,
+    load_docker_image,
 )
 
 apt_pkg.init()
@@ -173,8 +174,10 @@ def update_charm_status(update_config=True):
 
     image_id = get_docker_image_id(CONTAINER_NAME)
     if not image_id:
-        status_set('blocked', 'Awaiting for container resource')
-        return
+        image_id = load_docker_image(CONTAINER_NAME)
+        if not image_id:
+            status_set('blocked', 'Awaiting for container resource')
+            return
 
     ctx = get_context()
     missing_relations = []
