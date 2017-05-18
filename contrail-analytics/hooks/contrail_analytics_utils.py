@@ -63,6 +63,7 @@ def controller_ctx():
     """Get the ipaddress of all contrail control nodes"""
     auth_mode = config.get("auth_mode")
     if auth_mode is None:
+        # NOTE: auth_mode must be transmitted by controller
         return {}
 
     controller_ip_list = []

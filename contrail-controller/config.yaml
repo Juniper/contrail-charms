@@ -1,7 +1,7 @@
 options:
   auth-mode:
     type: string
-    default: rbac
+    default: cloud-admin
     description: |
       It represents 'aaa_mode' configuration key of Contrail.
       Can be one of: 'rbac', 'cloud-admin' or 'no-auth'
