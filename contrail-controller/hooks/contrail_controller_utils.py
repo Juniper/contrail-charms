@@ -17,6 +17,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     relation_get,
     status_set,
+    leader_get,
     application_version_set,
 )
 from charmhelpers.core.host import write_file
@@ -112,6 +113,9 @@ def get_context():
     ctx["ssl_key"] = config.get("ssl_key")
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
 
+    ctx["db_user"] = leader_get("db_user")
+    ctx["db_password"] = leader_get("db_password")
+
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(identity_admin_ctx())
@@ -162,11 +166,14 @@ def update_charm_status(update_config=True):
     if not image_id:
         image_id = load_docker_image(CONTAINER_NAME)
         if not image_id:
-            status_set('blocked', 'Awaiting for container resource')
+            status_set('waiting', 'Awaiting for container resource')
             return
 
     ctx = get_context()
     missing_relations = []
+    if not ctx.get("db_user"):
+        # NOTE: Charms don't allow to deploy cassandra in AllowAll mode
+        missing_relations.append("contrail-controller-cluster")
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
     if not ctx.get("cloud_orchestrator"):

@@ -125,6 +125,9 @@ def get_context():
     ctx["ssl_key"] = config.get("ssl_key")
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
 
+    ctx["db_user"] = config.get("db_user")
+    ctx["db_password"] = config.get("db_password")
+
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
@@ -176,7 +179,7 @@ def update_charm_status(update_config=True):
     if not image_id:
         image_id = load_docker_image(CONTAINER_NAME)
         if not image_id:
-            status_set('blocked', 'Awaiting for container resource')
+            status_set('waiting', 'Awaiting for container resource')
             return
 
     ctx = get_context()
@@ -198,6 +201,11 @@ def update_charm_status(update_config=True):
         status_set('blocked',
                    'Missing auth info in relation with contrail-controller.')
         return
+    if not ctx.get("db_user"):
+        # NOTE: Charms don't allow to deploy cassandra in AllowAll mode
+        status_set('blocked',
+                   'Missing DB user/password info in '
+                   'relation with contrail-controller.')
     # TODO: what should happens if relation departed?
 
     render_config(ctx)

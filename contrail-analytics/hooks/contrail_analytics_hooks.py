@@ -112,9 +112,21 @@ def contrail_analytics_departed():
     update_charm_status()
 
 
-@hooks.hook("contrail-analyticsdb-relation-joined")
+@hooks.hook("contrail-analyticsdb-relation-changed")
+def contrail_analyticsdb_changed():
+    data = relation_get()
+    _value_changed(data, "db-user", "db_user")
+    _value_changed(data, "db-password", "db_password")
+    update_charm_status()
+
+
 @hooks.hook("contrail-analyticsdb-relation-departed")
-def contrail_analyticsdb_relation():
+def contrail_analyticsdb_departed():
+    units = [unit for rid in relation_ids("contrail-analyticsdb")
+                  for unit in related_units(rid)]
+    if not units:
+        config.pop("db_user", None)
+        config.pop("db_password", None)
     update_charm_status()
 
 

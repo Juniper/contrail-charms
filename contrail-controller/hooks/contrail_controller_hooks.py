@@ -2,6 +2,7 @@
 
 import json
 import sys
+import uuid
 import yaml
 
 from charmhelpers.core.hookenv import (
@@ -10,6 +11,8 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     is_leader,
+    leader_get,
+    leader_set,
     relation_get,
     relation_ids,
     relation_set,
@@ -61,6 +64,20 @@ def install():
     update_charm_status()
 
 
+@hooks.hook("leader-elected")
+def leader_elected():
+    if not leader_get("db_user"):
+        user = "controller"
+        password = uuid.uuid4().hex
+        leader_set(db_user=user, db_password=password)
+    update_charm_status()
+
+
+@hooks.hook("leader-settings-changed")
+def leader_settings_changed():
+    update_charm_status()
+
+
 @hooks.hook("config-changed")
 def config_changed():
     auth_mode = config.get("auth-mode")
@@ -78,7 +95,6 @@ def config_changed():
 
 
 def update_northbound_relations(rid=None):
-    # TODO: support auth modes
     settings = {
         "auth-mode": config.get("auth-mode"),
         "cloud-admin-role": config.get("cloud-admin-role"),

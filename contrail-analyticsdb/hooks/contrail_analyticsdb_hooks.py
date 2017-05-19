@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import uuid
 import sys
 
 from charmhelpers.core.hookenv import (
@@ -11,7 +12,12 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_ids,
     status_set,
-    relation_set)
+    relation_set,
+    leader_set,
+    leader_get,
+    is_leader,
+    relation_id,
+)
 
 from charmhelpers.fetch import (
     apt_install,
@@ -55,9 +61,51 @@ def install():
     update_charm_status()
 
 
+@hooks.hook("leader-elected")
+def leader_elected():
+    if not leader_get("db_user"):
+        user = "analytics"
+        password = uuid.uuid4().hex
+        leader_set(db_user=user, db_password=password)
+        _update_relation()
+    update_charm_status()
+
+
+@hooks.hook("leader-settings-changed")
+def leader_settings_changed():
+    update_charm_status()
+
+
 @hooks.hook("config-changed")
 def config_changed():
     update_charm_status()
+
+
+def _update_relation(rid=None):
+    db_user = leader_get("db_user")
+    db_password = leader_get("db_password")
+    if not db_user or not db_password:
+        return
+
+    settings = {
+        "db-user": db_user,
+        "db-password": db_password
+    }
+
+    if rid:
+        relation_set(relation_id=rid, relation_settings=settings)
+        return
+
+    for rid in relation_ids("contrail-analyticsdb"):
+        relation_set(relation_id=rid, relation_settings=settings)
+
+
+@hooks.hook("contrail-analyticsdb-relation-joined")
+def analyticsdb_joined():
+    settings = {'private-address': get_ip()}
+    relation_set(relation_settings=settings)
+    if is_leader():
+        _update_relation(rid=relation_id())
 
 
 def _value_changed(rel_data, rel_key, cfg_key):
@@ -70,12 +118,6 @@ def _value_changed(rel_data, rel_key, cfg_key):
         config[cfg_key] = value
     else:
         config.pop(cfg_key, None)
-
-
-@hooks.hook("contrail-analyticsdb-relation-joined")
-def analyticsdb_joined():
-    settings = {'private-address': get_ip()}
-    relation_set(relation_settings=settings)
 
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
