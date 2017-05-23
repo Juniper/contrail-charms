@@ -24,10 +24,6 @@ from charmhelpers.core.hookenv import (
     status_set,
 )
 
-from charmhelpers.core.host import (
-    service_restart
-)
-
 from charmhelpers.fetch import (
     apt_install,
     apt_upgrade,
@@ -49,7 +45,8 @@ from contrail_openstack_compute_utils import (
     provision_vrouter,
     write_configs,
     write_vrouter_vgw_interfaces,
-    set_status
+    set_status,
+    vrouter_restart,
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
@@ -279,7 +276,7 @@ def update_status():
     check_vrouter()
     check_local_metadata()
     if set_status() == 1:
-        service_restart("supervisor-vrouter")
+        vrouter_restart()
         time.sleep(5)
         set_status()
 
@@ -287,7 +284,7 @@ def update_status():
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
     write_configs()
-    service_restart("supervisor-vrouter")
+    vrouter_restart()
     check_vrouter()
     check_local_metadata()
     set_status()

@@ -33,6 +33,7 @@ from charmhelpers.core.host import (
     service_start,
     write_file,
     mkdir,
+    lsb_release,
 )
 
 from charmhelpers.core.templating import render
@@ -156,6 +157,14 @@ def drop_caches():
 
 
 def fix_nodemgr():
+    release = lsb_release()["DISTRIB_CODENAME"]
+    if release == 'trusty':
+        fix_nodemgr_trusty()
+
+    vrouter_restart()
+
+
+def fix_nodemgr_trusty():
     # add files missing from contrail-nodemgr package
     etc_dir = "/etc/contrail"
     mkdir(etc_dir + "/supervisord_vrouter_files",
@@ -175,6 +184,16 @@ def fix_nodemgr():
     os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0o755)
 
     service_restart("supervisor-vrouter")
+
+
+def vrouter_restart():
+    release = lsb_release()["DISTRIB_CODENAME"]
+    if release == 'trusty':
+        # supervisord
+        service_restart("supervisor-vrouter")
+    elif release == 'xenial':
+        # systemd
+        service_restart("contrail-vrouter-agent")
 
 
 def ifdown(interfaces=None):
