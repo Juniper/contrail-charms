@@ -139,7 +139,7 @@ def configure_vrouter():
     if iface:
         args.append("--physical_interface", iface)
     check_call(args, cwd="scripts")
-    ifup("vhost0")
+    ifup(["vhost0"])
 
 
 def enable_vrouter_vgw():
