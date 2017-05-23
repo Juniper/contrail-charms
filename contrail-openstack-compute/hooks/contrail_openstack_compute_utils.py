@@ -1,6 +1,5 @@
 import functools
 import os
-import pwd
 import shutil
 from socket import gethostname
 from subprocess import (
@@ -32,7 +31,6 @@ from charmhelpers.core.host import (
     service_restart,
     service_start,
     write_file,
-    mkdir,
     lsb_release,
 )
 
@@ -154,36 +152,6 @@ def drop_caches():
     check_call(["sync"])
     with open("/proc/sys/vm/drop_caches", "w") as f:
         f.write("3\n")
-
-
-def fix_nodemgr():
-    release = lsb_release()["DISTRIB_CODENAME"]
-    if release == 'trusty':
-        fix_nodemgr_trusty()
-
-    vrouter_restart()
-
-
-def fix_nodemgr_trusty():
-    # add files missing from contrail-nodemgr package
-    etc_dir = "/etc/contrail"
-    mkdir(etc_dir + "/supervisord_vrouter_files",
-          owner="contrail", group="contrail")
-    dest = etc_dir + "/supervisord_vrouter_files/contrail-vrouter-nodemgr.ini"
-    shutil.copy("files/contrail-nodemgr-vrouter.ini", dest)
-    pw = pwd.getpwnam("contrail")
-    os.chown(dest, pw.pw_uid, pw.pw_gid)
-
-    shutil.copy("files/contrail-vrouter.rules",
-                etc_dir + "/supervisord_vrouter_files")
-    os.chown(etc_dir + "/supervisord_vrouter_files/contrail-vrouter.rules",
-             pw.pw_uid, pw.pw_gid)
-
-    shutil.copy("files/contrail-vrouter-nodemgr",
-                "/etc/init.d/contrail-vrouter-nodemgr")
-    os.chmod("/etc/init.d/contrail-vrouter-nodemgr", 0o755)
-
-    service_restart("supervisor-vrouter")
 
 
 def vrouter_restart():

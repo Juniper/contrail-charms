@@ -37,7 +37,6 @@ from contrail_openstack_compute_utils import (
     disable_vrouter_vgw,
     drop_caches,
     enable_vrouter_vgw,
-    fix_nodemgr,
     ifdown,
     ifup,
     modprobe,
@@ -74,7 +73,7 @@ def install():
     status_set('maintenance', 'Configuring...')
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
-    fix_nodemgr()
+    vrouter_restart()
 
     try:
         modprobe("vrouter")
