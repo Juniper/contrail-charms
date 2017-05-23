@@ -28,13 +28,6 @@ options:
     description: |
       Configures metadata shared secret and tells nova to run a local instance
       of nova-api-metadata for serving metadata to VMs.
-  remove-juju-bridge:
-    type: boolean
-    default: true
-    description: |
-      Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
-      Enable this to remove such a bridge if you want to install vhost0 directly
-      on the underlying interface.
   virtual-gateways:
     type: string
     description: |

@@ -70,11 +70,7 @@ def install():
     packages.extend(PACKAGES_DKMS_INIT)
     apt_install(packages, fatal=True)
 
-    status_set('maintenance', 'Configuring...')
-    os.chmod("/etc/contrail", 0o755)
-    os.chown("/etc/contrail", 0, 0)
-    vrouter_restart()
-
+    status_set('maintenance', 'Installing kernel module...')
     try:
         modprobe("vrouter")
     except CalledProcessError:
@@ -83,6 +79,7 @@ def install():
         drop_caches()
         modprobe("vrouter")
     modprobe("vrouter", True, True)
+    status_set('maintenance', 'Setuping interface...')
     configure_vrouter()
     status_set("waiting", "Waiting for relations.")
 

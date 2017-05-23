@@ -121,15 +121,25 @@ def set_status():
             return 1 if s_status == "initializing" else 2
 
 
+def get_ip(iface=None):
+    if not iface:
+        if hasattr(netifaces, 'gateways'):
+            iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+        else:
+            data = check_output("ip route | grep ^default", shell=True).split()
+            iface = data[data.index('dev') + 1]
+    ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+    return ip
+
+
 def configure_vrouter():
     # run external script to configure vrouter
-    args = ["./create-vrouter.sh"]
-    if config["remove-juju-bridge"]:
-        args.append("-b")
+    args = ["/usr/bin/contrail-compute-setup", "--self_ip", get_ip()]
     iface = config.get("vhost-interface")
     if iface:
-        args.append(iface)
+        args.append("--physical_interface", iface)
     check_call(args, cwd="scripts")
+    ifup("vhost0")
 
 
 def enable_vrouter_vgw():
