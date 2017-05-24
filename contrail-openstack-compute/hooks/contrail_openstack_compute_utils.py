@@ -327,7 +327,7 @@ def control_node_ctx():
 
 def identity_admin_ctx():
     auth_info = config.get("auth_info")
-    return (json.loads(auth_info) if auth_info else {})
+    return json.loads(auth_info) if auth_info else {}
 
 
 def analytics_node_ctx():
@@ -425,6 +425,7 @@ def write_vrouter_vgw_interfaces():
 def get_endpoints():
     # TODO: support keystone v3, check with SSL
     auth_info = config.get("auth_info")
+    auth_info = json.loads(auth_info) if auth_info else {}
     req_data = {
         "auth": {
             "tenantName": auth_info["keystone_admin_tenant"],
