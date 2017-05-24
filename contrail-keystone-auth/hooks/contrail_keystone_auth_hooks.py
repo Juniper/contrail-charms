@@ -47,7 +47,7 @@ def contrail_auth_joined():
 def identity_admin_changed():
     ip = relation_get("service_hostname")
     if ip:
-        api_version = relation_get("api_version")
+        api_version = int(relation_get("api_version"))
         api_suffix = 'v2.0' if api_version == 2 else 'v3'
         api_tokens = 'v2.0/tokens' if api_version == 2 else 'v3/auth/tokens'
         auth_info = {

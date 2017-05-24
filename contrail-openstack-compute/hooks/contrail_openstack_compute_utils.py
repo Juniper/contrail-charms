@@ -425,7 +425,7 @@ def write_vrouter_vgw_interfaces():
 def get_endpoints():
     # TODO: check with SSL
     auth_info = identity_admin_ctx()
-    api_ver = auth_info["keystone_api_version"]
+    api_ver = int(auth_info["keystone_api_version"])
     if api_ver == 2:
         req_data = {
             "auth": {
