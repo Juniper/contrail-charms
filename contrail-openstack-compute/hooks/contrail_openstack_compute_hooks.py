@@ -104,17 +104,27 @@ def check_local_metadata():
             # impossible to know if current hook is firing because
             # relation or leader is being removed lp #1469731
             if not relation_ids("cluster"):
-                provision_linklocal("del")
+                try:
+                    provision_linklocal("del")
+                except Exception as e:
+                    log("Couldn't unprovision metadata: " + str(e),
+                        level=WARNING)
             leader_set({"local-metadata-provisioned": ""})
         return
 
     if config["enable-metadata-server"]:
         if not leader_get("local-metadata-provisioned"):
-            provision_linklocal("add")
-            leader_set({"local-metadata-provisioned": True})
+            try:
+                provision_linklocal("add")
+                leader_set({"local-metadata-provisioned": True})
+            except Exception as e:
+                log("Couldn't provision metadata: " + str(e), level=WARNING)
     elif leader_get("local-metadata-provisioned"):
-        provision_linklocal("del")
-        leader_set({"local-metadata-provisioned": ""})
+        try:
+            provision_linklocal("del")
+            leader_set({"local-metadata-provisioned": ""})
+        except Exception as e:
+            log("Couldn't unprovision metadata: " + str(e), level=WARNING)
 
 
 def check_vrouter():
@@ -131,8 +141,11 @@ def check_vrouter():
                 # vrouter is not up yet
                 log("Couldn't provision vrouter: " + str(e), level=WARNING)
     elif config.get("vrouter-provisioned"):
-        provision_vrouter("del")
-        config["vrouter-provisioned"] = False
+        try:
+            provision_vrouter("del")
+            config["vrouter-provisioned"] = False
+        except Exception as e:
+            log("Couldn't unprovision vrouter: " + str(e), level=WARNING)
 
 
 @hooks.hook("config-changed")
@@ -255,8 +268,10 @@ def contrail_controller_changed():
     if changed:
         config.save()
         if is_leader():
-            relation_set(compute_service_ip=compute_ip,
-                         image_service_ip=image_ip)
+            for rid in ([rid] if rid else relation_ids("contrail-controller")):
+                relation_set(relation_id=rid,
+                             compute_service_ip=compute_ip,
+                             image_service_ip=image_ip)
 
     write_configs()
     config["controller-ready"] = True
