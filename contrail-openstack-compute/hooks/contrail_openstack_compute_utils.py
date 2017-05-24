@@ -432,10 +432,10 @@ def get_endpoints():
             "passwordCredentials": {
                 "username": auth_info["keystone_admin_user"],
                 "password": auth_info["keystone_admin_password"]}}}
-    url = "{}://{}:{}/v2.0/tokens" % (
-        auth_info["keystone_protocol"],
-        auth_info["keystone_ip"],
-        str(auth_info["keystone_public_port"]))
+    url = "{proto}://{ip}:{port}/v2.0/tokens".format(
+        proto=auth_info["keystone_protocol"],
+        ip=auth_info["keystone_ip"],
+        port=auth_info["keystone_public_port"])
     r = requests.post(url, headers={'Content-type': 'application/json'},
                       data=json.dumps(req_data), verify=False)
     content = json.loads(r.content)
