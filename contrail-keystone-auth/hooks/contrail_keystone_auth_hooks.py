@@ -47,6 +47,9 @@ def contrail_auth_joined():
 def identity_admin_changed():
     ip = relation_get("service_hostname")
     if ip:
+        api_version = relation_get("api_version")
+        api_suffix = 'v2.0' if api_version == 2 else 'v3'
+        api_tokens = 'v2.0/tokens' if api_version == 2 else 'v3/auth/tokens'
         auth_info = {
             "keystone_protocol": relation_get("service_protocol"),
             "keystone_ip": ip,
@@ -54,8 +57,17 @@ def identity_admin_changed():
             "keystone_admin_user": relation_get("service_username"),
             "keystone_admin_password": relation_get("service_password"),
             "keystone_admin_tenant": relation_get("service_tenant_name"),
-            "keystone_region": relation_get("service_region")}
-        # TODO: read version from keystone also and use it everywhere
+            "keystone_region": relation_get("service_region"),
+            "keystone_api_version": api_version,
+            "keystone_api_suffix": api_suffix,
+            "keystone_api_tokens": api_tokens,
+            # next three field are only for api_version = 3
+            "keystone_user_domain_name":
+                relation_get("service_user_domain_name"),
+            "keystone_project_domain_name":
+                relation_get("service_project_domain_name"),
+            "keystone_project_name": relation_get("service_project_name"),
+        }
         auth_info = json.dumps(auth_info)
         config["auth_info"] = auth_info
     else:

@@ -423,26 +423,53 @@ def write_vrouter_vgw_interfaces():
 
 
 def get_endpoints():
-    # TODO: support keystone v3, check with SSL
-    auth_info = config.get("auth_info")
-    auth_info = json.loads(auth_info) if auth_info else {}
-    req_data = {
-        "auth": {
-            "tenantName": auth_info["keystone_admin_tenant"],
-            "passwordCredentials": {
-                "username": auth_info["keystone_admin_user"],
-                "password": auth_info["keystone_admin_password"]}}}
-    url = "{proto}://{ip}:{port}/v2.0/tokens".format(
+    # TODO: check with SSL
+    auth_info = identity_admin_ctx()
+    api_ver = auth_info["keystone_api_version"]
+    if api_ver == 2:
+        req_data = {
+            "auth": {
+                "tenantName": auth_info["keystone_admin_tenant"],
+                "passwordCredentials": {
+                    "username": auth_info["keystone_admin_user"],
+                    "password": auth_info["keystone_admin_password"]}}}
+    else:
+        req_data = {
+            "auth": {
+                "identity": {
+                    "methods": ["password"],
+                    "password": {
+                        "user": {
+                            "name": auth_info["keystone_admin_user"],
+                            "domain": {"id": "default"},
+                            "password": auth_info["keystone_admin_password"]
+                        }
+                    }
+                }
+            }
+        }
+
+    url = "{proto}://{ip}:{port}/{tokens}".format(
         proto=auth_info["keystone_protocol"],
         ip=auth_info["keystone_ip"],
-        port=auth_info["keystone_public_port"])
+        port=auth_info["keystone_public_port"],
+        tokens=auth_info["keystone_api_tokens"])
     r = requests.post(url, headers={'Content-type': 'application/json'},
                       data=json.dumps(req_data), verify=False)
     content = json.loads(r.content)
     image_ip = None
     compute_ip = None
-    for service in content["access"]["serviceCatalog"]:
-        url = service["endpoints"]["publicURL"]
+    catalog = (content["access"]["serviceCatalog"] if api_ver == 2 else
+               content["token"]["catalog"])
+    for service in catalog:
+        if api_ver == 2:
+            # NOTE: 0 means first region. do we need to search for region?
+            url = service["endpoints"][0]["publicURL"]
+        else:
+            for endpoint in service["endpoints"]:
+                if endpoint["interface"] == "public":
+                    url = endpoint["url"]
+                    break
         host = gethostbyname(urlparse(url).hostname)
         if service["type"] == "image":
             image_ip = host
