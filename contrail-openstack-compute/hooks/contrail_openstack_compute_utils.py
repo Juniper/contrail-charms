@@ -435,7 +435,7 @@ def get_endpoints():
     url = "{}://{}:{}/v2.0/tokens" % (
         auth_info["keystone_protocol"],
         auth_info["keystone_ip"],
-        auth_info["keystone_public_port"])
+        str(auth_info["keystone_public_port"]))
     r = requests.post(url, headers={'Content-type': 'application/json'},
                       data=json.dumps(req_data), verify=False)
     content = json.loads(r.content)
