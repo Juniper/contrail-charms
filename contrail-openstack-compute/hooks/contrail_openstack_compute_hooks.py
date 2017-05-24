@@ -21,6 +21,7 @@ from charmhelpers.core.hookenv import (
     relation_set,
     related_units,
     WARNING,
+    ERROR,
     status_set,
 )
 
@@ -238,7 +239,13 @@ def contrail_controller_changed():
         return
 
     changed = False
-    compute_ip, image_ip = get_endpoints()
+    compute_ip = None
+    image_ip = None
+    try:
+        compute_ip, image_ip = get_endpoints()
+    except Exception as e:
+        log("Couldn't detect compute/image ips: " + str(e),
+            level=ERROR)
     if compute_ip and compute_ip != config.get("compute_service_ip"):
         config["compute_service_ip"] = compute_ip
         changed = True
