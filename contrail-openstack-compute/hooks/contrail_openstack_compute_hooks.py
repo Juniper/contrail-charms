@@ -46,6 +46,7 @@ from contrail_openstack_compute_utils import (
     write_vrouter_vgw_interfaces,
     set_status,
     vrouter_restart,
+    get_endpoints,
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
@@ -199,6 +200,18 @@ def configure_virtual_gateways():
     config["virtual-gateways-prev"] = gateways
 
 
+@hooks.hook("contrail-controller-relation-joined")
+def contrail_controller_joined():
+    if not is_leader():
+        return
+    compute_ip = config.get("compute_service_ip")
+    if compute_ip:
+        relation_set(compute_service_ip=compute_ip)
+    image_ip = config.get("image_service_ip")
+    if image_ip:
+        relation_set(image_service_ip=image_ip)
+
+
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     data = relation_get()
@@ -223,6 +236,20 @@ def contrail_controller_changed():
     if auth_info is None:
         log("Relation not ready")
         return
+
+    changed = False
+    compute_ip, image_ip = get_endpoints()
+    if compute_ip and compute_ip != config.get("compute_service_ip"):
+        config["compute_service_ip"] = compute_ip
+        changed = True
+    if image_ip and image_ip != config.get("image_service_ip"):
+        config["image_service_ip"] = image_ip
+        changed = True
+    if changed:
+        config.save()
+        if is_leader():
+            relation_set(compute_service_ip=compute_ip,
+                         image_service_ip=image_ip)
 
     write_configs()
     config["controller-ready"] = True

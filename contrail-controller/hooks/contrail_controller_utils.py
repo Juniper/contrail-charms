@@ -106,6 +106,8 @@ def get_context():
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
     ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
+    ctx["compute_service_ip"] = config.get("compute_service_ip")
+    ctx["image_service_ip"] = config.get("image_service_ip")
 
     ssl_ca = config.get("ssl_ca")
     ctx["ssl_ca"] = ssl_ca

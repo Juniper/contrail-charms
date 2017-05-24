@@ -1,7 +1,7 @@
 import functools
 import os
 import shutil
-from socket import gethostname
+from socket import gethostname, gethostbyname
 from subprocess import (
     CalledProcessError,
     check_call,
@@ -12,7 +12,9 @@ from time import sleep, time
 import apt_pkg
 import json
 import yaml
+from six.moves.urllib.parse import urlparse
 
+import requests
 import netaddr
 import netifaces
 
@@ -418,3 +420,31 @@ def write_configs():
 def write_vrouter_vgw_interfaces():
     ctx = vrouter_vgw_ctx()
     render("vrouter-vgw.cfg", "/etc/network/interfaces.d/vrouter-vgw.cfg", ctx)
+
+
+def get_endpoints():
+    # TODO: support keystone v3, check with SSL
+    auth_info = config.get("auth_info")
+    req_data = {
+        "auth": {
+            "tenantName": auth_info["keystone_admin_tenant"],
+            "passwordCredentials": {
+                "username": auth_info["keystone_admin_user"],
+                "password": auth_info["keystone_admin_password"]}}}
+    url = "{}://{}:{}/v2.0/tokens" % (
+        auth_info["keystone_protocol"],
+        auth_info["keystone_ip"],
+        auth_info["keystone_public_port"])
+    r = requests.post(url, headers={'Content-type': 'application/json'},
+                      data=json.dumps(req_data), verify=False)
+    content = json.loads(r.content)
+    image_ip = None
+    compute_ip = None
+    for service in content["access"]["serviceCatalog"]:
+        url = service["endpoints"]["publicURL"]
+        host = gethostbyname(urlparse(url).hostname)
+        if service["type"] == "image":
+            image_ip = host
+        if service["type"] == "compute":
+            compute_ip = host
+    return compute_ip, image_ip

@@ -55,6 +55,7 @@ def identity_admin_changed():
             "keystone_admin_password": relation_get("service_password"),
             "keystone_admin_tenant": relation_get("service_tenant_name"),
             "keystone_region": relation_get("service_region")}
+        # TODO: read version from keystone also and use it everywhere
         auth_info = json.dumps(auth_info)
         config["auth_info"] = auth_info
     else:

@@ -147,6 +147,21 @@ def contrail_controller_joined():
     update_charm_status()
 
 
+@hooks.hook("contrail-controller-relation-changed")
+def contrail_controller_changed():
+    data = relation_get()
+    changed = False
+    for key in ("compute_service_ip", "image_service_ip"):
+        if key not in data:
+            continue
+        val = data[key]
+        if val != config.get(key):
+            config[key] = val
+            changed = True
+    if changed:
+        update_charm_status()
+
+
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_controller_departed():
     if not remote_unit().startswith("contrail-openstack-compute"):
