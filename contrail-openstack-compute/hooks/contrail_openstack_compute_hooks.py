@@ -268,7 +268,7 @@ def contrail_controller_changed():
     if changed:
         config.save()
         if is_leader():
-            for rid in ([rid] if rid else relation_ids("contrail-controller")):
+            for rid in relation_ids("contrail-controller"):
                 relation_set(relation_id=rid,
                              compute_service_ip=compute_ip,
                              image_service_ip=image_ip)
