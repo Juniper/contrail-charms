@@ -97,8 +97,6 @@ def config_changed():
 def update_northbound_relations(rid=None):
     settings = {
         "auth-mode": config.get("auth-mode"),
-        "cloud-admin-role": config.get("cloud-admin-role"),
-        "global-read-only-role": config.get("global-read-only-role"),
         "auth-info": config.get("auth_info"),
         "cloud-orchestrator": config.get("cloud_orchestrator"),
         "ssl-ca": config.get("ssl_ca"),
@@ -121,8 +119,6 @@ def update_southbound_relations(rid=None):
         "port": 8082,
         "analytics-server": json.dumps(get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
-        "cloud-admin-role": config.get("cloud-admin-role"),
-        "global-read-only-role": config.get("global-read-only-role"),
         "auth-info": config.get("auth_info"),
         "ssl-ca": config.get("ssl_ca"),
         "ssl-cert": config.get("ssl_cert"),

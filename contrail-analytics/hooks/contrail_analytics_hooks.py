@@ -83,8 +83,6 @@ def contrail_analytics_joined():
 def contrail_analytics_changed():
     data = relation_get()
     _value_changed(data, "auth-mode", "auth_mode")
-    _value_changed(data, "cloud-admin-role", "cloud_admin_role")
-    _value_changed(data, "global-read-only-role", "global_read_only_role")
     _value_changed(data, "auth-info", "auth_info")
     _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
     _value_changed(data, "ssl-ca", "ssl_ca")
@@ -100,8 +98,7 @@ def contrail_analytics_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "auth_mode", "cloud_admin_role",
-                    "global_read_only_role", "cloud_orchestrator",
+        for key in ["auth_info", "auth_mode", "cloud_orchestrator",
                     "ssl_ca", "ssl_cert", "ssl_key"]:
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):

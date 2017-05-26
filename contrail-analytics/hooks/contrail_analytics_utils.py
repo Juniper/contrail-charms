@@ -77,8 +77,6 @@ def controller_ctx():
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
     return {
         "auth_mode": auth_mode,
-        "cloud_admin_role": config.get("cloud-admin-role"),
-        "global_read_only_role": config.get("global-read-only-role"),
         "controller_servers": controller_ip_list,
     }
 
