@@ -25,7 +25,8 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     status_set,
-    application_version_set
+    application_version_set,
+    leader_get,
 )
 
 from charmhelpers.core.host import (
@@ -232,30 +233,6 @@ def get_controller_address():
     return (None, None)
 
 
-def provision_linklocal(op):
-    api_ip, api_port = get_controller_address()
-    identity = identity_admin_ctx()
-    params = [
-        "contrail-provision-linklocal",
-        "--api_server_ip", api_ip,
-        "--api_server_port", str(api_port),
-        "--linklocal_service_name", "metadata",
-        "--linklocal_service_ip", "169.254.169.254",
-        "--linklocal_service_port", "80",
-        "--ipfabric_service_ip", "127.0.0.1",
-        "--ipfabric_service_port", "8775",
-        "--oper", op,
-        "--admin_user", identity.get("keystone_admin_user"),
-        "--admin_password", identity.get("keystone_admin_password")]
-
-    @retry(timeout=120, delay=20)
-    def _call():
-        check_call(params)
-
-    log("{} local metadata service 127.0.0.1:8775".format(op))
-    _call()
-
-
 def provision_vrouter(op):
     iface = config.get("control-interface")
     ip = vhost_addr(iface)["addr"]
@@ -342,9 +319,7 @@ def network_ctx():
 
 
 def neutron_metadata_ctx():
-    if "local-metadata-secret" in config:
-        return {"metadata_secret": config["local-metadata-secret"]}
-    return {}
+    return {"metadata_shared_secret": leader_get("metadata_shared_secret")}
 
 
 def vrouter_ctx():

@@ -41,7 +41,6 @@ from contrail_openstack_compute_utils import (
     ifdown,
     ifup,
     modprobe,
-    provision_linklocal,
     provision_vrouter,
     write_configs,
     write_vrouter_vgw_interfaces,
@@ -95,38 +94,6 @@ def units(relation):
                  for unit in related_units(rid)]
 
 
-def check_local_metadata():
-    if not is_leader():
-        return
-
-    if not config.get("vrouter-provisioned"):
-        if leader_get("local-metadata-provisioned"):
-            # impossible to know if current hook is firing because
-            # relation or leader is being removed lp #1469731
-            if not relation_ids("cluster"):
-                try:
-                    provision_linklocal("del")
-                except Exception as e:
-                    log("Couldn't unprovision metadata: " + str(e),
-                        level=WARNING)
-            leader_set({"local-metadata-provisioned": ""})
-        return
-
-    if config["enable-metadata-server"]:
-        if not leader_get("local-metadata-provisioned"):
-            try:
-                provision_linklocal("add")
-                leader_set({"local-metadata-provisioned": True})
-            except Exception as e:
-                log("Couldn't provision metadata: " + str(e), level=WARNING)
-    elif leader_get("local-metadata-provisioned"):
-        try:
-            provision_linklocal("del")
-            leader_set({"local-metadata-provisioned": ""})
-        except Exception as e:
-            log("Couldn't unprovision metadata: " + str(e), level=WARNING)
-
-
 def check_vrouter():
     # TODO: support authentication-less
     # check relation dependencies
@@ -150,32 +117,39 @@ def check_vrouter():
 
 @hooks.hook("config-changed")
 def config_changed():
-    configure_local_metadata()
+    if is_leader():
+        configure_metadata_shared_secret()
     configure_virtual_gateways()
     write_configs()
     check_vrouter()
-    check_local_metadata()
     set_status()
 
 
-def configure_local_metadata():
-    if config["enable-metadata-server"]:
-        if "local-metadata-secret" not in config:
-            # generate secret
-            secret = str(uuid.uuid4())
-            config["local-metadata-secret"] = secret
-            settings = {"metadata-shared-secret": secret}
-            # inform relations
-            for rid in relation_ids("neutron-plugin"):
-                relation_set(relation_id=rid, relation_settings=settings)
+@hooks.hook("leader-elected")
+def leader_elected():
+    configure_metadata_shared_secret()
+    write_configs()
+
+
+@hooks.hook("leader-settings-changed")
+def leader_settings_changed():
+    write_configs()
+
+
+def configure_metadata_shared_secret():
+    secret = leader_get("metadata_shared_secret")
+    if config["enable-metadata-server"] and not secret:
+        secret = str(uuid.uuid4())
+    elif not config["enable-metadata-server"] and secret:
+        secret = None
     else:
-        if "local-metadata-secret" in config:
-            # remove secret
-            config.pop("local-metadata-secret", None)
-            settings = {"metadata-shared-secret": None}
-            # inform relations
-            for rid in relation_ids("neutron-plugin"):
-                relation_set(relation_id=rid, relation_settings=settings)
+        return
+
+    leader_set(metadata_shared_secret=secret)
+    # inform relations
+    settings = {"metadata-shared-secret": secret}
+    for rid in relation_ids("neutron-plugin"):
+        relation_set(relation_id=rid, relation_settings=settings)
 
 
 def configure_virtual_gateways():
@@ -278,7 +252,6 @@ def contrail_controller_changed():
     config.save()
 
     check_vrouter()
-    check_local_metadata()
     set_status()
 
 
@@ -287,7 +260,6 @@ def contrail_controller_node_departed():
     if not units("contrail-controller"):
         config["controller-ready"] = False
         check_vrouter()
-        check_local_metadata()
         config.pop("analytics-servers", None)
         config.pop("auth_info", None)
         config.pop("ssl_ca", None)
@@ -315,14 +287,14 @@ def neutron_plugin_joined():
     relation_set(subordinate_configuration=json.dumps(conf))
 
     if config["enable-metadata-server"]:
-        settings = {"metadata-shared-secret": config["local-metadata-secret"]}
+        secret = leader_get("metadata_shared_secret")
+        settings = {"metadata-shared-secret": secret}
         relation_set(relation_settings=settings)
 
 
 @hooks.hook("update-status")
 def update_status():
     check_vrouter()
-    check_local_metadata()
     if set_status() == 1:
         vrouter_restart()
         time.sleep(5)
@@ -334,7 +306,6 @@ def upgrade_charm():
     write_configs()
     vrouter_restart()
     check_vrouter()
-    check_local_metadata()
     set_status()
 
 
