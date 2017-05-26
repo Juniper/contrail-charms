@@ -147,7 +147,8 @@ def contrail_controller_joined():
 def contrail_controller_changed():
     data = relation_get()
     changed = False
-    for key in ("compute_service_ip", "image_service_ip"):
+    keys = ["compute_service_ip", "image_service_ip", "network_service_ip"]
+    for key in keys:
         if key not in data:
             continue
         val = data[key]

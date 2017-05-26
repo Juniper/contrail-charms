@@ -192,12 +192,15 @@ def configure_virtual_gateways():
 def contrail_controller_joined():
     if not is_leader():
         return
-    compute_ip = config.get("compute_service_ip")
-    if compute_ip:
-        relation_set(compute_service_ip=compute_ip)
-    image_ip = config.get("image_service_ip")
-    if image_ip:
-        relation_set(image_service_ip=image_ip)
+
+    def _pass_to_relation(key):
+        value = config.get(key)
+        if value:
+            relation_set(**{key: value})
+
+    _pass_to_relation("compute_service_ip")
+    _pass_to_relation("image_service_ip")
+    _pass_to_relation("network_service_ip")
 
 
 @hooks.hook("contrail-controller-relation-changed")
@@ -225,27 +228,29 @@ def contrail_controller_changed():
         log("Relation not ready")
         return
 
-    changed = False
-    compute_ip = None
-    image_ip = None
     try:
-        compute_ip, image_ip = get_endpoints()
+        endpoints = get_endpoints()
     except Exception as e:
         log("Couldn't detect compute/image ips: " + str(e),
             level=ERROR)
-    if compute_ip and compute_ip != config.get("compute_service_ip"):
-        config["compute_service_ip"] = compute_ip
-        changed = True
-    if image_ip and image_ip != config.get("image_service_ip"):
-        config["image_service_ip"] = image_ip
-        changed = True
+
+    changed = {}
+
+    def _check_key(key):
+        val = endpoints.get(key)
+        if val and val != config.get(key):
+            config[key] = val
+            changed[key] = val
+
+    _check_key("compute_service_ip")
+    _check_key("image_service_ip")
+    _check_key("network_service_ip")
+
     if changed:
         config.save()
         if is_leader():
             for rid in relation_ids("contrail-controller"):
-                relation_set(relation_id=rid,
-                             compute_service_ip=compute_ip,
-                             image_service_ip=image_ip)
+                relation_set(relation_id=rid, **changed)
 
     write_configs()
     config["controller-ready"] = True

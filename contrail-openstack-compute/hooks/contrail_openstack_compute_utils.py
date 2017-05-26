@@ -432,8 +432,12 @@ def get_endpoints():
     r = requests.post(url, headers={'Content-type': 'application/json'},
                       data=json.dumps(req_data), verify=False)
     content = json.loads(r.content)
-    image_ip = None
-    compute_ip = None
+    services = ["compute", "image", "network"]
+    result = {
+        "compute_service_ip": None,
+        "image_service_ip": None,
+        "network_service_ip": None,
+    }
     catalog = (content["access"]["serviceCatalog"] if api_ver == 2 else
                content["token"]["catalog"])
     for service in catalog:
@@ -446,8 +450,7 @@ def get_endpoints():
                     url = endpoint["url"]
                     break
         host = gethostbyname(urlparse(url).hostname)
-        if service["type"] == "image":
-            image_ip = host
-        if service["type"] == "compute":
-            compute_ip = host
-    return compute_ip, image_ip
+        stype = service["type"]
+        if stype in services:
+            result[stype + "_service_ip"] = host
+    return result

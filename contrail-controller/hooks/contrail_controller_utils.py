@@ -108,6 +108,7 @@ def get_context():
     ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
     ctx["compute_service_ip"] = config.get("compute_service_ip")
     ctx["image_service_ip"] = config.get("image_service_ip")
+    ctx["network_service_ip"] = config.get("network_service_ip")
 
     ssl_ca = config.get("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
