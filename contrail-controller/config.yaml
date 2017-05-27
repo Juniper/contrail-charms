@@ -13,7 +13,6 @@ options:
       Role name in keystone for users that have full access to everything.
   global-read-only-role:
     type: string
-    default: guest
     description: |
       Role name in keystone for users that have read-only access to everything.
   ssl_cert:
