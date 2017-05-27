@@ -228,11 +228,23 @@ def contrail_controller_changed():
         log("Relation not ready")
         return
 
+    _update_service_ips()
+
+    write_configs()
+    config["controller-ready"] = True
+    config.save()
+
+    check_vrouter()
+    set_status()
+
+
+def _update_service_ips():
     try:
         endpoints = get_endpoints()
     except Exception as e:
         log("Couldn't detect compute/image ips: " + str(e),
             level=ERROR)
+        return
 
     changed = {}
 
@@ -245,19 +257,11 @@ def contrail_controller_changed():
     _check_key("compute_service_ip")
     _check_key("image_service_ip")
     _check_key("network_service_ip")
-
     if changed:
         config.save()
         if is_leader():
             for rid in relation_ids("contrail-controller"):
                 relation_set(relation_id=rid, **changed)
-
-    write_configs()
-    config["controller-ready"] = True
-    config.save()
-
-    check_vrouter()
-    set_status()
 
 
 @hooks.hook("contrail-controller-relation-departed")
