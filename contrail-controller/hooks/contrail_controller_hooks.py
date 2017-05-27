@@ -70,6 +70,14 @@ def leader_elected():
         user = "controller"
         password = uuid.uuid4().hex
         leader_set(db_user=user, db_password=password)
+    if not leader_get("rabbitmq_user"):
+        user = "contrail"
+        password = uuid.uuid4().hex
+        vhost = "contrail"
+        leader_set(rabbitmq_user=user,
+                   rabbitmq_password=password,
+                   rabbitmq_vhost=vhost)
+        update_northbound_relations()
     update_charm_status()
 
 
@@ -102,6 +110,9 @@ def update_northbound_relations(rid=None):
         "ssl-ca": config.get("ssl_ca"),
         "ssl-cert": config.get("ssl_cert"),
         "ssl-key": config.get("ssl_key"),
+        "rabbitmq_user": leader_get("rabbitmq_user"),
+        "rabbitmq_password": leader_get("rabbitmq_password"),
+        "rabbitmq_vhost": leader_get("rabbitmq_vhost"),
     }
 
     if rid:

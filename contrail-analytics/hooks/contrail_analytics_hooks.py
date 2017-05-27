@@ -65,12 +65,15 @@ def _value_changed(rel_data, rel_key, cfg_key):
     if rel_key not in rel_data:
         # data is absent in relation. it means that remote charm doesn't
         # send it due to lack of information
-        return
+        return False
     value = rel_data[rel_key]
-    if value is not None:
+    if value is not None and value != config.get(cfg_key):
         config[cfg_key] = value
-    else:
+        return True
+    elif value is None and config.get(cfg_key) is not None:
         config.pop(cfg_key, None)
+        return True
+    return False
 
 
 @hooks.hook("contrail-analytics-relation-joined")
@@ -82,15 +85,20 @@ def contrail_analytics_joined():
 @hooks.hook("contrail-analytics-relation-changed")
 def contrail_analytics_changed():
     data = relation_get()
-    _value_changed(data, "auth-mode", "auth_mode")
-    _value_changed(data, "auth-info", "auth_info")
-    _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
-    _value_changed(data, "ssl-ca", "ssl_ca")
-    _value_changed(data, "ssl-cert", "ssl_cert")
-    _value_changed(data, "ssl-key", "ssl_key")
+    changed = False
+    changed |= _value_changed(data, "auth-mode", "auth_mode")
+    changed |= _value_changed(data, "auth-info", "auth_info")
+    changed |= _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
+    changed |= _value_changed(data, "ssl-ca", "ssl_ca")
+    changed |= _value_changed(data, "ssl-cert", "ssl_cert")
+    changed |= _value_changed(data, "ssl-key", "ssl_key")
+    changed |= _value_changed(data, "rabbitmq_user", "rabbitmq_user")
+    changed |= _value_changed(data, "rabbitmq_password", "rabbitmq_password")
+    changed |= _value_changed(data, "rabbitmq_vhost", "rabbitmq_vhost")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
-    update_charm_status()
+    if changed:
+        update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
@@ -99,7 +107,8 @@ def contrail_analytics_departed():
                   for unit in related_units(rid)]
     if not units:
         for key in ["auth_info", "auth_mode", "cloud_orchestrator",
-                    "ssl_ca", "ssl_cert", "ssl_key"]:
+                    "ssl_ca", "ssl_cert", "ssl_key", "rabbitmq_vhost",
+                    "rabbitmq_user", "rabbitmq_password"]:
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):
             status_set(

@@ -119,6 +119,10 @@ def get_context():
     ctx["db_user"] = leader_get("db_user")
     ctx["db_password"] = leader_get("db_password")
 
+    ctx["rabbitmq_user"] = leader_get("rabbitmq_user")
+    ctx["rabbitmq_password"] = leader_get("rabbitmq_password")
+    ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
+
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(identity_admin_ctx())

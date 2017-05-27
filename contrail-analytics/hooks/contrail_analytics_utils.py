@@ -126,6 +126,10 @@ def get_context():
     ctx["db_user"] = config.get("db_user")
     ctx["db_password"] = config.get("db_password")
 
+    ctx["rabbitmq_user"] = config.get("rabbitmq_user")
+    ctx["rabbitmq_password"] = config.get("rabbitmq_password")
+    ctx["rabbitmq_vhost"] = config.get("rabbitmq_vhost")
+
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
@@ -203,6 +207,11 @@ def update_charm_status(update_config=True):
         # NOTE: Charms don't allow to deploy cassandra in AllowAll mode
         status_set('blocked',
                    'Missing DB user/password info in '
+                   'relation with contrail-controller.')
+    if not ctx.get("rabbitmq_user"):
+        # NOTE: Charms don't allow to deploy rabbitmq with guest access
+        status_set('blocked',
+                   'Missing rabbitmq user/password info in '
                    'relation with contrail-controller.')
     # TODO: what should happens if relation departed?
 
