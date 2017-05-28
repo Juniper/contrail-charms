@@ -73,7 +73,7 @@ def leader_elected():
     if not leader_get("rabbitmq_user"):
         user = "contrail"
         password = uuid.uuid4().hex
-        vhost = "/contrail"
+        vhost = "contrail"
         leader_set(rabbitmq_user=user,
                    rabbitmq_password=password,
                    rabbitmq_vhost=vhost)
