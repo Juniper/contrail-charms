@@ -176,6 +176,8 @@ def contrail_controller_changed():
     config["ssl_ca"] = data.get("ssl-ca")
     config["ssl_cert"] = data.get("ssl-cert")
     config["ssl_key"] = data.get("ssl-key")
+    config["contrail_api_vip"] = data.get("contrail-api-vip")
+    config["analytics_api_vip"] = data.get("analytics-api-vip")
     config.save()
 
     # TODO: add reaction to change auth_info from None to not-None and back

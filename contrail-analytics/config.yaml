@@ -1,1 +1,7 @@
 options:
+  vip:
+    type: string
+    description: |
+      Contrail API VIP to be used for configuring client-side software.
+      (to be set up also in KeepAlived charm configuration if it’s used for HA)
+      Private IP of the first Contrail API unit will be used if not set.

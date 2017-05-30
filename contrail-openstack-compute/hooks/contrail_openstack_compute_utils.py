@@ -208,10 +208,12 @@ def get_controller_address():
     port = config.get("api_port")
     if ip and port:
         return (ip, port)
+    api_vip = config.get("contrail_api_vip")
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             port = relation_get("port", unit, rid)
-            ip = relation_get("private-address", unit, rid)
+            ip = (api_vip if api_vip else
+                  relation_get("private-address", unit, rid))
             return (ip, port)
     return (None, None)
 

@@ -134,6 +134,8 @@ def update_southbound_relations(rid=None):
         "ssl-ca": config.get("ssl_ca"),
         "ssl-cert": config.get("ssl_cert"),
         "ssl-key": config.get("ssl_key"),
+        "analytics-api-vip": config.get("analytics-api-vip"),
+        "contrail-api-vip": config.get("vip"),
     }
     for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)
@@ -204,6 +206,14 @@ def analytics_joined():
         update_northbound_relations(rid=relation_id())
         update_southbound_relations()
     update_charm_status()
+
+
+@hooks.hook("contrail-analytics-relation-changed")
+def analytics_changed():
+    config["analytics-api-vip"] = relation_get("analytics-api-vip")
+    config.save()
+    if is_leader():
+        update_southbound_relations()
 
 
 @hooks.hook("contrail-analytics-relation-departed")

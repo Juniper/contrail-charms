@@ -67,7 +67,8 @@ def contrail_controller_changed():
     else:
         config.pop("auth_info", None)
     config["ssl_ca"] = data.get("ssl-ca")
-    config.save
+    config["contrail_api_vip"] = data.get("contrail-api-vip")
+    config.save()
 
     write_plugin_config()
 
@@ -81,7 +82,7 @@ def contrail_cotroller_departed():
     if not units:
         config.pop("auth_info", None)
         config.pop("ssl_ca", None)
-        config.save
+        config.save()
     write_plugin_config()
 
 

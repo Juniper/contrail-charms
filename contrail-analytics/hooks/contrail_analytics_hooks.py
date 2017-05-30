@@ -43,7 +43,7 @@ config = config()
 
 @hooks.hook("install.real")
 def install():
-    status_set('maintenance', 'Installing...')
+    status_set("maintenance", "Installing...")
 
     # TODO: try to remove this call
     fix_hostname()
@@ -58,6 +58,10 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
+    settings = {"analytics-api-vip": config.get("vip")}
+    for rid in relation_ids("contrail-analytics"):
+        relation_set(relation_id=rid, relation_settings=settings)
+
     update_charm_status()
 
 
@@ -78,7 +82,8 @@ def _value_changed(rel_data, rel_key, cfg_key):
 
 @hooks.hook("contrail-analytics-relation-joined")
 def contrail_analytics_joined():
-    settings = {'private-address': get_ip()}
+    settings = {"private-address": get_ip(),
+                "analytics-api-vip": config.get("vip")}
     relation_set(relation_settings=settings)
 
 
@@ -138,7 +143,7 @@ def contrail_analyticsdb_departed():
 
 @hooks.hook("analytics-cluster-relation-joined")
 def analytics_cluster_joined():
-    settings = {'private-address': get_ip()}
+    settings = {"private-address": get_ip()}
     relation_set(relation_settings=settings)
 
     update_charm_status()
