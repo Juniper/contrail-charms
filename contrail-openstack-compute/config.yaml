@@ -35,23 +35,3 @@ options:
       Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
       Enable this to remove such a bridge if you want to install vhost0 directly
       on the underlying interface.
-  virtual-gateways:
-    type: string
-    description: |
-      Virtual gateways to create (software based).
-
-      Using a YAML encoded string specify one or more gateways using a list
-      of maps, where each map consists of the following attributes:
-
-      project - project name
-      network - network name
-      interface - interface to use (will be created)
-      subnets - list of virtual subnets to route
-      routes - list of routes gateway will make available to virtual subnets,
-               0.0.0.0/0 selects all routes
-
-      For example:
-
-      // make any network available to virtual subnet 10.0.10.0/24 on
-      // admin:public network using local interface vgw to route
-      [ { project: admin, network: public, interface: vgw, subnets: [ 10.0.10.0/24 ], routes: [ 0.0.0.0/0 ] } ]

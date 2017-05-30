@@ -6,7 +6,6 @@ import time
 
 import json
 import uuid
-import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -35,15 +34,10 @@ from subprocess import (
 )
 from contrail_openstack_compute_utils import (
     configure_vrouter,
-    disable_vrouter_vgw,
     drop_caches,
-    enable_vrouter_vgw,
-    ifdown,
-    ifup,
     modprobe,
     provision_vrouter,
     write_configs,
-    write_vrouter_vgw_interfaces,
     set_status,
     vrouter_restart,
     get_endpoints,
@@ -119,7 +113,6 @@ def check_vrouter():
 def config_changed():
     if is_leader():
         configure_metadata_shared_secret()
-    configure_virtual_gateways()
     write_configs()
     check_vrouter()
     set_status()
@@ -150,42 +143,6 @@ def configure_metadata_shared_secret():
     settings = {"metadata-shared-secret": secret}
     for rid in relation_ids("neutron-plugin"):
         relation_set(relation_id=rid, relation_settings=settings)
-
-
-def configure_virtual_gateways():
-    gateways = config.get("virtual-gateways")
-    previous_gateways = config.get("virtual-gateways-prev")
-    if gateways == previous_gateways:
-        return
-
-    # create/destroy virtual gateway interfaces according to new value
-    interfaces = {gateway["interface"]: set(gateway["subnets"])
-                  for gateway in yaml.safe_load(gateways)} \
-                 if gateways else {}
-    previous_interfaces = {gateway["interface"]: set(gateway["subnets"])
-                           for gateway in yaml.safe_load(previous_gateways)} \
-                          if previous_gateways else {}
-    ifaces = [
-        interface for interface, subnets in previous_interfaces.iteritems()
-        if interface not in interfaces
-        or subnets != interfaces[interface]]
-    if ifaces:
-        ifdown(ifaces)
-
-    write_vrouter_vgw_interfaces()
-
-    ifaces = [interface for interface, subnets in interfaces.iteritems()
-              if interface not in previous_interfaces
-              or subnets != previous_interfaces[interface]]
-    if ifaces:
-        ifup(ifaces)
-
-    if interfaces:
-        enable_vrouter_vgw()
-    else:
-        disable_vrouter_vgw()
-
-    config["virtual-gateways-prev"] = gateways
 
 
 @hooks.hook("contrail-controller-relation-joined")

@@ -1,6 +1,5 @@
 import functools
 import os
-import shutil
 from socket import gethostname, gethostbyname
 from subprocess import (
     CalledProcessError,
@@ -11,7 +10,6 @@ from time import sleep, time
 
 import apt_pkg
 import json
-import yaml
 from six.moves.urllib.parse import urlparse
 
 import requests
@@ -32,7 +30,6 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.core.host import (
     restart_on_change,
     service_restart,
-    service_start,
     write_file,
     lsb_release,
 )
@@ -133,20 +130,6 @@ def configure_vrouter():
     if iface:
         args.append(iface)
     check_call(args, cwd="scripts")
-
-
-def enable_vrouter_vgw():
-    if not os.path.exists("/etc/sysctl.d/60-vrouter-vgw.conf"):
-        # set sysctl options
-        shutil.copy("files/60-vrouter-vgw.conf", "/etc/sysctl.d")
-        service_start("procps")
-
-
-def disable_vrouter_vgw():
-    if os.path.exists("/etc/sysctl.d/60-vrouter-vgw.conf"):
-        # unset sysctl options
-        os.remove("/etc/sysctl.d/60-vrouter-vgw.conf")
-        check_call(["sysctl", "-qw", "net.ipv4.ip_forward=0"])
 
 
 def drop_caches():
@@ -329,16 +312,6 @@ def vrouter_ctx():
             "vhost_physical": vhost_phys()}
 
 
-def vrouter_vgw_ctx():
-    ctx = {}
-    vgws = config.get("virtual-gateways")
-    if vgws:
-        vgws = yaml.safe_load(vgws)
-        map(lambda item: item.update(domain="default-domain"), vgws)
-        ctx["vgws"] = vgws
-    return ctx
-
-
 def get_context():
     ctx = {}
 
@@ -355,7 +328,6 @@ def get_context():
     ctx.update(neutron_metadata_ctx())
     ctx.update(network_ctx())
     ctx.update(vrouter_ctx())
-    ctx.update(vrouter_vgw_ctx())
     return ctx
 
 
@@ -390,11 +362,6 @@ def write_configs():
     render("vnc_api_lib.ini", "/etc/contrail/vnc_api_lib.ini", ctx)
     render("contrail-vrouter-agent.conf",
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
-
-
-def write_vrouter_vgw_interfaces():
-    ctx = vrouter_vgw_ctx()
-    render("vrouter-vgw.cfg", "/etc/network/interfaces.d/vrouter-vgw.cfg", ctx)
 
 
 def get_endpoints():
