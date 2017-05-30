@@ -42,6 +42,7 @@ from contrail_openstack_compute_utils import (
     vrouter_restart,
     get_endpoints,
     get_controller_address,
+    analytics_node_ctx,
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
@@ -177,9 +178,9 @@ def contrail_controller_changed():
     config["ssl_ca"] = data.get("ssl-ca")
     config["ssl_cert"] = data.get("ssl-cert")
     config["ssl_key"] = data.get("ssl-key")
-    prev_contrail_api_vip = config["contrail_api_vip"]
+    prev_contrail_api_vip = config.get("contrail_api_vip")
     config["contrail_api_vip"] = data.get("contrail-api-vip")
-    prev_analytics_api_vip = config["analytics_api_vip"]
+    prev_analytics_api_vip = config.get("analytics_api_vip")
     config["analytics_api_vip"] = data.get("analytics-api-vip")
     config.save()
 
@@ -288,35 +289,36 @@ def upgrade_charm():
 
 @hooks.hook("identity-service-relation-joined")
 def keystone_joined(relation_id=None):
+    if not is_leader():
+        return
+
+    relation_data = dict()
     ssl_ca = config.get("ssl_ca")
     # TODO: pass full URL-s from remote side
     proto = ("https" if (ssl_ca is not None and len(ssl_ca) > 0) else
              "http")
     api_ip, api_port = get_controller_address()
-    url = "{}://{}:{}".format(proto, api_ip, api_port)
-    relation_data = {
-        "contrail-api": {
-            "service": "contrail-api",
-            "region": config.get("region"),
-            "public_url": url,
-            "admin_url": url,
-            "internal_url": url
-        }
-    }
+    if api_ip:
+        url = "{}://{}:{}".format(proto, api_ip, api_port)
+        relation_data["contrail-api_service"] = "contrail-api"
+        relation_data["contrail-api_region"] = config.get("region")
+        relation_data["contrail-api_public_url"] = url
+        relation_data["contrail-api_admin_url"] = url
+        relation_data["contrail-api_internal_url"] = url
 
     # TODO: pass full URL-s from remote side - with protocol and port
-    if config.get("analytics_api_vip"):
-        vip = config.get("analytics_api_vip")
+    vip = config.get("analytics_api_vip")
+    if not vip:
+        data = analytics_node_ctx()
+        if data["analytics_nodes"]:
+            vip = data["analytics_nodes"][0]
+    if vip:
         url = "{}://{}:{}".format(proto, vip, "8081")
-        relation_data = {
-            "contrail-analytics": {
-                "service": "contrail-analytics",
-                "region": config.get("region"),
-                "public_url": url,
-                "admin_url": url,
-                "internal_url": url
-            }
-        }
+        relation_data["contrail-analytics_service"] = "contrail-analytics"
+        relation_data["contrail-analytics_region"] = config.get("region")
+        relation_data["contrail-analytics_public_url"] = url
+        relation_data["contrail-analytics_admin_url"] = url
+        relation_data["contrail-analytics_internal_url"] = url
 
     relation_set(relation_id=relation_id, **relation_data)
 
