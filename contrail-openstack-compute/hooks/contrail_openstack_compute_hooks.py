@@ -178,9 +178,7 @@ def contrail_controller_changed():
     config["ssl_ca"] = data.get("ssl-ca")
     config["ssl_cert"] = data.get("ssl-cert")
     config["ssl_key"] = data.get("ssl-key")
-    prev_contrail_api_vip = config.get("contrail_api_vip")
     config["contrail_api_vip"] = data.get("contrail-api-vip")
-    prev_analytics_api_vip = config.get("analytics_api_vip")
     config["analytics_api_vip"] = data.get("analytics-api-vip")
     config.save()
 
@@ -191,9 +189,7 @@ def contrail_controller_changed():
         log("Relation not ready")
         return
 
-    if (prev_contrail_api_vip != config["contrail_api_vip"] or
-            prev_analytics_api_vip != config["analytics_api_vip"]):
-        keystone_joined()
+    keystone_joined()
 
     _update_service_ips()
 
@@ -320,7 +316,8 @@ def keystone_joined(relation_id=None):
         relation_data["contrail-analytics_admin_url"] = url
         relation_data["contrail-analytics_internal_url"] = url
 
-    relation_set(relation_id=relation_id, **relation_data)
+    if relation_data:
+        relation_set(relation_id=relation_id, **relation_data)
 
 
 def main():
