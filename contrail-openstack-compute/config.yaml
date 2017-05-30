@@ -35,3 +35,7 @@ options:
       Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
       Enable this to remove such a bridge if you want to install vhost0 directly
       on the underlying interface.
+  region:
+    default: RegionOne
+    type: string
+    description: OpenStack Region

@@ -41,6 +41,7 @@ from contrail_openstack_compute_utils import (
     set_status,
     vrouter_restart,
     get_endpoints,
+    get_controller_address,
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
@@ -55,7 +56,7 @@ config = config()
 
 @hooks.hook("install.real")
 def install():
-    status_set('maintenance', 'Installing...')
+    status_set("maintenance", "Installing...")
 
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
@@ -65,7 +66,7 @@ def install():
     packages.extend(PACKAGES_DKMS_INIT)
     apt_install(packages, fatal=True)
 
-    status_set('maintenance', 'Configuring...')
+    status_set("maintenance", "Configuring...")
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
     vrouter_restart()
@@ -176,7 +177,9 @@ def contrail_controller_changed():
     config["ssl_ca"] = data.get("ssl-ca")
     config["ssl_cert"] = data.get("ssl-cert")
     config["ssl_key"] = data.get("ssl-key")
+    prev_contrail_api_vip = config["contrail_api_vip"]
     config["contrail_api_vip"] = data.get("contrail-api-vip")
+    prev_analytics_api_vip = config["analytics_api_vip"]
     config["analytics_api_vip"] = data.get("analytics-api-vip")
     config.save()
 
@@ -186,6 +189,10 @@ def contrail_controller_changed():
     if auth_info is None:
         log("Relation not ready")
         return
+
+    if (prev_contrail_api_vip != config["contrail_api_vip"] or
+            prev_analytics_api_vip != config["analytics_api_vip"]):
+        keystone_joined()
 
     _update_service_ips()
 
@@ -233,6 +240,8 @@ def contrail_controller_node_departed():
         config.pop("ssl_ca", None)
         config.pop("ssl_cert", None)
         config.pop("ssl_key", None)
+        config.pop("contrail_api_vip", None)
+        config.pop("analytics_api_vip", None)
         config.save()
         set_status()
     write_configs()
@@ -275,6 +284,41 @@ def upgrade_charm():
     vrouter_restart()
     check_vrouter()
     set_status()
+
+
+@hooks.hook("identity-service-relation-joined")
+def keystone_joined(relation_id=None):
+    ssl_ca = config.get("ssl_ca")
+    # TODO: pass full URL-s from remote side
+    proto = ("https" if (ssl_ca is not None and len(ssl_ca) > 0) else
+             "http")
+    api_ip, api_port = get_controller_address()
+    url = "{}://{}:{}".format(proto, api_ip, api_port)
+    relation_data = {
+        "contrail-api": {
+            "service": "contrail-api",
+            "region": config.get("region"),
+            "public_url": url,
+            "admin_url": url,
+            "internal_url": url
+        }
+    }
+
+    # TODO: pass full URL-s from remote side - with protocol and port
+    if config.get("analytics_api_vip"):
+        vip = config.get("analytics_api_vip")
+        url = "{}://{}:{}".format(proto, vip, "8081")
+        relation_data = {
+            "contrail-analytics": {
+                "service": "contrail-analytics",
+                "region": config.get("region"),
+                "public_url": url,
+                "admin_url": url,
+                "internal_url": url
+            }
+        }
+
+    relation_set(relation_id=relation_id, **relation_data)
 
 
 def main():
