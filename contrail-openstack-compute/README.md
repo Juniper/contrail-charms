@@ -59,9 +59,3 @@ Option 'enable-metadata-server' controls if a local nova-api-metadata service is
 started (per Compute Node) and registered to serve metadata requests. It is
 the recommended approach for serving metadata to instances and is enabled by
 default.
-
-Keystone Relation
------------------
-
-If this charm is related to keystone then it pushes endpoints information
-about contrail-api and analytics-api to keystone.
