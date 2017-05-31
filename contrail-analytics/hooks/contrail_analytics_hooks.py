@@ -58,10 +58,6 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
-    settings = {"analytics-api-vip": config.get("vip")}
-    for rid in relation_ids("contrail-analytics"):
-        relation_set(relation_id=rid, relation_settings=settings)
-
     update_charm_status()
 
 
@@ -82,8 +78,7 @@ def _value_changed(rel_data, rel_key, cfg_key):
 
 @hooks.hook("contrail-analytics-relation-joined")
 def contrail_analytics_joined():
-    settings = {"private-address": get_ip(),
-                "analytics-api-vip": config.get("vip")}
+    settings = {"private-address": get_ip()}
     relation_set(relation_settings=settings)
 
 

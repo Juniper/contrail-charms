@@ -119,6 +119,8 @@ def config_changed():
     check_vrouter()
     set_status()
 
+    keystone_joined()
+
 
 @hooks.hook("leader-elected")
 def leader_elected():
@@ -169,6 +171,8 @@ def contrail_controller_changed():
         config["analytics-servers"] = data["analytics-server"]
     config["api_ip"] = data.get("private-address")
     config["api_port"] = data.get("port")
+    if "api-vip" in data:
+        config["api_vip"] = data.get("api-vip")
     if "auth-info" in data:
         auth_info = data["auth-info"]
         if auth_info is not None:
@@ -178,8 +182,6 @@ def contrail_controller_changed():
     config["ssl_ca"] = data.get("ssl-ca")
     config["ssl_cert"] = data.get("ssl-cert")
     config["ssl_key"] = data.get("ssl-key")
-    config["contrail_api_vip"] = data.get("contrail-api-vip")
-    config["analytics_api_vip"] = data.get("analytics-api-vip")
     config.save()
 
     # TODO: add reaction to change auth_info from None to not-None and back
@@ -188,8 +190,6 @@ def contrail_controller_changed():
     if auth_info is None:
         log("Relation not ready")
         return
-
-    keystone_joined()
 
     _update_service_ips()
 
@@ -233,12 +233,13 @@ def contrail_controller_node_departed():
         config["controller-ready"] = False
         check_vrouter()
         config.pop("analytics-servers", None)
+        config.pop("api_ip", None)
+        config.pop("api_port", None)
+        config.pop("api_vip", None)
         config.pop("auth_info", None)
         config.pop("ssl_ca", None)
         config.pop("ssl_cert", None)
         config.pop("ssl_key", None)
-        config.pop("contrail_api_vip", None)
-        config.pop("analytics_api_vip", None)
         config.save()
         set_status()
     write_configs()
@@ -289,27 +290,16 @@ def keystone_joined(relation_id=None):
         return
 
     relation_data = dict()
-    ssl_ca = config.get("ssl_ca")
-    # TODO: pass full URL-s from remote side
-    proto = ("https" if (ssl_ca is not None and len(ssl_ca) > 0) else
-             "http")
-    api_ip, api_port = get_controller_address()
-    if api_ip:
-        url = "{}://{}:{}".format(proto, api_ip, api_port)
+    url = config.get("endpoint-contrail-api")
+    if url:
         relation_data["contrail-api_service"] = "contrail-api"
         relation_data["contrail-api_region"] = config.get("region")
         relation_data["contrail-api_public_url"] = url
         relation_data["contrail-api_admin_url"] = url
         relation_data["contrail-api_internal_url"] = url
 
-    # TODO: pass full URL-s from remote side - with protocol and port
-    vip = config.get("analytics_api_vip")
-    if not vip:
-        data = analytics_node_ctx()
-        if data["analytics_nodes"]:
-            vip = data["analytics_nodes"][0]
-    if vip:
-        url = "{}://{}:{}".format(proto, vip, "8081")
+    url = config.get("endpoint-analytics-api")
+    if url:
         relation_data["contrail-analytics_service"] = "contrail-analytics"
         relation_data["contrail-analytics_region"] = config.get("region")
         relation_data["contrail-analytics_public_url"] = url
