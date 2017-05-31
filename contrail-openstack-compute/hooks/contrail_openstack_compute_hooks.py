@@ -22,7 +22,6 @@ from charmhelpers.core.hookenv import (
     WARNING,
     ERROR,
     status_set,
-    relation_id,
 )
 
 from charmhelpers.fetch import (
@@ -117,7 +116,6 @@ def config_changed():
     write_configs()
     check_vrouter()
     set_status()
-    _update_keystone_endpoints()
 
 
 @hooks.hook("leader-elected")
@@ -280,38 +278,6 @@ def upgrade_charm():
     vrouter_restart()
     check_vrouter()
     set_status()
-
-
-def _update_keystone_endpoints(rid=None):
-    data = dict()
-    url = config.get("endpoint-contrail-api")
-    if url:
-        data["contrail-api_service"] = "contrail-api"
-        data["contrail-api_region"] = config.get("region")
-        data["contrail-api_public_url"] = url
-        data["contrail-api_admin_url"] = url
-        data["contrail-api_internal_url"] = url
-
-    url = config.get("endpoint-analytics-api")
-    if url:
-        data["contrail-analytics_service"] = "contrail-analytics"
-        data["contrail-analytics_region"] = config.get("region")
-        data["contrail-analytics_public_url"] = url
-        data["contrail-analytics_admin_url"] = url
-        data["contrail-analytics_internal_url"] = url
-
-    if not data:
-        return
-
-    for rid in ([rid] if rid else relation_ids("identity-service")):
-        relation_set(relation_id=rid, **data)
-
-
-@hooks.hook("identity-service-relation-joined")
-def keystone_joined():
-    if not is_leader():
-        return
-    _update_keystone_endpoints(rid=relation_id())
 
 
 def main():

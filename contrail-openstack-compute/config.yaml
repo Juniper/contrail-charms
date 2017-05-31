@@ -35,19 +35,3 @@ options:
       Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
       Enable this to remove such a bridge if you want to install vhost0 directly
       on the underlying interface.
-  endpoint-contrail-api:
-    type: string
-    description: |
-      The URL of all (public/admin/internal) endpoints created for Contrail API
-      in the keystone identity provider.
-      Endpoints will be created onyl if the value is set.
-  endpoint-analytics-api:
-    type: string
-    description: |
-      The URL of all (public/admin/internal) endpoints created for Analytics API
-      in the keystone identity provider.
-      Endpoints will be created onyl if the value is set.
-  region:
-    default: RegionOne
-    type: string
-    description: OpenStack Region for endpoints creation.
