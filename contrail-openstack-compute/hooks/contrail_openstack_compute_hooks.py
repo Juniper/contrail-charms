@@ -22,6 +22,7 @@ from charmhelpers.core.hookenv import (
     WARNING,
     ERROR,
     status_set,
+    relation_id,
 )
 
 from charmhelpers.fetch import (
@@ -41,8 +42,6 @@ from contrail_openstack_compute_utils import (
     set_status,
     vrouter_restart,
     get_endpoints,
-    get_controller_address,
-    analytics_node_ctx,
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
@@ -118,8 +117,7 @@ def config_changed():
     write_configs()
     check_vrouter()
     set_status()
-
-    keystone_joined()
+    _update_keystone_endpoints()
 
 
 @hooks.hook("leader-elected")
@@ -284,30 +282,36 @@ def upgrade_charm():
     set_status()
 
 
-@hooks.hook("identity-service-relation-joined")
-def keystone_joined(relation_id=None):
-    if not is_leader():
-        return
-
-    relation_data = dict()
+def _update_keystone_endpoints(rid=None):
+    data = dict()
     url = config.get("endpoint-contrail-api")
     if url:
-        relation_data["contrail-api_service"] = "contrail-api"
-        relation_data["contrail-api_region"] = config.get("region")
-        relation_data["contrail-api_public_url"] = url
-        relation_data["contrail-api_admin_url"] = url
-        relation_data["contrail-api_internal_url"] = url
+        data["contrail-api_service"] = "contrail-api"
+        data["contrail-api_region"] = config.get("region")
+        data["contrail-api_public_url"] = url
+        data["contrail-api_admin_url"] = url
+        data["contrail-api_internal_url"] = url
 
     url = config.get("endpoint-analytics-api")
     if url:
-        relation_data["contrail-analytics_service"] = "contrail-analytics"
-        relation_data["contrail-analytics_region"] = config.get("region")
-        relation_data["contrail-analytics_public_url"] = url
-        relation_data["contrail-analytics_admin_url"] = url
-        relation_data["contrail-analytics_internal_url"] = url
+        data["contrail-analytics_service"] = "contrail-analytics"
+        data["contrail-analytics_region"] = config.get("region")
+        data["contrail-analytics_public_url"] = url
+        data["contrail-analytics_admin_url"] = url
+        data["contrail-analytics_internal_url"] = url
 
-    if relation_data:
-        relation_set(relation_id=relation_id, **relation_data)
+    if not data:
+        return
+
+    for rid in ([rid] if rid else relation_ids("identity-service")):
+        relation_set(relation_id=rid, **data)
+
+
+@hooks.hook("identity-service-relation-joined")
+def keystone_joined():
+    if not is_leader():
+        return
+    _update_keystone_endpoints(rid=relation_id())
 
 
 def main():
