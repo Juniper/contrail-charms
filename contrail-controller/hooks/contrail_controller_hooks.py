@@ -261,16 +261,9 @@ def upgrade_charm():
     # NOTE: old image can not be deleted if container is running.
     # TODO: so think about killing the container
 
-    # TODO: this hook can be fired when either resource changed or charm code
+    # NOTE: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config
     update_charm_status()
-
-
-@hooks.hook("start")
-@hooks.hook("stop")
-def todo():
-    # TODO: think about it
-    pass
 
 
 def _http_services():

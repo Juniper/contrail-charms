@@ -337,11 +337,17 @@ def _save_file(path, data):
         os.remove(path)
 
 
-# TODO: add restart if content of certificates was changed
-@restart_on_change({"/etc/contrail/contrail-vrouter-agent.conf":
-                        ["contrail-vrouter-agent"],
-                    "/etc/contrail/contrail-vrouter-nodemgr.conf":
-                        ["contrail-vrouter-nodemgr"]})
+@restart_on_change({
+    "/etc/contrail/ssl/certs/ca-cert.pem":
+        ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
+    "/etc/contrail/ssl/certs/server.pem":
+        ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
+    "/etc/contrail/ssl/private/server-privkey.pem":
+        ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
+    "/etc/contrail/contrail-vrouter-agent.conf":
+        ["contrail-vrouter-agent"],
+    "/etc/contrail/contrail-vrouter-nodemgr.conf":
+        ["contrail-vrouter-nodemgr"]})
 def write_configs():
     ctx = get_context()
 
@@ -361,7 +367,6 @@ def write_configs():
 
 
 def get_endpoints():
-    # TODO: check with SSL
     auth_info = identity_admin_ctx()
     api_ver = int(auth_info["keystone_api_version"])
     if api_ver == 2:
