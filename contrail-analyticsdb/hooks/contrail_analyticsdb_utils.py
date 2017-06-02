@@ -134,12 +134,12 @@ def render_config(ctx=None):
 
     # NOTE: store files in default paths cause no way to pass this path to
     # some of components (sandesh)
-    ssl_ca = ctx["ssl_ca"]
-    _save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
-    ssl_cert = ctx["ssl_cert"]
-    _save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
-    ssl_key = ctx["ssl_key"]
-    _save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
+    #ssl_ca = ctx["ssl_ca"]
+    #_save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
+    #ssl_cert = ctx["ssl_cert"]
+    #_save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
+    #ssl_key = ctx["ssl_key"]
+    #_save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
 
     render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
 

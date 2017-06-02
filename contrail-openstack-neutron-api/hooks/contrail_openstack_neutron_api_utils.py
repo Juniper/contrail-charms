@@ -83,8 +83,8 @@ def write_plugin_config():
     ctx = get_context()
 
     # NOTE: store files in the same paths as in tepmlates
-    ssl_ca = ctx["ssl_ca"]
-    _save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
+    #ssl_ca = ctx["ssl_ca"]
+    #_save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
 
     render("ContrailPlugin.ini",
            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
