@@ -13,6 +13,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     relation_set,
     local_unit,
+    open_port,
 )
 
 from charmhelpers.fetch import (

@@ -21,6 +21,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     remote_unit,
     local_unit,
+    open_port,
 )
 
 from charmhelpers.fetch import (
