@@ -130,7 +130,7 @@ ifacedown()
 		fi
 		[ -d /sys/class/net/$iface/bridge ] && saveIfaces $iface
 		[ -d /sys/class/net/$iface/bonding ] && saveSlaves $iface
-		ifdown --force $iface
+		ifdown -v --force $iface
 	done
 }
 
@@ -141,7 +141,7 @@ ifaceup()
 		# if bridge, restore list of interfaces
 		# restore list of slaves if exists (bond)
 		restoreSlaves $iface
-		ifup $iface
+		ifup -v $iface
 		[ -d /sys/class/net/$iface/bridge ] && restoreIfaces $iface
 	done
 	return 0
