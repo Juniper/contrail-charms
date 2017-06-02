@@ -26,6 +26,8 @@ from charmhelpers.core.hookenv import (
     status_set,
     application_version_set,
     leader_get,
+    log,
+    ERROR,
 )
 
 from charmhelpers.core.host import (
@@ -309,10 +311,22 @@ def vrouter_ctx():
             "vhost_physical": vhost_phys()}
 
 
+def decode_cert(key):
+    val = config.get(key)
+    if not val:
+        return None
+    try:
+        return b64decode(val)
+    except Exception as e:
+        log("Couldn't decode certificate from config['{}']: {}".format(
+            key, str(e)), level=ERROR)
+    return None
+
+
 def get_context():
     ctx = {}
 
-    ssl_ca = b64decode(config.get("ssl_ca", ""))
+    ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
 

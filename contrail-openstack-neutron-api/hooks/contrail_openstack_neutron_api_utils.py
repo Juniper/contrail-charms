@@ -12,6 +12,8 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     application_version_set,
     status_set,
+    log,
+    ERROR,
 )
 from charmhelpers.core.host import (
     write_file,
@@ -59,12 +61,24 @@ def identity_admin_ctx():
     return (json.loads(auth_info) if auth_info else {})
 
 
+def decode_cert(key):
+    val = config.get(key)
+    if not val:
+        return None
+    try:
+        return b64decode(val)
+    except Exception as e:
+        log("Couldn't decode certificate from config['{}']: {}".format(
+            key, str(e)), level=ERROR)
+    return None
+
+
 def get_context():
     ctx = {}
     ctx.update(contrail_api_ctx())
     ctx.update(identity_admin_ctx())
 
-    ssl_ca = b64decode(config.get("ssl_ca", ""))
+    ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
     return ctx
