@@ -1,3 +1,4 @@
+from base64 import b64decode
 import functools
 import os
 from socket import gethostname, gethostbyname
@@ -311,10 +312,8 @@ def vrouter_ctx():
 def get_context():
     ctx = {}
 
-    ssl_ca = config.get("ssl_ca")
+    ssl_ca = b64decode(config.get("ssl_ca", ""))
     ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_cert"] = config.get("ssl_cert")
-    ctx["ssl_key"] = config.get("ssl_key")
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
 
     ctx.update(contrail_api_ctx())
@@ -354,10 +353,6 @@ def write_configs():
     # NOTE: store files in the same paths as in tepmlates
     ssl_ca = ctx["ssl_ca"]
     _save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
-    ssl_cert = ctx["ssl_cert"]
-    _save_file("/etc/contrail/ssl/certs/server.pem", ssl_cert)
-    ssl_key = ctx["ssl_key"]
-    _save_file("/etc/contrail/ssl/private/server-privkey.pem", ssl_key)
 
     render("contrail-vrouter-nodemgr.conf",
            "/etc/contrail/contrail-vrouter-nodemgr.conf", ctx)

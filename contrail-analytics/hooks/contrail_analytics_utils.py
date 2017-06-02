@@ -1,3 +1,4 @@
+from base64 import b64decode
 import os
 from socket import gethostbyname, inet_aton, gethostname, gaierror
 import struct
@@ -117,10 +118,10 @@ def get_context():
     ctx = {}
     ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
 
-    ssl_ca = config.get("ssl_ca")
+    ssl_ca = b64decode(config.get("ssl_ca", ""))
     ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_cert"] = config.get("ssl_cert")
-    ctx["ssl_key"] = config.get("ssl_key")
+    ctx["ssl_cert"] = b64decode(config.get("ssl_cert", ""))
+    ctx["ssl_key"] = b64decode(config.get("ssl_key", ""))
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
 
     ctx["db_user"] = config.get("db_user")

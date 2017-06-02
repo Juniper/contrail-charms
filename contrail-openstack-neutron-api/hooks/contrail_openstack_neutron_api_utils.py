@@ -1,3 +1,4 @@
+from base64 import b64decode
 import os
 import json
 from subprocess import CalledProcessError, check_output
@@ -63,7 +64,7 @@ def get_context():
     ctx.update(contrail_api_ctx())
     ctx.update(identity_admin_ctx())
 
-    ssl_ca = config.get("ssl_ca")
+    ssl_ca = b64decode(config.get("ssl_ca", ""))
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
     return ctx
