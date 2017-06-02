@@ -352,12 +352,12 @@ def write_configs():
     ctx = get_context()
 
     # NOTE: store files in the same paths as in tepmlates
-    #ssl_ca = ctx["ssl_ca"]
-    #_save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
-    #ssl_cert = ctx["ssl_cert"]
-    #_save_file("/etc/contrail/ssl/certs/server.pem", ssl_cert)
-    #ssl_key = ctx["ssl_key"]
-    #_save_file("/etc/contrail/ssl/private/server-privkey.pem", ssl_key)
+    ssl_ca = ctx["ssl_ca"]
+    _save_file("/etc/contrail/ssl/certs/ca-cert.pem", ssl_ca)
+    ssl_cert = ctx["ssl_cert"]
+    _save_file("/etc/contrail/ssl/certs/server.pem", ssl_cert)
+    ssl_key = ctx["ssl_key"]
+    _save_file("/etc/contrail/ssl/private/server-privkey.pem", ssl_key)
 
     render("contrail-vrouter-nodemgr.conf",
            "/etc/contrail/contrail-vrouter-nodemgr.conf", ctx)
