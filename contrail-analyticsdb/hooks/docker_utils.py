@@ -173,7 +173,7 @@ def launch_docker_image(name, additional_args=[]):
         log(name + " docker image is not available", ERROR)
         return
 
-    open_ports(image_id)
+    #open_ports(image_id)
 
     orchestrator = config.get("cloud_orchestrator")
     args = [DOCKER_CLI,

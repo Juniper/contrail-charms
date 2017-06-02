@@ -53,6 +53,7 @@ def install():
     apt_update(fatal=False)
     apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
 
+    open_port(8081, "TCP")
     update_charm_status()
 
 
