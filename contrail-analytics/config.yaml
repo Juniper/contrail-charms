@@ -1,1 +1,13 @@
 options:
+  ssl_cert:
+    type: string
+    description: |
+      SSL certificate to install and use for API ports.
+  ssl_key:
+    type: string
+    description: SSL key to use with certificate specified as ssl_cert.
+  ssl_ca:
+    type: string
+    description: |
+      SSL CA to use with the certificate and key provided - this is only
+      required if you are providing a privately signed ssl_cert and ssl_key.

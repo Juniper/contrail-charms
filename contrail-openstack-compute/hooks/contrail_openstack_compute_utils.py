@@ -153,13 +153,13 @@ def vrouter_restart():
 def ifdown(interfaces=None):
     """ifdown an interface or all interfaces"""
     log("Taking down {}".format(interfaces if interfaces else "interfaces"))
-    check_call(["ifdown"] + interfaces if interfaces else ["-a"])
+    check_call(["ifdown", "-v"] + interfaces if interfaces else ["-a"])
 
 
 def ifup(interfaces=None):
     """ifup an interface or all interfaces"""
     log("Bringing up {}".format(interfaces if interfaces else "interfaces"))
-    check_call(["ifup"] + interfaces if interfaces else ["-a"])
+    check_call(["ifup", "-v"] + interfaces if interfaces else ["-a"])
 
 
 def lsmod(module):
