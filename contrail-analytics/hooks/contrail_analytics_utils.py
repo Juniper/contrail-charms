@@ -19,6 +19,7 @@ from charmhelpers.core.hookenv import (
     application_version_set,
     log,
     ERROR,
+    open_port,
 )
 from charmhelpers.core.host import write_file
 from charmhelpers.core.templating import render
@@ -231,13 +232,14 @@ def update_charm_status(update_config=True):
     # TODO: what should happens if relation departed?
 
     render_config(ctx)
+    open_port(8081, "TCP")
+
     args = []
     if platform.linux_distribution()[2].strip() == "trusty":
         args.append("--pid=host")
     launch_docker_image(CONTAINER_NAME, args)
-    # TODO: find a way to do not use 'sleep'
-    time.sleep(5)
 
+    time.sleep(5)
     version = dpkg_version(CONTAINER_NAME, "contrail-analytics")
     application_version_set(version)
     status_set("active", "Unit ready")

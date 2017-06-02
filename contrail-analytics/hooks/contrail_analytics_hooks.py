@@ -13,7 +13,6 @@ from charmhelpers.core.hookenv import (
     status_set,
     relation_set,
     local_unit,
-    open_port,
 )
 
 from charmhelpers.fetch import (
@@ -54,7 +53,6 @@ def install():
     apt_update(fatal=False)
     apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
 
-    open_port(8081, "TCP")
     update_charm_status()
 
 

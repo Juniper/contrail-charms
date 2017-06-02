@@ -1,5 +1,4 @@
 import functools
-import json
 from time import sleep, time
 
 from subprocess import (
@@ -12,7 +11,6 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     ERROR,
-    open_port,
 )
 
 
@@ -137,43 +135,11 @@ def get_docker_image_id(name):
     return None
 
 
-def open_ports(image_id):
-    try:
-        result = check_output([DOCKER_CLI,
-                               "inspect",
-                               "-f='{{json .Config.ExposedPorts}}'",
-                               image_id
-                               ])
-        result = result.replace("'", "")
-    except CalledProcessError as e:
-        log("error in getting ExposedPorts from image. " + str(e),
-            level=ERROR)
-        return
-    try:
-        ports = json.loads(result)
-    except Exception as e:
-        log("error in decoding ExposedPorts from image: " + result,
-            level=ERROR)
-        log(str(e), level=ERROR)
-        return
-
-    if not ports:
-        log("There is no ports defined in container image confige.",
-            level=ERROR)
-        return
-
-    for pp_str in ports:
-        pp = pp_str.split('/')
-        open_port(pp[0], pp[1].upper())
-
-
 def launch_docker_image(name, additional_args=[]):
     image_id = get_docker_image_id(name)
     if not image_id:
         log(name + " docker image is not available", ERROR)
         return
-
-    #open_ports(image_id)
 
     orchestrator = config.get("cloud_orchestrator")
     args = [DOCKER_CLI,

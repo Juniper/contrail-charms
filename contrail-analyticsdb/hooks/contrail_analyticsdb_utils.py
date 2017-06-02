@@ -209,9 +209,8 @@ def update_charm_status(update_config=True):
     if platform.linux_distribution()[2].strip() == "trusty":
         args.append("--pid=host")
     launch_docker_image(CONTAINER_NAME, args)
-    # TODO: find a way to do not use 'sleep'
-    time.sleep(5)
 
+    time.sleep(5)
     version = dpkg_version(CONTAINER_NAME, "contrail-nodemgr")
     application_version_set(version)
     status_set("active", "Unit ready")
