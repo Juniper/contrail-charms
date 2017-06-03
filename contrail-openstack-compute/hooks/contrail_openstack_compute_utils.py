@@ -126,7 +126,7 @@ def set_status():
 
 def configure_vrouter():
     # run external script to configure vrouter
-    args = ["nohup", "./create-vrouter.sh"]
+    args = ["./create-vrouter.sh"]
     if config["remove-juju-bridge"]:
         args.append("-b")
     iface = config.get("vhost-interface")
