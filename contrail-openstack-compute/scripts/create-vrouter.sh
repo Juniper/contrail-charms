@@ -27,7 +27,7 @@ configVRouter()
 		echo "iface vhost0 inet dhcp"
 	fi
 	cat <<-EOF
-		    pre-up ip link add address \$(cat /sys/class/net/$1/address) type vhost
+		    pre-up ip link add vhost0 address \$(cat /sys/class/net/$1/address) type vhost
 		    pre-up vif --add $1 --mac \$(cat /sys/class/net/$1/address) --vrf 0 --vhost-phys --type physical
 		    pre-up vif --add vhost0 --mac \$(cat /sys/class/net/$1/address) --vrf 0 --type vhost --xconnect $1
 		    post-down vif --list | awk '/^vif.*OS: vhost0/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
@@ -92,16 +92,18 @@ configureVRouter()
 		iface_up=$1
 		iface_cfg=/dev/null
 	fi
+	if [ "$codename" != "xenial" ] ; then
+		ifacedown $iface_down vhost0; sleep 5
+	fi
 	configureInterfacesDir
 	configureInterfaces $iface_delete
 	configVRouter $iface_up $iface_cfg $TMP/vrouter.cfg \
 	    > /etc/network/interfaces.d/vrouter.cfg
 	codename=`cat /etc/lsb-release | grep DISTRIB_CODENAME | cut -d '=' -f 2`
-	if [ "$codename" = "xenial" ] ; then
-		systemctl restart networking
-	else
-		ifacedown $iface_down vhost0; sleep 5
+	if [ "$codename" != "xenial" ] ; then
 		ifaceup $iface_up vhost0
+	else
+		systemctl restart networking
 	fi
 	restoreRoutes
 }
