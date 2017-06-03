@@ -92,19 +92,12 @@ configureVRouter()
 		iface_up=$1
 		iface_cfg=/dev/null
 	fi
-	if [ "$codename" != "xenial" ] ; then
-		ifacedown $iface_down vhost0; sleep 5
-	fi
+	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
 	configVRouter $iface_up $iface_cfg $TMP/vrouter.cfg \
 	    > /etc/network/interfaces.d/vrouter.cfg
-	codename=`cat /etc/lsb-release | grep DISTRIB_CODENAME | cut -d '=' -f 2`
-	if [ "$codename" != "xenial" ] ; then
-		ifaceup $iface_up vhost0
-	else
-		systemctl restart networking
-	fi
+	ifaceup $iface_up vhost0
 	restoreRoutes
 }
 
