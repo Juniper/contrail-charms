@@ -67,7 +67,7 @@ def retry(f=None, timeout=10, delay=2):
 
 def add_docker_repo():
     import platform
-    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
+    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | apt-key add -'
     check_output(cmd, shell=True)
     dist = platform.linux_distribution()[2].strip()
     cmd = "add-apt-repository " + \
