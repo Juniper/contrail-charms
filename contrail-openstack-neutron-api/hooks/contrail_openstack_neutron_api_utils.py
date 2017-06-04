@@ -36,11 +36,8 @@ def set_status():
 
 def dpkg_version(pkg):
     try:
-        return check_output(["dpkg-query",
-                             "-f",
-                             "${Version}\\n",
-                             "-W",
-                             pkg]).rstrip()
+        return check_output(
+            ["dpkg-query", "-f", "${Version}\\n", "-W", pkg]).rstrip()
     except CalledProcessError:
         return None
 
@@ -76,11 +73,12 @@ def decode_cert(key):
 def get_context():
     ctx = {}
     ctx.update(contrail_api_ctx())
-    ctx.update(identity_admin_ctx())
-
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    log("CTX: " + str(ctx))
+
+    ctx.update(identity_admin_ctx())
     return ctx
 
 

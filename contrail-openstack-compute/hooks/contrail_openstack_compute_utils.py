@@ -313,18 +313,18 @@ def decode_cert(key):
 
 def get_context():
     ctx = {}
-
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
-
     ctx.update(contrail_api_ctx())
-    ctx.update(identity_admin_ctx())
     ctx.update(control_node_ctx())
     ctx.update(analytics_node_ctx())
     ctx.update(neutron_metadata_ctx())
     ctx.update(network_ctx())
     ctx.update(vrouter_ctx())
+    log("CTX: " + str(ctx))
+
+    ctx.update(identity_admin_ctx())
     return ctx
 
 

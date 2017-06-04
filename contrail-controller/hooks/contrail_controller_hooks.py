@@ -128,7 +128,6 @@ def update_northbound_relations(rid=None):
 def update_southbound_relations(rid=None):
     settings = {
         "api-vip": config.get("vip"),
-        "port": 8082,
         "analytics-server": json.dumps(get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
