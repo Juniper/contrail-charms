@@ -26,7 +26,6 @@ from charmhelpers.core.hookenv import (
     status_set,
     application_version_set,
     leader_get,
-    log,
     ERROR,
 )
 

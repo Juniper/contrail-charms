@@ -7,9 +7,6 @@ import apt_pkg
 
 from charmhelpers.core.hookenv import (
     config,
-    related_units,
-    relation_get,
-    relation_ids,
     application_version_set,
     status_set,
     log,
@@ -48,7 +45,7 @@ def contrail_api_ctx():
     api_vip = config.get("api_vip")
     if api_vip:
         ip = api_vip
-    return (ip, port) if ip and port else (None, None)
+    return ({"api_server": ip, "api_port": port} if ip and port else {})
 
 
 def identity_admin_ctx():
