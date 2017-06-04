@@ -43,14 +43,12 @@ def dpkg_version(pkg):
 
 
 def contrail_api_ctx():
-    api_vip = config.get("contrail_api_vip")
-    for rid in relation_ids("contrail-controller"):
-        for unit in related_units(rid):
-            port = relation_get("port", unit, rid)
-            ip = (api_vip if api_vip else
-                  relation_get("private-address", unit, rid))
-            return {"api_server": ip, "api_port": port}
-    return {}
+    ip = config.get("api_ip")
+    port = config.get("api_port")
+    api_vip = config.get("api_vip")
+    if api_vip:
+        ip = api_vip
+    return (ip, port) if ip and port else (None, None)
 
 
 def identity_admin_ctx():

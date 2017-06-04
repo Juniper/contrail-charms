@@ -67,7 +67,9 @@ def contrail_controller_changed():
     else:
         config.pop("auth_info", None)
     config["ssl_ca"] = data.get("ssl-ca")
-    config["contrail_api_vip"] = data.get("contrail-api-vip")
+    config["api_vip"] = data.get("contrail-api-vip")
+    config["api_ip"] = data.get("private-address")
+    config["api_port"] = data.get("port")
     config.save()
 
     write_plugin_config()
