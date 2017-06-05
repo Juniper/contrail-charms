@@ -10,6 +10,8 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     ERROR,
+    relation_ids,
+    related_units,
 )
 from charmhelpers.core.host import (
     write_file,
@@ -104,6 +106,11 @@ def _get_endpoints():
 
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
+
+    units = [unit for rid in relation_ids("neutron-api")
+                  for unit in related_units(rid)]
+    if not units:
+        return
 
     ctx = _get_context()
 

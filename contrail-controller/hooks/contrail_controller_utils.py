@@ -121,7 +121,7 @@ def get_context():
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
-    ctx.update(config.get("orchestrator_info"))
+    ctx.update(config.get("orchestrator_info", {}))
 
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
@@ -203,6 +203,7 @@ def update_charm_status(update_config=True):
     if not ctx.get("cloud_orchestrator"):
         status_set('blocked',
                    'Missing cloud orchestrator info in relations.')
+        return
     if not ctx.get("keystone_ip"):
         status_set('blocked',
                    'Missing auth info in relation with contrail-auth.')

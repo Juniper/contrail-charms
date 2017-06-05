@@ -168,7 +168,7 @@ def contrail_controller_departed():
                   for unit in related_units(rid)]
     if units:
         return
-    config.pop("cloud_orchestrator")
+    config.pop("orchestrator_info")
     if is_leader():
         update_northbound_relations()
     if is_container_launched(CONTAINER_NAME):
