@@ -124,7 +124,7 @@ def _value_changed(rel_data, rel_key, cfg_key):
 def analyticsdb_changed():
     data = relation_get()
     _value_changed(data, "auth-info", "auth_info")
-    _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
+    _value_changed(data, "orchestrator-info", "orchestrator_info")
     _value_changed(data, "ssl-ca", "ssl_ca")
     _value_changed(data, "ssl-cert", "ssl_cert")
     _value_changed(data, "ssl-key", "ssl_key")
@@ -138,7 +138,7 @@ def analyticsdb_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "cloud_orchestrator",
+        for key in ["auth_info", "orchestrator_info",
                     "ssl_ca", "ssl_cert", "ssl_key"]:
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):

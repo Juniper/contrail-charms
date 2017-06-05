@@ -121,10 +121,7 @@ def get_context():
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
-    ctx["cloud_orchestrator"] = config.get("cloud_orchestrator")
-    ctx["compute_service_ip"] = config.get("compute_service_ip")
-    ctx["image_service_ip"] = config.get("image_service_ip")
-    ctx["network_service_ip"] = config.get("network_service_ip")
+    ctx.update(config.get("orchestrator_info"))
 
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
@@ -199,13 +196,13 @@ def update_charm_status(update_config=True):
         missing_relations.append("contrail-controller-cluster")
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
-    if not ctx.get("cloud_orchestrator"):
-        missing_relations.append("contrail-cloud-orchestrator"
-                                 "(contrail-openstack-compute)")
     if missing_relations:
         status_set('blocked',
                    'Missing relations: ' + ', '.join(missing_relations))
         return
+    if not ctx.get("cloud_orchestrator"):
+        status_set('blocked',
+                   'Missing cloud orchestrator info in relations.')
     if not ctx.get("keystone_ip"):
         status_set('blocked',
                    'Missing auth info in relation with contrail-auth.')

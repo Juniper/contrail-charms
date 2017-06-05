@@ -1,0 +1,27 @@
+name: contrail-openstack
+summary: Contrail Connector to OpenStack
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
+description: |
+  Charm connects Contrail to neutron-api and nova-compute.
+categories:
+  - openstack
+series:
+  - xenial
+  - trusty
+subordinate: true
+peers:
+  cluster:
+    interface: contrail-openstack-cluster
+provides:
+  neutron-api:
+    interface: neutron-plugin-api-subordinate
+    scope: container
+  nova-compute:
+    interface: neutron-plugin
+    scope: container
+requires:
+  juju-info:
+    interface: juju-info
+    scope: container
+  contrail-controller:
+    interface: contrail-controller

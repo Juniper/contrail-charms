@@ -106,7 +106,7 @@ def update_northbound_relations(rid=None):
     settings = {
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
-        "cloud-orchestrator": config.get("cloud_orchestrator"),
+        "orchestrator-info": config.get("orchestrator_info"),
         "ssl-ca": config.get("ssl_ca"),
         "ssl-cert": config.get("ssl_cert"),
         "ssl-key": config.get("ssl_key"),
@@ -132,8 +132,7 @@ def update_southbound_relations(rid=None):
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "ssl-ca": config.get("ssl_ca"),
-        "ssl-cert": config.get("ssl_cert"),
-        "ssl-key": config.get("ssl_key"),
+        "orchestrator-info": config.get("orchestrator_info"),
     }
     for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)
@@ -141,33 +140,23 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    settings = {'private-address': get_ip(), "port": 8082}
+    settings = {"private-address": get_ip(), "port": 8082}
     relation_set(relation_settings=settings)
-
-    if remote_unit().startswith("contrail-openstack-compute"):
-        config["cloud_orchestrator"] = "openstack"
-    # TODO: add other orchestrators
-    # TODO: set error if orchestrator is changing and container was started
     if is_leader():
         update_southbound_relations(rid=relation_id())
-        update_northbound_relations()
-    update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     data = relation_get()
-    changed = False
-    keys = ["compute_service_ip", "image_service_ip", "network_service_ip"]
-    for key in keys:
-        if key not in data:
-            continue
-        val = data[key]
-        if val != config.get(key):
-            config[key] = val
-            changed = True
-    if changed:
-        update_charm_status()
+    if "orchestrator-info" in data:
+        config["orchestrator_info"] = data["orchestrator-info"]
+    # TODO: set error if orchestrator is changed and container was started
+    # with another orchestrator
+    if is_leader():
+        update_southbound_relations()
+        update_northbound_relations()
+    update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-departed")

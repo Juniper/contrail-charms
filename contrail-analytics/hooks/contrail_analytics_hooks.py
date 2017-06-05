@@ -88,7 +88,7 @@ def contrail_analytics_changed():
     changed = False
     changed |= _value_changed(data, "auth-mode", "auth_mode")
     changed |= _value_changed(data, "auth-info", "auth_info")
-    changed |= _value_changed(data, "cloud-orchestrator", "cloud_orchestrator")
+    changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
     changed |= _value_changed(data, "ssl-ca", "ssl_ca")
     changed |= _value_changed(data, "ssl-cert", "ssl_cert")
     changed |= _value_changed(data, "ssl-key", "ssl_key")
@@ -106,7 +106,7 @@ def contrail_analytics_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "auth_mode", "cloud_orchestrator",
+        for key in ["auth_info", "auth_mode", "orchestrator_info",
                     "ssl_ca", "ssl_cert", "ssl_key", "rabbitmq_vhost",
                     "rabbitmq_user", "rabbitmq_password"]:
             config.pop(key, None)

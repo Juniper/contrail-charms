@@ -1,0 +1,17 @@
+name: contrail-vrouter-agent
+summary: OpenStack Contrail VRouter Agent
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
+description: |
+  This charm provides the OpenStack VRouter agent.
+categories:
+  - openstack
+series:
+  - xenial
+  - trusty
+subordinate: true
+requires:
+  juju-info:
+    interface: juju-info
+    scope: container
+  contrail-controller:
+    interface: contrail-controller

@@ -1,0 +1,13 @@
+options:
+  install-sources:
+    type: string
+    description: Package sources for install
+  install-keys:
+    type: string
+    description: Apt keys for package install sources
+  enable-metadata-server:
+    type: boolean
+    default: true
+    description: |
+      Configures metadata shared secret and tells nova to run a local instance
+      of nova-api-metadata for serving metadata to VMs.
