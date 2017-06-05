@@ -140,11 +140,12 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
 
 def update_vrouter_provision_status():
     # TODO: update this logic with various scenario for data in relation
+    info = _load_json_from_config("orchestrator_info")
     ready = (
         config.get("api_port")
         and (config.get("api_ip") or config.get("api_vip"))
         and config.get("analytics_servers")
-        and config.get("orchestrator_info", {}).get("cloud_orchestrator"))
+        and info.get("cloud_orchestrator"))
     if config.get("vrouter-expected-provision-state"):
         if ready and not config.get("vrouter-provisioned"):
             try:

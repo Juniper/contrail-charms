@@ -131,8 +131,10 @@ def decode_cert(key):
 
 def get_context():
     ctx = {}
-    ctx["cloud_orchestrator"] = (config.get("orchestrator_info", {})
-                                 .get("cloud_orchestrator"))
+    info = config.get("orchestrator_info")
+    if info:
+        info = json.loads(info)
+        ctx["cloud_orchestrator"] = info.get("cloud_orchestrator")
 
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca

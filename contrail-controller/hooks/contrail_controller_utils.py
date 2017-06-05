@@ -121,7 +121,9 @@ def get_context():
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
-    ctx.update(config.get("orchestrator_info", {}))
+    info = config.get("orchestrator_info")
+    if info:
+        ctx.update(json.loads(info))
 
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca

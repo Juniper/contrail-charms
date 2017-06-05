@@ -158,7 +158,7 @@ def _get_orchestrator_info():
     _add_to_info("compute_service_ip")
     _add_to_info("image_service_ip")
     _add_to_info("network_service_ip")
-    return {"orchestrator-info": info}
+    return {"orchestrator-info": json.dumps(info)}
 
 
 @hooks.hook("neutron-api-relation-joined")
