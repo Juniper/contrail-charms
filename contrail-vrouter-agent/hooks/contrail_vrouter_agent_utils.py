@@ -244,7 +244,7 @@ def get_context():
          for rid in relation_ids("contrail-controller")
          for unit in related_units(rid)]
     ctx["analytics_nodes"] = _load_json_from_config("analytics_servers")
-    info = _load_json_from_config("orchestration_info")
+    info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
 
     iface = config.get("control-interface")
