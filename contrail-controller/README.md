@@ -16,3 +16,10 @@ Usage
 -----
 
 TODO
+
+charm can tell to haproxy list of backends via two relations: http-services and https-services.
+it tells unsecured backend (like contrail-api:8082 and webUI:8080) via http-services
+and secured (like webUI:8143) via https-services.
+it allows to relate this charm to different haproxy applications where first has ssl_cert/ssl_key in
+configuration and makes SSL termination itself but second doesn't have SSL parameters and acts
+as a proxy/load-balancer.

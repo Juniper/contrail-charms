@@ -289,6 +289,31 @@ def http_services_joined():
     relation_set(services=yaml.dump(_http_services()))
 
 
+def _https_services():
+    name = local_unit().replace("/", "-")
+    addr = get_ip()
+    return [
+        {'service_name': 'contrail-webui-https',
+         'service_host': '*',
+         'service_port': 8143,
+         'service_options': [
+            'timeout client 86400000',
+            'mode http',
+            'balance roundrobin',
+            'cookie SERVERID insert indirect nocache',
+            'timeout server 30000',
+            'timeout connect 4000',
+         ],
+         'servers': [[name, addr, 8143,
+            'cookie ' + addr + ' weight 1 maxconn 1024 check port 8082']]},
+    ]
+
+
+@hooks.hook("https-services-relation-joined")
+def https_services_joined():
+    relation_set(services=yaml.dump(_https_services()))
+
+
 def main():
     try:
         hooks.execute(sys.argv)

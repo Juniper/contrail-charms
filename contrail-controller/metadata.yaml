@@ -14,6 +14,8 @@ provides:
     interface: contrail-controller
   http-services:
     interface: http
+  https-services:
+    interface: http
 requires:
   contrail-auth:
     interface: contrail-auth
