@@ -20,7 +20,7 @@ from charmhelpers.fetch import (
     apt_upgrade,
     configure_sources
 )
-from charmhelpers.core.host import service_restart
+from charmhelpers.core.host import service_restart, lsb_release
 from subprocess import (
     CalledProcessError,
     check_output,
@@ -66,7 +66,12 @@ def install():
     status_set("maintenance", "Configuring...")
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
-    service_restart("contrail-vrouter-agent")
+
+    # supervisord must be started after installation
+    release = lsb_release()["DISTRIB_CODENAME"]
+    if release == 'trusty':
+        # supervisord
+        service_restart("supervisor-vrouter")
 
     try:
         modprobe("vrouter")
