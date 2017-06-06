@@ -98,7 +98,7 @@ def update_status():
     if not auth_info:
         status_set('blocked', 'Missing relations: identity')
     else:
-        status_set("active", "Unit ready")
+        status_set("active", "Unit is ready")
 
 
 def main():

@@ -9,7 +9,7 @@ from socket import gethostbyname
 from charmhelpers.core.hookenv import (
     config,
     log,
-    ERROR,
+    WARNING,
     relation_ids,
     related_units,
 )
@@ -27,7 +27,7 @@ def update_service_ips():
         endpoints = _get_endpoints()
     except Exception as e:
         log("Couldn't detect services ips: " + str(e),
-            level=ERROR)
+            level=WARNING)
         return False
 
     changed = {}

@@ -172,7 +172,7 @@ def render_config(ctx=None):
 
 def update_charm_status(update_config=True):
     if is_container_launched(CONTAINER_NAME):
-        status_set("active", "Unit ready")
+        status_set("active", "Unit is ready")
         if update_config:
             render_config()
             apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
@@ -224,4 +224,4 @@ def update_charm_status(update_config=True):
     time.sleep(5)
     version = dpkg_version(CONTAINER_NAME, "contrail-control")
     application_version_set(version)
-    status_set("active", "Unit ready")
+    status_set("active", "Unit is ready")
