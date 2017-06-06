@@ -25,7 +25,7 @@ from subprocess import (
     CalledProcessError,
     check_output,
 )
-from contrail_vrouter_agent_utils import (
+from contrail_agent_utils import (
     configure_vrouter_interface,
     drop_caches,
     modprobe,

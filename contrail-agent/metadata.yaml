@@ -1,5 +1,5 @@
-name: contrail-vrouter-agent
-summary: OpenStack Contrail VRouter Agent
+name: contrail-agent
+summary: Contrail Agent
 maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
   This charm provides the OpenStack VRouter agent.

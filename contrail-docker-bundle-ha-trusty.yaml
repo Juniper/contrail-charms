@@ -104,8 +104,8 @@ services:
     options:
       cluster_count: 3
     num_units: 0
-  contrail-openstack-neutron-api:
-    charm: ./contrail-openstack-neutron-api
+  contrail-openstack:
+    charm: ./contrail-openstack
     series: trusty
     num_units: 0
     options:
@@ -131,8 +131,8 @@ services:
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
         - "deb http://192.168.1.1:8080/contrail-openstack-neutron-api-pkgs/3065 /"
-  contrail-openstack-compute:
-    charm: ./contrail-openstack-compute
+  contrail-agent:
+    charm: ./contrail-agent
     series: trusty
     num_units: 0
     options:
@@ -207,15 +207,16 @@ relations:
   - [ openstack-dashboard, dashboard-hacluster ]
 
   #contrail
-  - [ "contrail-openstack-neutron-api", "neutron-api" ]
-  - [ "contrail-controller", "contrail-keystone-auth" ]
   - [ "contrail-keystone-auth", "keystone" ]
-  - [ "contrail-controller", "contrail-openstack-neutron-api" ]
+  - [ "contrail-controller", "contrail-keystone-auth" ]
   - [ "contrail-analytics", "contrail-analyticsdb" ]
   - [ "contrail-controller", "contrail-analytics" ]
   - [ "contrail-controller", "contrail-analyticsdb" ]
-  - [ "contrail-openstack-compute", "nova-compute" ]
-  - [ "contrail-openstack-compute", "contrail-controller"]
+  - [ "contrail-openstack", "nova-compute" ]
+  - [ "contrail-openstack", "neutron-api" ]
+  - [ "contrail-openstack", "contrail-controller" ]
+  - [ "contrail-agent:juju-info", "nova-compute:juju-info" ]
+  - [ "contrail-agent", "contrail-controller"]
 
 machines:
   "1":
