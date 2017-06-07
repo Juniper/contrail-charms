@@ -78,6 +78,13 @@ def leader_settings_changed():
 
 @hooks.hook("config-changed")
 def config_changed():
+    if config.changed("control-network"):
+        settings = {'private-address': get_ip()}
+        rnames = ("contrail-analyticsdb", "analyticsdb-cluster")
+        for rname in rnames:
+            for rid in relation_ids(rname):
+                relation_set(relation_id=rid, relation_settings=settings)
+
     update_charm_status()
 
 

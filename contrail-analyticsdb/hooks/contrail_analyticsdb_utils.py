@@ -44,16 +44,15 @@ CONTAINER_NAME = "contrail-analyticsdb"
 CONFIG_NAME = "analyticsdb"
 
 
-def get_ip(iface=None):
-    fallback = get_ip()
+def get_ip():
     network = config.get("control-network")
-    if network:
-        return get_address_in_network(network, fallback)
-    else:
-        return fallback
+    ip = get_address_in_network(network)
+    if not ip:
+        ip = _get_default_ip()
+    return ip
 
 
-def get_default_ip():
+def _get_default_ip():
     if hasattr(netifaces, 'gateways'):
         iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
     else:

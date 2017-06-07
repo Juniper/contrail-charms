@@ -93,6 +93,15 @@ def config_changed():
         raise Exception("Config is invalid. auth-mode must one of: "
                         "rbac, cloud-admin, no-auth.")
 
+    if config.changed("control-network"):
+        settings = {'private-address': get_ip()}
+        rnames = ("contrail-controller", "controller-cluster",
+                  "contrail-analytics", "contrail-analyticsdb",
+                  "http-services", "https-services")
+        for rname in rnames:
+            for rid in relation_ids(rname):
+                relation_set(relation_id=rid, relation_settings=settings)
+
     update_charm_status()
 
     if not is_leader():

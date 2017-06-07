@@ -58,6 +58,13 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
+    if config.changed("control-network"):
+        settings = {'private-address': get_ip()}
+        rnames = ("contrail-analytics", "analytics-cluster", "http-services")
+        for rname in rnames:
+            for rid in relation_ids(rname):
+                relation_set(relation_id=rid, relation_settings=settings)
+
     update_charm_status()
 
 
