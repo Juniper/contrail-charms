@@ -10,6 +10,7 @@ import json
 import platform
 import netifaces
 
+from charmhelpers.contrib.network.ip import get_address_in_network
 from charmhelpers.core.hookenv import (
     config,
     related_units,
@@ -44,14 +45,21 @@ CONFIG_NAME = "analyticsdb"
 
 
 def get_ip(iface=None):
-    if not iface:
-        if hasattr(netifaces, 'gateways'):
-            iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
-        else:
-            data = check_output("ip route | grep ^default", shell=True).split()
-            iface = data[data.index('dev') + 1]
-    ip = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
-    return ip
+    fallback = get_ip()
+    network = config.get("control-network")
+    if network:
+        return get_address_in_network(network, fallback)
+    else:
+        return fallback
+
+
+def get_default_ip():
+    if hasattr(netifaces, 'gateways'):
+        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+    else:
+        data = check_output("ip route | grep ^default", shell=True).split()
+        iface = data[data.index('dev') + 1]
+    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
 
 
 def fix_hostname():
