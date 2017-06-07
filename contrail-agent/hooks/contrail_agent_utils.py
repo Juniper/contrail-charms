@@ -30,6 +30,9 @@ from charmhelpers.core.host import (
     write_file,
     service_restart,
 )
+from charmhelpers.core.kernel import (
+    modprobe
+)
 
 from charmhelpers.core.templating import render
 
@@ -97,15 +100,6 @@ def drop_caches():
         f.write("3\n")
 
 
-def lsmod(module):
-    """Check if a kernel module is loaded"""
-    with open("/proc/modules", "r") as modules:
-        for line in modules:
-            if line.split()[0] == module:
-                return True
-    return False
-
-
 def modprobe(module, auto_load=False, dkms_autoinstall=False):
     """Load a kernel module.
 
@@ -122,13 +116,9 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
     :param dkms_autoinstall: invoke DKMS autoinstall for other kernels
                              (default False)
     """
-    if not lsmod(module):
-        log("Loading kernel module {}".format(module))
-        check_call(["modprobe", module])
-    if auto_load:
-        with open("/etc/modules", "a") as modules:
-            modules.write(module)
-            modules.write("\n")
+    log("Loading kernel module {}".format(module))
+    modprobe(module, persist=auto_load)
+
     if dkms_autoinstall:
         current = check_output(["uname", "-r"]).rstrip()
         for kernel in os.listdir("/lib/modules"):
