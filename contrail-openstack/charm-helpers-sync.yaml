@@ -3,3 +3,4 @@ destination: hooks/charmhelpers
 include:
   - core
   - fetch
+  - osplatform
