@@ -15,19 +15,6 @@ options:
     type: string
     description: |
       Role name in keystone for users that have read-only access to everything.
-  ssl_cert:
-    type: string
-    description: |
-      SSL certificate to install and use for API ports. Base64 encoded.
-  ssl_key:
-    type: string
-    description: SSL key to use with certificate specified as ssl_cert. Base64 encoded.
-  ssl_ca:
-    type: string
-    description: |
-      SSL CA to use with the certificate and key provided - this is only
-      required if you are providing a privately signed ssl_cert and ssl_key.
-      Base64 encoded.
   vip:
     type: string
     description: |
