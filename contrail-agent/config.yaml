@@ -5,7 +5,7 @@ options:
   install-keys:
     type: string
     description: Apt keys for package install sources
-  vhost-interface:
+  physical-interface:
     type: string
     description: |
       Specify the interface to install vhost0 on. If left empty, vhost0 will
@@ -16,11 +16,10 @@ options:
     description: |
       Specify the gateway for vhost0, either an IPv4 address or keyword 'auto'.
       'auto' will set gateway automatically based on host's existing routes.
-  control-interface:
+  control-network:
     type: string
-    default: vhost0
     description: |
-      Specify the interface to use for the control channel.
+      The IP address and netmask of the control network channel (e.g. 192.168.0.0/24).
       Default is to use vRouter interface that will be created.
   remove-juju-bridge:
     type: boolean

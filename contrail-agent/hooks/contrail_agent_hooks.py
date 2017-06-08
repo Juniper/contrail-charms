@@ -33,6 +33,7 @@ from contrail_agent_utils import (
     update_vrouter_provision_status,
     write_configs,
     update_unit_status,
+    reprovision_vrouter,
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
@@ -90,13 +91,16 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
-    # Charm doesn't support changing of parameters that are used only in
+    # Charm doesn't support changing of some parameters that are used only in
     # install hook.
-    for key in ("control-interface", "remove-juju-bridge", "vhost-interface"):
+    for key in ("remove-juju-bridge", "physical-interface"):
         if config.changed(key):
             raise Exception("Configuration parameter {} couldn't be changed"
                             .format(key))
+
     write_configs()
+    if config.changed("control-network"):
+        reprovision_vrouter()
 
 
 @hooks.hook("contrail-controller-relation-changed")

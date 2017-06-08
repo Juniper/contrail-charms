@@ -14,6 +14,7 @@ import json
 import netaddr
 import netifaces
 
+from charmhelpers.contrib.network.ip import get_address_in_network
 from charmhelpers.core.hookenv import (
     config,
     log,
@@ -35,6 +36,10 @@ from charmhelpers.core.templating import render
 
 apt_pkg.init()
 config = config()
+
+
+# as it's hardcoded in several scripts/configs
+VROUTER_INTERFACE = "vhost0"
 
 
 def retry(f=None, timeout=10, delay=2):
@@ -83,7 +88,7 @@ def configure_vrouter_interface():
     args = ["./create-vrouter.sh"]
     if config["remove-juju-bridge"]:
         args.append("-b")
-    iface = config.get("vhost-interface")
+    iface = config.get("physical-interface")
     if iface:
         args.append(iface)
     check_call(args, cwd="scripts")
@@ -140,17 +145,34 @@ def update_vrouter_provision_status():
         config["vrouter-provisioned"] = False
 
 
-def get_controller_address():
-    ip = config.get("api_ip")
-    port = config.get("api_port")
-    api_vip = config.get("api_vip")
-    if api_vip:
-        ip = api_vip
-    return (ip, port) if ip and port else (None, None)
+def get_control_network_ip(control_network=None):
+    network = control_network
+    if not network:
+        network = config.get("control-network")
+    ip = get_address_in_network(network) if network else None
+    if not ip:
+        ip = iface_addr(VROUTER_INTERFACE)["addr"]
+    return ip
 
 
-def provision_vrouter(op):
-    ip = vhost_addr(config.get("control-interface"))["addr"]
+def reprovision_vrouter(old_ip):
+    if not config.get("vrouter-provisioned"):
+        return
+
+    old_ip = get_control_network_ip(config.prev("control-network"))
+    try:
+        provision_vrouter("del", old_ip)
+    except Exception as e:
+        log("Couldn't unprovision vrouter: " + str(e), level=WARNING)
+    try:
+        provision_vrouter("add")
+    except Exception as e:
+        # vrouter is not up yet
+        log("Couldn't provision vrouter: " + str(e), level=WARNING)
+
+
+def provision_vrouter(op, self_ip=None):
+    ip = self_ip if self_ip else get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
     params = [
@@ -169,9 +191,31 @@ def provision_vrouter(op):
     @retry(timeout=200, delay=20)
     def _call():
         check_call(params)
+        log("vrouter operation '{}' was successful".format(op))
 
     log("{} vrouter {}".format(op, ip))
     _call()
+
+
+def get_controller_address():
+    ip = config.get("api_ip")
+    port = config.get("api_port")
+    api_vip = config.get("api_vip")
+    if api_vip:
+        ip = api_vip
+    return (ip, port) if ip and port else (None, None)
+
+
+def iface_addr(iface):
+    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
+
+
+def vhost_ip(addr):
+    # return a vhost formatted address and mask - x.x.x.x/xx
+    addr = iface_addr(VROUTER_INTERFACE)
+    ip = addr["addr"]
+    cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
+    return ip + "/" + str(cidr)
 
 
 def vhost_gateway(iface):
@@ -184,17 +228,6 @@ def vhost_gateway(iface):
                 return l[1]
         gateway = None
     return gateway
-
-
-def vhost_addr(iface):
-    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
-
-
-def vhost_ip(addr):
-    # return a vhost formatted address and mask - x.x.x.x/xx
-    ip = addr["addr"]
-    cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
-    return ip + "/" + str(cidr)
 
 
 def vhost_phys(iface):
@@ -225,12 +258,11 @@ def get_context():
     info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
 
-    iface = config.get("control-interface")
-    addr = vhost_addr(iface)
-    ctx["control_network_ip"] = addr["addr"]
-    ctx["vhost_ip"] = vhost_ip(addr)
-    ctx["vhost_gateway"] = vhost_gateway(iface)
-    ctx["vhost_physical"] = vhost_phys(iface)
+    ctx["control_network_ip"] = get_control_network_ip()
+
+    ctx["vhost_ip"] = vhost_ip(VROUTER_INTERFACE)
+    ctx["vhost_gateway"] = vhost_gateway(VROUTER_INTERFACE)
+    ctx["vhost_physical"] = vhost_phys(VROUTER_INTERFACE)
 
     log("CTX: " + str(ctx))
 

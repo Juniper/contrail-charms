@@ -48,7 +48,7 @@ CONFIG_NAME = "controller"
 
 def get_ip():
     network = config.get("control-network")
-    ip = get_address_in_network(network)
+    ip = get_address_in_network(network) if network else None
     if not ip:
         ip = _get_default_ip()
     return ip
