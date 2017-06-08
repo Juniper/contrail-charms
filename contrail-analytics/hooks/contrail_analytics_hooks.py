@@ -60,7 +60,8 @@ def install():
 def config_changed():
     if config.changed("control-network"):
         settings = {'private-address': get_ip()}
-        rnames = ("contrail-analytics", "analytics-cluster", "http-services")
+        rnames = ("contrail-analytics", "contrail-analyticsdb",
+                  "analytics-cluster", "http-services")
         for rname in rnames:
             for rid in relation_ids(rname):
                 relation_set(relation_id=rid, relation_settings=settings)
@@ -123,6 +124,12 @@ def contrail_analytics_departed():
                 "Container is present but cloud orchestrator was disappeared."
                 " Please kill container by yourself or restore it.")
     update_charm_status()
+
+
+@hooks.hook("contrail-analyticsdb-relation-joined")
+def contrail_analyticsdb_joined():
+    settings = {"private-address": get_ip()}
+    relation_set(relation_settings=settings)
 
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
