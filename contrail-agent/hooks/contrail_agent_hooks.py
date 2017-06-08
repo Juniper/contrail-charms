@@ -21,6 +21,7 @@ from charmhelpers.fetch import (
     configure_sources
 )
 from charmhelpers.core.host import service_restart, lsb_release
+from charmhelpers.core.kernel import modprobe
 from subprocess import (
     CalledProcessError,
     check_output,
@@ -28,7 +29,7 @@ from subprocess import (
 from contrail_agent_utils import (
     configure_vrouter_interface,
     drop_caches,
-    modprobe,
+    dkms_autoinstall,
     update_vrouter_provision_status,
     write_configs,
     update_unit_status,
@@ -74,13 +75,14 @@ def install():
         service_restart("supervisor-vrouter")
 
     try:
+        log("Loading kernel module vrouter")
         modprobe("vrouter")
     except CalledProcessError:
         log("vrouter kernel module failed to load,"
             " clearing pagecache and retrying")
         drop_caches()
         modprobe("vrouter")
-    modprobe("vrouter", True, True)
+    dkms_autoinstall("vrouter")
     configure_vrouter_interface()
     config["vrouter-expected-provision-state"] = False
     status_set("blocked", "Missing relation to contrail-controller")

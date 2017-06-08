@@ -30,9 +30,6 @@ from charmhelpers.core.host import (
     write_file,
     service_restart,
 )
-from charmhelpers.core.kernel import (
-    modprobe
-)
 
 from charmhelpers.core.templating import render
 
@@ -100,10 +97,8 @@ def drop_caches():
         f.write("3\n")
 
 
-def modprobe(module, auto_load=False, dkms_autoinstall=False):
-    """Load a kernel module.
-
-    Allows loading of a kernel module.
+def dkms_autoinstall(module):
+    """Allows loading of a kernel module.
 
     'dkms_autoinstall' is useful for DKMS kernel modules. Juju often upgrades
     units to newer kernels before charm install, which won't be used until the
@@ -112,20 +107,13 @@ def modprobe(module, auto_load=False, dkms_autoinstall=False):
     are compiled for newer kernels.
 
     :param module: module to load
-    :param auto_load: load module on boot (default False)
-    :param dkms_autoinstall: invoke DKMS autoinstall for other kernels
-                             (default False)
     """
-    log("Loading kernel module {}".format(module))
-    modprobe(module, persist=auto_load)
-
-    if dkms_autoinstall:
-        current = check_output(["uname", "-r"]).rstrip()
-        for kernel in os.listdir("/lib/modules"):
-            if kernel == current:
-                continue
-            log("DKMS auto installing for kernel {}".format(kernel))
-            check_call(["dkms", "autoinstall", "-k", kernel])
+    current = check_output(["uname", "-r"]).rstrip()
+    for kernel in os.listdir("/lib/modules"):
+        if kernel == current:
+            continue
+        log("DKMS auto installing for kernel {}".format(kernel))
+        check_call(["dkms", "autoinstall", "-k", kernel])
 
 
 def update_vrouter_provision_status():
