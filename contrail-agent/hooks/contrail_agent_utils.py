@@ -335,10 +335,13 @@ def update_unit_status():
         if status == 'initializing':
             log("Run agent hack: reinitialize config client")
             ip, _ = get_controller_address()
-            check_call("curl http://{}:8083/Snh_ConfigClientReinitReq?"
-                       .format(ip))
-            sleep(5)
-            status = _get_agent_status()
+            try:
+                check_call("curl http://{}:8083/Snh_ConfigClientReinitReq?"
+                           .format(ip))
+                sleep(5)
+                status = _get_agent_status()
+            except Exception as e:
+                log("Reinitialize returns error: " + str(e))
 
     if status == 'active':
         status_set("active", "Unit is ready")
