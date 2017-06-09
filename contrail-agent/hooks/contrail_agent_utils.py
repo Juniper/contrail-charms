@@ -327,9 +327,18 @@ def update_unit_status():
 
     status = _get_agent_status()
     if status == 'initializing':
+        # some hacks
+        log("Run agent hack: service restart")
         service_restart("contrail-vrouter-agent")
         sleep(10)
         status = _get_agent_status()
+        if status == 'initializing':
+            log("Run agent hack: reinitialize config client")
+            ip, _ = get_controller_address()
+            check_call("curl http://{}:8083/Snh_ConfigClientReinitReq?"
+                       .format(ip))
+            sleep(5)
+            status = _get_agent_status()
 
     if status == 'active':
         status_set("active", "Unit is ready")
