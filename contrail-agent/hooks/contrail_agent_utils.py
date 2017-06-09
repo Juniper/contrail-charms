@@ -325,21 +325,21 @@ def update_unit_status():
         else:
             status_set("blocked", "Missing relation to contrail-controller")
 
-    status = _get_agent_status()
+    status, _ = _get_agent_status()
     if status == 'initializing':
         # some hacks
         log("Run agent hack: service restart")
         service_restart("contrail-vrouter-agent")
         sleep(10)
-        status = _get_agent_status()
-        if status == 'initializing':
+        status, msg = _get_agent_status()
+        if status == 'initializing' and "(No Configuration for self)" in msg:
             log("Run agent hack: reinitialize config client")
             ip, _ = get_controller_address()
             try:
                 check_call("/usr/bin/curl -s http://{}:8083/"
                            "Snh_ConfigClientReinitReq?".format(ip))
                 sleep(5)
-                status = _get_agent_status()
+                status, _ = _get_agent_status()
             except Exception as e:
                 log("Reinitialize returns error: " + str(e))
 
@@ -368,4 +368,4 @@ def _get_agent_status():
             continue
 
         log("contrail-status: " + line)
-        return s_status
+        return s_status, line
