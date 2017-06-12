@@ -339,7 +339,7 @@ def update_unit_status():
                 # TODO: apply SSL if needed
                 check_call(
                     ["curl", "-s",
-                     "http://{}:8083/Snh_ConfigClientReinitReq?".format(ip))
+                     "http://{}:8083/Snh_ConfigClientReinitReq?".format(ip)])
                 sleep(5)
                 status, _ = _get_agent_status()
             except Exception as e:
