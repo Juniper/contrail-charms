@@ -336,8 +336,10 @@ def update_unit_status():
             log("Run agent hack: reinitialize config client")
             ip, _ = get_controller_address()
             try:
-                check_call("/usr/bin/curl -s http://{}:8083/"
-                           "Snh_ConfigClientReinitReq?".format(ip))
+                # TODO: apply SSL if needed
+                check_call(
+                    ["curl", "-s",
+                     "http://{}:8083/Snh_ConfigClientReinitReq?".format(ip))
                 sleep(5)
                 status, _ = _get_agent_status()
             except Exception as e:
