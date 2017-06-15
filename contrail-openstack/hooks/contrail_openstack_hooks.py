@@ -67,24 +67,12 @@ def config_changed():
 @hooks.hook("leader-elected")
 def leader_elected():
     _configure_metadata_shared_secret()
+    _notify_clients()
 
 
-def _configure_metadata_shared_secret():
-    secret = leader_get("metadata-shared-secret")
-    if config["enable-metadata-server"] and not secret:
-        secret = str(uuid.uuid4())
-    elif not config["enable-metadata-server"] and secret:
-        secret = None
-    else:
-        return
-
-    leader_set(settings={"metadata-shared-secret": secret})
-    # notify clients
-    data = _get_orchestrator_info()
-    for rid in relation_ids("contrail-controller"):
-        relation_set(relation_id=rid, **data)
-    for rid in relation_ids("nova-compute"):
-        nova_compute_joined(rid)
+@hooks.hook("leader-settings-changed")
+def leader_settings_changed():
+    _notify_clients()
 
 
 @hooks.hook("contrail-controller-relation-joined")
@@ -142,6 +130,27 @@ def contrail_cotroller_departed():
     config.save()
     write_configs()
     status_set("blocked", "Missing relation to contrail-controller")
+
+
+def _configure_metadata_shared_secret():
+    secret = leader_get("metadata-shared-secret")
+    if config["enable-metadata-server"] and not secret:
+        secret = str(uuid.uuid4())
+    elif not config["enable-metadata-server"] and secret:
+        secret = None
+    else:
+        return
+
+    leader_set(settings={"metadata-shared-secret": secret})
+
+
+def _notify_clients()
+    # notify clients
+    data = _get_orchestrator_info()
+    for rid in relation_ids("contrail-controller"):
+        relation_set(relation_id=rid, **data)
+    for rid in relation_ids("nova-compute"):
+        nova_compute_joined(rid)
 
 
 def _get_orchestrator_info():
