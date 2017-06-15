@@ -188,7 +188,7 @@ def provision_vrouter(op, self_ip=None):
             "--admin_password", identity.get("keystone_admin_password"),
             "--admin_tenant_name", identity.get("keystone_admin_tenant")]
 
-    @retry(timeout=200, delay=20)
+    @retry(timeout=65, delay=20)
     def _call():
         check_call(params)
         log("vrouter operation '{}' was successful".format(op))
