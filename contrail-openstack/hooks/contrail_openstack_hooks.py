@@ -144,7 +144,7 @@ def _configure_metadata_shared_secret():
     leader_set(settings={"metadata-shared-secret": secret})
 
 
-def _notify_clients()
+def _notify_clients():
     # notify clients
     data = _get_orchestrator_info()
     for rid in relation_ids("contrail-controller"):
