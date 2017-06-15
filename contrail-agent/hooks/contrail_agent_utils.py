@@ -334,7 +334,7 @@ def update_unit_status():
         status, msg = _get_agent_status()
         if status == 'initializing' and "(No Configuration for self)" in msg:
             log("Run agent hack: reinitialize config client")
-            ip, _ = get_controller_address()
+            ip = config.get("api_ip")
             try:
                 # TODO: apply SSL if needed
                 check_call(
