@@ -140,6 +140,7 @@ def get_context():
     ip_list = leader_get("controller_ip_list")
     ctx["controller_servers"] = json.loads(ip_list) if ip_list else []
     ctx["analytics_servers"] = get_analytics_list()
+    log("CTX: " + str(ctx))
     ctx.update(identity_admin_ctx())
     return ctx
 

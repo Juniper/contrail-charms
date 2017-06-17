@@ -118,7 +118,12 @@ def cluster_joined():
 def cluster_changed():
     if not is_leader():
         return
-    new_ip = relation_get("private-adress")
+    data = relation_get()
+    log("RelData: " + str(data))
+    new_ip = data.get("private-adress")
+    if not new_ip:
+        log("There is no private-address in the relation")
+        return
     ip_list = leader_get("controller_ip_list")
     ip_list = json.loads(ip_list) if ip_list else list()
     if new_ip in ip_list:
