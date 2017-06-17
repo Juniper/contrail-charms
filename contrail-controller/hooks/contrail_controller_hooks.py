@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import six
 import sys
 import uuid
 import yaml
@@ -36,7 +37,8 @@ from contrail_controller_utils import (
     get_analytics_list,
     fix_hostname,
     get_ip,
-    get_controller_ip_list
+    get_controller_ips,
+    json_loads,
 )
 
 from docker_utils import (
@@ -53,7 +55,7 @@ config = config()
 
 @hooks.hook("install.real")
 def install():
-    status_set('maintenance', 'Installing...')
+    status_set("maintenance", "Installing...")
 
     # TODO: try to remove this call
     fix_hostname()
@@ -83,13 +85,15 @@ def leader_elected():
         update_northbound_relations()
 
     ip_list = leader_get("controller_ip_list")
+    ips = get_controller_ips()
     if not ip_list:
-        ip_list = get_controller_ip_list()
-        log("IP_LIST: " + str(ip_list))
-        leader_set(controller_ip_list=json.dumps(ip_list))
+        ip_list = six.itervalues(ips)
+        log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
+        leader_set(controller_ip_list=json.dumps(ip_list),
+                   controller_ips=json.dumps(ips))
         # TODO: pass this list to all south/north relations
     else:
-        current_ip_list = get_controller_ip_list()
+        current_ip_list = six.itervalues(ips)
         dead_ips = set(ip_list).difference(current_ip_list)
         new_ips = set(current_ip_list).difference(ip_list)
         if new_ips:
@@ -109,7 +113,7 @@ def leader_settings_changed():
 
 @hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
-    settings = {"private-address": get_ip()}
+    settings = {"unit-address": get_ip()}
     relation_set(relation_settings=settings)
     update_charm_status()
 
@@ -120,61 +124,65 @@ def cluster_changed():
         return
     data = relation_get()
     log("RelData: " + str(data))
-    new_ip = data.get("private-address")
-    if not new_ip:
-        log("There is no private-address in the relation")
+    ip = data.get("unit-address")
+    if not ip:
+        log("There is no unit-address in the relation")
         return
-    ip_list = leader_get("controller_ip_list")
-    ip_list = json.loads(ip_list) if ip_list else list()
-    if new_ip in ip_list:
+    unit = remote_unit()
+    ip_list = json_loads(leader_get("controller_ip_list", list()))
+    ips = json_loads(leader_get("controller_ips"), dict())
+    if ip in ip_list:
         return
-    ip_list.append(new_ip)
-    log("IP_LIST: " + str(ip_list))
-    leader_set(controller_ip_list=json.dumps(ip_list))
+    old_ip = ips.get(unit)
+    if old_ip:
+        index = ip_list.index(old_ip)
+        ip_list[index] = ip
+        ips[unit] = ip
+    else:
+        ip_list.append(ip)
+        ips[unit] = ip
+
+    log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
+    leader_set(controller_ip_list=json.dumps(ip_list),
+               controller_ips=json.dumps(ips))
 
 
 @hooks.hook("controller-cluster-relation-departed")
 def cluster_departed():
     if not is_leader():
         return
-    ip_list = leader_get("controller_ip_list")
-    ip_list = json.loads(ip_list) if ip_list else list()
-    log("IP_LIST current: " + str(ip_list))
-    old_ip = relation_get("private-address")
-    if not old_ip:
-        log("remote address couldn't be detected. calculate it from currents")
-        current_ip_list = get_controller_ip_list()
-        dead_ips = set(ip_list).difference(current_ip_list)
-    else:
-        dead_ips = [old_ip]
-    log("IP-s to remove: " + str(dead_ips))
-
-    removed = False
-    for ip in dead_ips:
-        if ip in ip_list:
-            removed = True
-            ip_list.remove(ip)
-    if not removed:
+    unit = remote_unit()
+    ips = json_loads(leader_get("controller_ips"), dict())
+    if unit not in ips:
         return
-    log("IP_LIST new: " + str(ip_list))
-    leader_set(controller_ip_list=json.dumps(ip_list))
+    old_ip = ips.pop(unit)
+    ip_list = json_loads(leader_get("controller_ip_list", list()))
+    ip_list.remove(old_ip)
+
+    log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
+    leader_set(controller_ip_list=json.dumps(ip_list),
+               controller_ips=json.dumps(ips))
 
 
 @hooks.hook("config-changed")
 def config_changed():
     auth_mode = config.get("auth-mode")
-    if auth_mode not in ('rbac', 'cloud-admin', 'no-auth'):
+    if auth_mode not in ("rbac", "cloud-admin", "no-auth"):
         raise Exception("Config is invalid. auth-mode must one of: "
                         "rbac, cloud-admin, no-auth.")
 
     if config.changed("control-network"):
-        settings = {'private-address': get_ip()}
-        rnames = ("contrail-controller", "controller-cluster",
+        ip = get_ip()
+        settings = {"private-address": ip}
+        rnames = ("contrail-controller",
                   "contrail-analytics", "contrail-analyticsdb",
                   "http-services", "https-services")
         for rname in rnames:
             for rid in relation_ids(rname):
                 relation_set(relation_id=rid, relation_settings=settings)
+        settings = {"unit-address": ip}
+        for rid in relation_ids("controller-cluster"):
+            relation_set(relation_id=rid, relation_settings=settings)
 
     update_charm_status()
 
@@ -263,7 +271,7 @@ def contrail_controller_departed():
 
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
-    settings = {'private-address': get_ip()}
+    settings = {"private-address": get_ip()}
     relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
@@ -281,7 +289,7 @@ def analytics_changed_departed():
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
-    settings = {'private-address': get_ip()}
+    settings = {"private-address": get_ip()}
     relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
@@ -334,29 +342,29 @@ def _http_services():
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [
-        {'service_name': 'contrail-webui-http',
-         'service_host': '*',
-         'service_port': 8080,
-         'service_options': [
-            'timeout client 86400000',
-            'mode http',
-            'balance roundrobin',
-            'cookie SERVERID insert indirect nocache',
-            'timeout server 30000',
-            'timeout connect 4000',
+        {"service_name": "contrail-webui-http",
+         "service_host": "*",
+         "service_port": 8080,
+         "service_options": [
+            "timeout client 86400000",
+            "mode http",
+            "balance roundrobin",
+            "cookie SERVERID insert indirect nocache",
+            "timeout server 30000",
+            "timeout connect 4000",
          ],
-         'servers': [[name, addr, 8080,
-            'cookie ' + addr + ' weight 1 maxconn 1024 check port 8082']]},
-        {'service_name': 'contrail-api',
-         'service_host': '*',
-         'service_port': 8082,
-         'service_options': [
-            'timeout client 3m',
-            'option nolinger',
-            'timeout server 3m',
-            'balance roundrobin',
+         "servers": [[name, addr, 8080,
+            "cookie " + addr + " weight 1 maxconn 1024 check port 8082"]]},
+        {"service_name": "contrail-api",
+         "service_host": "*",
+         "service_port": 8082,
+         "service_options": [
+            "timeout client 3m",
+            "option nolinger",
+            "timeout server 3m",
+            "balance roundrobin",
          ],
-         'servers': [[name, addr, 8082, 'check inter 2000 rise 2 fall 3']]}
+         "servers": [[name, addr, 8082, "check inter 2000 rise 2 fall 3"]]}
     ]
 
 
@@ -369,19 +377,19 @@ def _https_services():
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [
-        {'service_name': 'contrail-webui-https',
-         'service_host': '*',
-         'service_port': 8143,
-         'service_options': [
-            'timeout client 86400000',
-            'mode http',
-            'balance roundrobin',
-            'cookie SERVERID insert indirect nocache',
-            'timeout server 30000',
-            'timeout connect 4000',
+        {"service_name": "contrail-webui-https",
+         "service_host": "*",
+         "service_port": 8143,
+         "service_options": [
+            "timeout client 86400000",
+            "mode http",
+            "balance roundrobin",
+            "cookie SERVERID insert indirect nocache",
+            "timeout server 30000",
+            "timeout connect 4000",
          ],
-         'servers': [[name, addr, 8143,
-            'cookie ' + addr + ' weight 1 maxconn 1024 check port 8082']]},
+         "servers": [[name, addr, 8143,
+            "cookie " + addr + " weight 1 maxconn 1024 check port 8082"]]},
     ]
 
 

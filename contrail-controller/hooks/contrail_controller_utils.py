@@ -23,6 +23,7 @@ from charmhelpers.core.hookenv import (
     log,
     ERROR,
     open_port,
+    local_unit,
 )
 from charmhelpers.core.host import write_file
 from charmhelpers.core.templating import render
@@ -63,17 +64,15 @@ def _get_default_ip():
     return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
 
 
-def get_controller_ip_list():
-    controller_ip_list = []
+def get_controller_ips():
+    controller_ips = dict()
     for rid in relation_ids("controller-cluster"):
         for unit in related_units(rid):
-            ip = relation_get("private-address", unit, rid)
-            controller_ip_list.append(ip)
+            ip = relation_get("unit-address", unit, rid)
+            controller_ips[unit] = ip
     # add it's own ip address
-    controller_ip_list.append(get_ip())
-    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
-    controller_ip_list = sorted(controller_ip_list, key=sort_key)
-    return controller_ip_list
+    controller_ips[local_unit()] = get_ip()
+    return controller_ips
 
 
 def fix_hostname():
@@ -85,6 +84,10 @@ def fix_hostname():
         check_call(["sed", "-E", "-i", "-e",
             ("/127.0.0.1[[:blank:]]+/a \\\n" + ip + " " + hostname),
             "/etc/hosts"])
+
+
+def json_loads(data, default=None):
+    return json.loads(data) if data else default
 
 
 def get_analytics_list():
@@ -99,8 +102,7 @@ def get_analytics_list():
 
 
 def identity_admin_ctx():
-    auth_info = config.get("auth_info")
-    return (json.loads(auth_info) if auth_info else {})
+    return json_loads(config.get("auth_info"), dict())
 
 
 def decode_cert(key):
@@ -120,9 +122,7 @@ def get_context():
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
-    info = config.get("orchestrator_info")
-    if info:
-        ctx.update(json.loads(info))
+    ctx.update(json_loads(config.get("orchestrator_info", dict())))
 
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
@@ -137,8 +137,8 @@ def get_context():
     ctx["rabbitmq_password"] = leader_get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
 
-    ip_list = leader_get("controller_ip_list")
-    ctx["controller_servers"] = json.loads(ip_list) if ip_list else []
+    ctx["controller_servers"] = json_loads(leader_get("controller_ip_list",
+                                                      list()))
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
     ctx.update(identity_admin_ctx())
