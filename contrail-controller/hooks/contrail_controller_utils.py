@@ -63,6 +63,19 @@ def _get_default_ip():
     return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
 
 
+def get_controller_ip_list():
+    controller_ip_list = []
+    for rid in relation_ids("controller-cluster"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            controller_ip_list.append(ip)
+    # add it's own ip address
+    controller_ip_list.append(get_ip())
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    controller_ip_list = sorted(controller_ip_list, key=sort_key)
+    return controller_ip_list
+
+
 def fix_hostname():
     hostname = gethostname()
     try:
@@ -83,26 +96,6 @@ def get_analytics_list():
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
     return analytics_ip_list
-
-
-def controller_ctx():
-    ctx = {}
-    controller_ip_list = []
-    for rid in relation_ids("controller-cluster"):
-        for unit in related_units(rid):
-            ip = relation_get("private-address", unit, rid)
-            controller_ip_list.append(ip)
-    # add it's own ip address
-    controller_ip_list.append(get_ip())
-    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
-    controller_ip_list = sorted(controller_ip_list, key=sort_key)
-    ctx["controller_servers"] = controller_ip_list
-    return ctx
-
-
-def analytics_ctx():
-    """Get the ipaddres of all contrail nodes"""
-    return {"analytics_servers": get_analytics_list()}
 
 
 def identity_admin_ctx():
@@ -144,8 +137,9 @@ def get_context():
     ctx["rabbitmq_password"] = leader_get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
 
-    ctx.update(controller_ctx())
-    ctx.update(analytics_ctx())
+    ip_list = leader_get("controller_ip_list")
+    ctx["controller_servers"] = json.loads(ip_list) if ip_list else []
+    ctx["analytics_servers"] = get_analytics_list()
     ctx.update(identity_admin_ctx())
     return ctx
 
@@ -204,6 +198,8 @@ def update_charm_status(update_config=True):
         missing_relations.append("contrail-controller-cluster")
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
+    if not ctx.get("controller_servers"):
+        missing_relations.append("contrail-cluster")
     if missing_relations:
         status_set('blocked',
                    'Missing relations: ' + ', '.join(missing_relations))

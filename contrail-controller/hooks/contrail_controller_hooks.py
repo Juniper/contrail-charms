@@ -21,6 +21,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     remote_unit,
     local_unit,
+    ERROR,
 )
 
 from charmhelpers.fetch import (
@@ -34,7 +35,8 @@ from contrail_controller_utils import (
     CONTAINER_NAME,
     get_analytics_list,
     fix_hostname,
-    get_ip
+    get_ip,
+    get_controller_ip_list
 )
 
 from docker_utils import (
@@ -70,6 +72,7 @@ def leader_elected():
         user = "controller"
         password = uuid.uuid4().hex
         leader_set(db_user=user, db_password=password)
+
     if not leader_get("rabbitmq_user"):
         user = "contrail"
         password = uuid.uuid4().hex
@@ -78,12 +81,78 @@ def leader_elected():
                    rabbitmq_password=password,
                    rabbitmq_vhost=vhost)
         update_northbound_relations()
+
+    ip_list = leader_get("controller_ip_list")
+    if not ip_list:
+        ip_list = get_controller_ip_list()
+        log("IP_LIST: " + str(ip_list))
+        leader_set(controller_ip_list=json.dumps(ip_list))
+        # TODO: pass this list to all south/north relations
+    else:
+        current_ip_list = get_controller_ip_list()
+        dead_ips = set(ip_list).difference(current_ip_list)
+        new_ips = set(current_ip_list).difference(ip_list)
+        if new_ips:
+            log("There are a new controllers that are not in the list: "
+                + str(new_ips), level=ERROR)
+        if dead_ips:
+            log("There are a dead controllers that are in the list: "
+                + str(dead_ips), level=ERROR)
+
     update_charm_status()
 
 
 @hooks.hook("leader-settings-changed")
 def leader_settings_changed():
     update_charm_status()
+
+
+@hooks.hook("controller-cluster-relation-joined")
+def cluster_joined():
+    settings = {"private-address": get_ip()}
+    relation_set(relation_settings=settings)
+    update_charm_status()
+
+
+@hooks.hook("controller-cluster-relation-changed")
+def cluster_changed():
+    if not is_leader():
+        return
+    new_ip = relation_get("private-adress")
+    ip_list = leader_get("controller_ip_list")
+    ip_list = json.loads(ip_list) if ip_list else list()
+    if new_ip in ip_list:
+        return
+    ip_list.append(new_ip)
+    log("IP_LIST: " + str(ip_list))
+    leader_set(controller_ip_list=json.dumps(ip_list))
+
+
+@hooks.hook("controller-cluster-relation-departed")
+def cluster_departed():
+    if not is_leader():
+        return
+    ip_list = leader_get("controller_ip_list")
+    ip_list = json.loads(ip_list) if ip_list else list()
+    log("IP_LIST current: " + str(ip_list))
+    old_ip = relation_get("private-adress")
+    if not old_ip:
+        log("remote address couldn't be detected. calculate it from currents")
+        current_ip_list = get_controller_ip_list()
+        dead_ips = set(ip_list).difference(current_ip_list)
+    else:
+        dead_ips = [old_ip]
+    log("IP-s to remove: " + str(dead_ips))
+
+    removed = False
+    for ip in dead_ips:
+        if ip in ip_list:
+            removed = True
+            ip_list.remove(ip)
+    if not removed:
+        return
+    log("IP_LIST new: " + str(ip_list))
+    leader_set(controller_ip_list=json.dumps(ip_list))
 
 
 @hooks.hook("config-changed")
@@ -185,13 +254,6 @@ def contrail_controller_departed():
             "error",
             "Container is present but cloud orchestrator was disappeared."
             " Please kill container by yourself or restore relation.")
-
-
-@hooks.hook("controller-cluster-relation-joined")
-def cluster_joined():
-    settings = {'private-address': get_ip()}
-    relation_set(relation_settings=settings)
-    update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-joined")
