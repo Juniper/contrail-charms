@@ -120,7 +120,7 @@ def cluster_changed():
         return
     data = relation_get()
     log("RelData: " + str(data))
-    new_ip = data.get("private-adress")
+    new_ip = data.get("private-address")
     if not new_ip:
         log("There is no private-address in the relation")
         return
@@ -140,7 +140,7 @@ def cluster_departed():
     ip_list = leader_get("controller_ip_list")
     ip_list = json.loads(ip_list) if ip_list else list()
     log("IP_LIST current: " + str(ip_list))
-    old_ip = relation_get("private-adress")
+    old_ip = relation_get("private-address")
     if not old_ip:
         log("remote address couldn't be detected. calculate it from currents")
         current_ip_list = get_controller_ip_list()
