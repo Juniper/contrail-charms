@@ -199,7 +199,7 @@ def update_charm_status(update_config=True):
         missing_relations.append("contrail-controller-cluster")
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
-    if not ctx.get("controller_servers"):
+    if get_ip() not in ctx.get("controller_servers"):
         missing_relations.append("contrail-cluster")
     if missing_relations:
         status_set('blocked',
