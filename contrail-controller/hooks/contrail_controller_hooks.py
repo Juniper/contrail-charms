@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-import six
 import sys
 import uuid
 import yaml
@@ -87,13 +86,13 @@ def leader_elected():
     ip_list = leader_get("controller_ip_list")
     ips = get_controller_ips()
     if not ip_list:
-        ip_list = six.itervalues(ips)
+        ip_list = ips.values()
         log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
         leader_set(controller_ip_list=json.dumps(ip_list),
                    controller_ips=json.dumps(ips))
         # TODO: pass this list to all south/north relations
     else:
-        current_ip_list = six.itervalues(ips)
+        current_ip_list = ips.values()
         dead_ips = set(ip_list).difference(current_ip_list)
         new_ips = set(current_ip_list).difference(ip_list)
         if new_ips:
