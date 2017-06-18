@@ -144,6 +144,7 @@ def cluster_changed():
     log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
     leader_set(controller_ip_list=json.dumps(ip_list),
                controller_ips=json.dumps(ips))
+    update_charm_status()
 
 
 @hooks.hook("controller-cluster-relation-departed")
@@ -161,6 +162,7 @@ def cluster_departed():
     log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
     leader_set(controller_ip_list=json.dumps(ip_list),
                controller_ips=json.dumps(ips))
+    update_charm_status()
 
 
 @hooks.hook("config-changed")

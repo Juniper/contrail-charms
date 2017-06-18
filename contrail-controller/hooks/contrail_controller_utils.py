@@ -137,8 +137,10 @@ def get_context():
     ctx["rabbitmq_password"] = leader_get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
 
-    ctx["controller_servers"] = json_loads(leader_get("controller_ip_list"),
-                                                      list())
+    ips = json_loads(leader_get("controller_ip_list"), list())
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    ctx["controller_servers"] = sorted(ips, key=sort_key)
+    ctx["config_seeds"] = ips
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
     ctx.update(identity_admin_ctx())
