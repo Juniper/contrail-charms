@@ -122,7 +122,7 @@ def get_context():
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
-    ctx.update(json_loads(config.get("orchestrator_info", dict())))
+    ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
     ssl_ca = decode_cert("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
@@ -137,8 +137,8 @@ def get_context():
     ctx["rabbitmq_password"] = leader_get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
 
-    ctx["controller_servers"] = json_loads(leader_get("controller_ip_list",
-                                                      list()))
+    ctx["controller_servers"] = json_loads(leader_get("controller_ip_list"),
+                                                      list())
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
     ctx.update(identity_admin_ctx())

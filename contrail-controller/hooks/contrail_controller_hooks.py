@@ -128,7 +128,7 @@ def cluster_changed():
         log("There is no unit-address in the relation")
         return
     unit = remote_unit()
-    ip_list = json_loads(leader_get("controller_ip_list", list()))
+    ip_list = json_loads(leader_get("controller_ip_list"), list())
     ips = json_loads(leader_get("controller_ips"), dict())
     if ip in ip_list:
         return
@@ -155,7 +155,7 @@ def cluster_departed():
     if unit not in ips:
         return
     old_ip = ips.pop(unit)
-    ip_list = json_loads(leader_get("controller_ip_list", list()))
+    ip_list = json_loads(leader_get("controller_ip_list"), list())
     ip_list.remove(old_ip)
 
     log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
