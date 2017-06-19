@@ -22,3 +22,6 @@ provides:
 requires:
   contrail-controller:
     interface: contrail-controller
+  juju-info:
+    interface: juju-info
+    scope: container
