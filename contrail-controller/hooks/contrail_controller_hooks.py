@@ -128,6 +128,11 @@ def cluster_changed():
         log("There is no unit-address in the relation")
         return
     unit = remote_unit()
+    _address_changed(unit, ip)
+    update_charm_status()
+
+
+def _address_changed(unit, ip):
     ip_list = json_loads(leader_get("controller_ip_list"), list())
     ips = json_loads(leader_get("controller_ips"), dict())
     if ip in ip_list:
@@ -144,7 +149,6 @@ def cluster_changed():
     log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
     leader_set(controller_ip_list=json.dumps(ip_list),
                controller_ips=json.dumps(ips))
-    update_charm_status()
 
 
 @hooks.hook("controller-cluster-relation-departed")
@@ -184,6 +188,8 @@ def config_changed():
         settings = {"unit-address": ip}
         for rid in relation_ids("controller-cluster"):
             relation_set(relation_id=rid, relation_settings=settings)
+        if is_leader():
+            _address_changed(local_unit(), ip)
 
     update_charm_status()
 
