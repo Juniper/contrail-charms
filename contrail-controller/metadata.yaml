@@ -2,7 +2,7 @@ name: contrail-controller
 summary: Contrail Controller Node
 maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
-  TODO
+  Contral controller component within docker container.
 series:
   - xenial
   - trusty

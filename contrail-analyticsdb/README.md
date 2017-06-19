@@ -8,6 +8,7 @@ provides a Neutron plugin to integrate with OpenStack.
 
 This charm provides the Contrail Analytics DB role that includes
 Cassandra server (specially for Analytics nodes) and Kafka server.
+
 Only OpenStack Mitaka or newer is supported.
 Only for Contrail 4.0 for now.
 Juju 2.0 is required.

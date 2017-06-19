@@ -2,7 +2,7 @@ name: contrail-keystone-auth
 summary: Contrail Auth charm to connect Contrail to Keystone
 maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
-  TODO
+  Charm connects Contrail cluster to keystone to obtain auth info.
 series:
   - xenial
   - trusty

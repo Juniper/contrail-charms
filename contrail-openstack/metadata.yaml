@@ -20,8 +20,5 @@ provides:
     interface: neutron-plugin
     scope: container
 requires:
-  juju-info:
-    interface: juju-info
-    scope: container
   contrail-controller:
     interface: contrail-controller

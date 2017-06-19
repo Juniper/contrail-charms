@@ -1,8 +1,8 @@
 name: contrail-agent
-summary: Contrail Agent
+summary: Contrail vRouter Agent
 maintainer: Andrey Pavlov <andrey.mp@gmail.com>
 description: |
-  This charm provides the OpenStack VRouter agent.
+  Contrail vRouter agent
 categories:
   - openstack
 series:
