@@ -138,9 +138,7 @@ def get_context():
     ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
 
     ips = json_loads(leader_get("controller_ip_list"), list())
-    # comment sorting for test
-    # sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
-    ctx["controller_servers"] = ips # sorted(ips, key=sort_key)
+    ctx["controller_servers"] = ips
     ctx["config_seeds"] = ips
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
