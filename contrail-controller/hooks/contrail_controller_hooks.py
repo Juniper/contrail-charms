@@ -34,12 +34,13 @@ from contrail_controller_utils import (
     update_charm_status,
     CONTAINER_NAME,
     get_analytics_list,
-    fix_hostname,
-    get_ip,
     get_controller_ips,
+)
+from common_utils import (
+    get_ip,
+    fix_hostname,
     json_loads,
 )
-
 from docker_utils import (
     add_docker_repo,
     DOCKER_PACKAGES,
@@ -122,7 +123,6 @@ def cluster_changed():
     if not is_leader():
         return
     data = relation_get()
-    log("RelData: " + str(data))
     ip = data.get("unit-address")
     if not ip:
         log("There is no unit-address in the relation")

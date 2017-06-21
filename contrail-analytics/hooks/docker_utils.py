@@ -167,7 +167,8 @@ def docker_exec(name, cmd):
         cli.extend(cmd)
     else:
         cli.append(cmd)
-    check_call(cli)
+    output = check_output(cli)
+    return output.decode('UTF-8')
 
 
 @retry(timeout=32, delay=10)
@@ -182,18 +183,3 @@ def apply_config_in_container(name, cfg_name):
             log("Container was restarted. " + str(e.output), level=ERROR)
             return False
         raise
-
-
-def docker_contrail_status(name):
-    statuses = dict()
-    output = docker_exec(name, "contrail-status")
-    for line in output.splitlines()[1:]:
-        if len(line) == 0 or line.starts_with("=="):
-            return
-        lst = line.decode('UTF-8').split()
-        if len(lst) < 2:
-            continue
-        s_name = lst[0].strip()
-        s_status = lst[1].strip()
-        statuses[s_name] = s_status
-    return statuses

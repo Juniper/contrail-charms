@@ -26,12 +26,13 @@ from charmhelpers.fetch import (
 )
 
 from contrail_analyticsdb_utils import (
-    fix_hostname,
-    get_ip,
     update_charm_status,
     CONTAINER_NAME,
 )
-
+from common_utils import (
+    get_ip,
+    fix_hostname,
+)
 from docker_utils import (
     add_docker_repo,
     DOCKER_PACKAGES,

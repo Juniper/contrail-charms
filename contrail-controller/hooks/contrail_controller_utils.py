@@ -1,17 +1,8 @@
-from base64 import b64decode
-import os
-from socket import gethostbyname, inet_aton, gethostname, gaierror
+from socket import inet_aton
 import struct
-from subprocess import check_call, check_output
-import netifaces
-
-import time
 
 import apt_pkg
-import json
-import platform
 
-from charmhelpers.contrib.network.ip import get_address_in_network
 from charmhelpers.core.hookenv import (
     config,
     related_units,
@@ -19,24 +10,19 @@ from charmhelpers.core.hookenv import (
     relation_get,
     status_set,
     leader_get,
-    application_version_set,
     log,
-    ERROR,
     open_port,
     local_unit,
 )
-from charmhelpers.core.host import write_file
 from charmhelpers.core.templating import render
 
-from docker_utils import (
-    is_container_launched,
-    is_container_present,
-    apply_config_in_container,
-    launch_docker_image,
-    dpkg_version,
-    get_docker_image_id,
-    load_docker_image,
-    docker_contrail_status,
+from common_utils import (
+    get_ip,
+    decode_cert,
+    save_file,
+    check_run_prerequisites,
+    run_container,
+    json_loads,
 )
 
 
@@ -47,23 +33,6 @@ config = config()
 CONTAINER_NAME = "contrail-controller"
 CONFIG_NAME = "controller"
 SERVICES_TO_CHECK = ["contrail-control", "contrail-api:0", "contrail-webui"]
-
-
-def get_ip():
-    network = config.get("control-network")
-    ip = get_address_in_network(network) if network else None
-    if not ip:
-        ip = _get_default_ip()
-    return ip
-
-
-def _get_default_ip():
-    if hasattr(netifaces, 'gateways'):
-        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
-    else:
-        data = check_output("ip route | grep ^default", shell=True).split()
-        iface = data[data.index('dev') + 1]
-    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
 
 
 def get_controller_ips():
@@ -77,21 +46,6 @@ def get_controller_ips():
     return controller_ips
 
 
-def fix_hostname():
-    hostname = gethostname()
-    try:
-        gethostbyname(hostname)
-    except gaierror:
-        ip = get_ip()
-        check_call(["sed", "-E", "-i", "-e",
-            ("/127.0.0.1[[:blank:]]+/a \\\n" + ip + " " + hostname),
-            "/etc/hosts"])
-
-
-def json_loads(data, default=None):
-    return json.loads(data) if data else default
-
-
 def get_analytics_list():
     analytics_ip_list = []
     for rid in relation_ids("contrail-analytics"):
@@ -101,22 +55,6 @@ def get_analytics_list():
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
     return analytics_ip_list
-
-
-def identity_admin_ctx():
-    return json_loads(config.get("auth_info"), dict())
-
-
-def decode_cert(key):
-    val = config.get(key)
-    if not val:
-        return None
-    try:
-        return b64decode(val)
-    except Exception as e:
-        log("Couldn't decode certificate from config['{}']: {}".format(
-            key, str(e)), level=ERROR)
-    return None
 
 
 def get_context():
@@ -144,18 +82,8 @@ def get_context():
     ctx["config_seeds"] = ips
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
-    ctx.update(identity_admin_ctx())
+    ctx.update(json_loads(config.get("auth_info"), dict()))
     return ctx
-
-
-def _save_file(path, data):
-    if data:
-        fdir = os.path.dirname(path)
-        if not os.path.exists(fdir):
-            os.makedirs(fdir)
-        write_file(path, data, perms=0o400)
-    elif os.path.exists(path):
-        os.remove(path)
 
 
 def render_config(ctx=None):
@@ -165,44 +93,21 @@ def render_config(ctx=None):
     # NOTE: store files in default paths cause no way to pass this path to
     # some of components (sandesh)
     ssl_ca = ctx["ssl_ca"]
-    _save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
+    save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
     ssl_cert = ctx["ssl_cert"]
-    _save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
+    save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
     ssl_key = ctx["ssl_key"]
-    _save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
+    save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
 
     render("controller.conf", "/etc/contrailctl/controller.conf", ctx)
 
 
 def update_charm_status(update_config=True):
-    if is_container_launched(CONTAINER_NAME):
-        check = True
-        if update_config:
-            render_config()
-            check = apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
-        if check:
-            statuses = docker_contrail_status(CONTAINER_NAME)
-            for srv in SERVICES_TO_CHECK:
-                if statuses.get(srv) != "active":
-                    status_set("error", "{} is not ready. Statuses: {}"
-                               .format(srv, str(statuses)))
-                    break
-            else:
-                status_set("active", "Unit is ready")
+    update_config_func = render_config if update_config else None
+    result = check_run_prerequisites(CONTAINER_NAME, CONFIG_NAME,
+                                     update_config_func, SERVICES_TO_CHECK)
+    if not result:
         return
-
-    if is_container_present(CONTAINER_NAME):
-        status_set(
-            "error",
-            "Container is present but is not running. Run or remove it.")
-        return
-
-    image_id = get_docker_image_id(CONTAINER_NAME)
-    if not image_id:
-        image_id = load_docker_image(CONTAINER_NAME)
-        if not image_id:
-            status_set('waiting', 'Awaiting for container resource')
-            return
 
     ctx = get_context()
     missing_relations = []
@@ -231,12 +136,4 @@ def update_charm_status(update_config=True):
     for port in ("8082", "8080", "8143"):
         open_port(port, "TCP")
 
-    args = []
-    if platform.linux_distribution()[2].strip() == "trusty":
-        args.append("--pid=host")
-    launch_docker_image(CONTAINER_NAME, args)
-
-    time.sleep(5)
-    version = dpkg_version(CONTAINER_NAME, "contrail-control")
-    application_version_set(version)
-    status_set("active", "Container is run")
+    run_container(CONTAINER_NAME, "contrail-control")
