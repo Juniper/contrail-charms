@@ -186,7 +186,7 @@ def apply_config_in_container(name, cfg_name):
 
 def docker_contrail_status(name):
     statuses = dict()
-    output = docker_exec(name)
+    output = docker_exec(name, "contrail-status")
     for line in output.splitlines()[1:]:
         if len(line) == 0 or line.starts_with("=="):
             return
