@@ -40,12 +40,12 @@ def get_ip():
 
 
 def _get_default_ip():
-    if hasattr(netifaces, 'gateways'):
-        iface = netifaces.gateways()['default'][netifaces.AF_INET][1]
+    if hasattr(netifaces, "gateways"):
+        iface = netifaces.gateways()["default"][netifaces.AF_INET][1]
     else:
         data = check_output("ip route | grep ^default", shell=True).split()
-        iface = data[data.index('dev') + 1]
-    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+        iface = data[data.index("dev") + 1]
+    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"]
 
 
 def fix_hostname():
@@ -91,14 +91,11 @@ def update_services_status(name, services):
         if len(lst) < 2:
             continue
         statuses[lst[0].strip()] = (lst[1].strip(), " ".join(lst[2:]))
-
     for srv in services:
         status, desc = statuses.get(srv)
-        if status == "initializing":
-            status_set("waiting", "{} is not ready. Reason: {}"
-                       .format(srv, desc))
-        if statuses.get(srv) != "active":
-            status_set("error", "{} is not ready. Reason: {}"
+        if status != "active":
+            workload = "waiting" if status == "initializing" else "blocked"
+            status_set(workload, "{} is not ready. Reason: {}"
                        .format(srv, desc))
             return
 
@@ -117,7 +114,7 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
 
     if is_container_present(name):
         status_set(
-            "error",
+            "blocked",
             "Container is present but is not running. Run or remove it.")
         return False
 
@@ -125,7 +122,7 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
     if not image_id:
         image_id = load_docker_image(name)
         if not image_id:
-            status_set('waiting', 'Awaiting for container resource')
+            status_set("waiting", "Awaiting for container resource")
             return False
 
     return True

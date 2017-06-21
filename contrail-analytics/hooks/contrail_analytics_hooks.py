@@ -121,9 +121,9 @@ def contrail_analytics_departed():
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):
             status_set(
-                "error",
+                "blocked",
                 "Container is present but cloud orchestrator was disappeared."
-                " Please kill container by yourself or restore it.")
+                " Please kill container by yourself or restore cloud orchestrator.")
     update_charm_status()
 
 

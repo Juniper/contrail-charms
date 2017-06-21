@@ -271,9 +271,9 @@ def contrail_controller_departed():
         update_northbound_relations()
     if is_container_launched(CONTAINER_NAME):
         status_set(
-            "error",
+            "blocked",
             "Container is present but cloud orchestrator was disappeared."
-            " Please kill container by yourself or restore relation.")
+            " Please kill container by yourself or restore cloud orchestrator.")
 
 
 @hooks.hook("contrail-analytics-relation-joined")
