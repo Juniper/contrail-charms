@@ -23,7 +23,6 @@ from docker_utils import (
     apply_config_in_container,
     get_docker_image_id,
     load_docker_image,
-    docker_contrail_status,
     launch_docker_image,
     dpkg_version,
     docker_exec,
