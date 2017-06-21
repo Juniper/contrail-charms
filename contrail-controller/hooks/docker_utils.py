@@ -67,7 +67,7 @@ def retry(f=None, timeout=10, delay=2):
 
 def add_docker_repo():
     import platform
-    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | apt-key add -'
+    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
     check_output(cmd, shell=True)
     dist = platform.linux_distribution()[2].strip()
     cmd = "add-apt-repository " + \
@@ -138,7 +138,7 @@ def get_docker_image_id(name):
 def launch_docker_image(name, additional_args=[]):
     image_id = get_docker_image_id(name)
     if not image_id:
-        log(name + " docker image is not available", ERROR)
+        log(name + " docker image is not available", level=ERROR)
         return
 
     orchestrator = config.get("cloud_orchestrator")
@@ -161,8 +161,39 @@ def docker_cp(name, src, dst):
     check_call([DOCKER_CLI, "cp", name + ":" + src, dst])
 
 
-@retry(timeout=30, delay=10)
+def docker_exec(name, cmd):
+    cli = [DOCKER_CLI, "exec", name]
+    if isinstance(cmd, list):
+        cli.extend(cmd)
+    else:
+        cli.append(cmd)
+    check_call(cli)
+
+
+@retry(timeout=32, delay=10)
 def apply_config_in_container(name, cfg_name):
-    cmd = (DOCKER_CLI + ' exec ' + name + ' contrailctl config sync -v -c '
-           + cfg_name)
-    check_call(cmd, shell=True)
+    try:
+        cmd = (DOCKER_CLI + ' exec ' + name + ' contrailctl config sync -v'
+               + ' -c ' + cfg_name)
+        check_call(cmd, shell=True)
+        return True
+    except CalledProcessError as e:
+        if e.returncode == 137:
+            log("Container was restarted. " + str(e.output), level=ERROR)
+            return False
+        raise
+
+
+def docker_contrail_status(name):
+    statuses = dict()
+    output = docker_exec(name)
+    for line in output.splitlines()[1:]:
+        if len(line) == 0 or line.starts_with("=="):
+            return
+        lst = line.decode('UTF-8').split()
+        if len(lst) < 2:
+            continue
+        s_name = lst[0].strip()
+        s_status = lst[1].strip()
+        statuses[s_name] = s_status
+    return statuses

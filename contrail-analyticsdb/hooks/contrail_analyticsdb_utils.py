@@ -33,6 +33,7 @@ from docker_utils import (
     dpkg_version,
     get_docker_image_id,
     load_docker_image,
+    docker_contrail_status,
 )
 
 
@@ -42,6 +43,7 @@ config = config()
 
 CONTAINER_NAME = "contrail-analyticsdb"
 CONFIG_NAME = "analyticsdb"
+SERVICES_TO_CHECK = ["contrail-database"]
 
 
 def get_ip():
@@ -171,10 +173,19 @@ def render_config(ctx=None):
 
 def update_charm_status(update_config=True):
     if is_container_launched(CONTAINER_NAME):
-        status_set("active", "Unit is ready")
+        check = True
         if update_config:
             render_config()
-            apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
+            check = apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
+        if check:
+            statuses = docker_contrail_status(CONTAINER_NAME)
+            for srv in SERVICES_TO_CHECK:
+                if statuses.get(srv) != "active":
+                    status_set("error", "{} is not ready. Statuses: {}"
+                               .format(srv, str(statuses)))
+                    break
+            else:
+                status_set("active", "Unit is ready")
         return
 
     if is_container_present(CONTAINER_NAME):
@@ -223,4 +234,4 @@ def update_charm_status(update_config=True):
     time.sleep(5)
     version = dpkg_version(CONTAINER_NAME, "contrail-nodemgr")
     application_version_set(version)
-    status_set("active", "Unit is ready")
+    status_set("active", "Container is run")
