@@ -1,7 +1,11 @@
 from base64 import b64decode
 import os
 from socket import gethostbyname, gethostname, gaierror
-from subprocess import check_call, check_output
+from subprocess import (
+    CalledProcessError,
+    check_call,
+    check_output
+)
 import netifaces
 import time
 import platform
@@ -82,7 +86,13 @@ def save_file(path, data):
 
 
 def update_services_status(name, services):
-    output = docker_exec(name, "contrail-status")
+    try:
+        output = docker_exec(name, "contrail-status")
+    except CalledProcessError as e:
+        log("Container is not ready to get contrail-status: " + str(e))
+        status_set("waiting", "Waiting services to run in container")
+        return
+
     statuses = dict()
     for line in output.splitlines()[1:]:
         if len(line) == 0 or line.startswith("=="):
