@@ -85,7 +85,7 @@ def update_services_status(name, services):
     output = docker_exec(name, "contrail-status")
     statuses = dict()
     for line in output.splitlines()[1:]:
-        if len(line) == 0 or line.starts_with("=="):
+        if len(line) == 0 or line.startswith("=="):
             continue
         lst = line.split()
         if len(lst) < 2:
