@@ -29,7 +29,7 @@ config = config()
 
 CONTAINER_NAME = "contrail-analyticsdb"
 CONFIG_NAME = "analyticsdb"
-SERVICES_TO_CHECK = ["contrail-database"]
+SERVICES_TO_CHECK = ["contrail-database:"]
 
 
 def servers_ctx():

@@ -92,6 +92,9 @@ def update_services_status(name, services):
             continue
         statuses[lst[0].strip()] = (lst[1].strip(), " ".join(lst[2:]))
     for srv in services:
+        if srv not in statuses:
+            status_set("waiting", srv + " is absent in the contrail-status")
+            return
         status, desc = statuses.get(srv)
         if status != "active":
             workload = "waiting" if status == "initializing" else "blocked"
