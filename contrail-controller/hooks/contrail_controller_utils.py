@@ -32,7 +32,7 @@ config = config()
 
 CONTAINER_NAME = "contrail-controller"
 CONFIG_NAME = "controller"
-SERVICES_TO_CHECK = ["contrail-control", "contrail-api:0", "contrail-webui"]
+SERVICES_TO_CHECK = ["contrail-control", "contrail-api", "contrail-webui"]
 
 
 def get_controller_ips():
