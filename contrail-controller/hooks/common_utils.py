@@ -100,7 +100,8 @@ def update_services_status(name, services):
         lst = line.split()
         if len(lst) < 2:
             continue
-        statuses[lst[0].strip()] = (lst[1].strip(), " ".join(lst[2:]))
+        srv = lst[0].strip(":")
+        statuses[srv] = (lst[1], " ".join(lst[2:]))
     for srv in services:
         if srv not in statuses:
             status_set("waiting", srv + " is absent in the contrail-status")
