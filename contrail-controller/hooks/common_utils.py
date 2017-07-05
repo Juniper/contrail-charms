@@ -100,7 +100,7 @@ def update_services_status(name, services):
         lst = line.split()
         if len(lst) < 2:
             continue
-        srv = lst[0].strip(":")
+        srv = lst[0].split(":")[0]
         statuses[srv] = (lst[1], " ".join(lst[2:]))
     for srv in services:
         if srv not in statuses:
