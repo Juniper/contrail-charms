@@ -105,8 +105,8 @@ services:
     options:
       cluster_count: 3
     num_units: 0
-  contrail-openstack-neutron-api:
-    charm: ./contrail-openstack-neutron-api
+  contrail-openstack:
+    charm: ./contrail-openstack
     series: xenial
     num_units: 0
     options:
@@ -132,8 +132,8 @@ services:
           -----END PGP PUBLIC KEY BLOCK-----
       install-sources: |
         - "deb http://192.168.1.1:8080/newton/3065 /"
-  contrail-openstack-compute:
-    charm: ./contrail-openstack-compute
+  contrail-agent:
+    charm: ./contrail-agent
     num_units: 0
     series: xenial
     options:
