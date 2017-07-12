@@ -1,0 +1,19 @@
+name: contrail-kubernetes
+summary: Contrail Connector to Kubernetes
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
+description: |
+  Charm connects Contrail to kubernetes by CNI interface.
+series:
+  - xenial
+subordinate: true
+peers:
+  cluster:
+    interface: contrail-kubernetes-cluster
+requires:
+  contrail-controller:
+    interface: contrail-controller
+  etcd:
+    interface: etcd
+  cni:
+    interface: kubernetes-cni
+    scope: container
