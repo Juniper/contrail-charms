@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     WARNING,
+    ERROR,
     relation_ids,
     related_units,
 )
