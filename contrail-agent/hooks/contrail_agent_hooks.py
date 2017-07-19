@@ -37,7 +37,8 @@ from contrail_agent_utils import (
 )
 
 PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
-            "contrail-vrouter-common"]
+            "contrail-vrouter-common", "contrail-setup",
+            "contrail-utils"]
 
 PACKAGES_DKMS_INIT = ["contrail-vrouter-init"]
 PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk-init"]
