@@ -104,6 +104,7 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "rabbitmq_user", "rabbitmq_user")
     changed |= _value_changed(data, "rabbitmq_password", "rabbitmq_password")
     changed |= _value_changed(data, "rabbitmq_vhost", "rabbitmq_vhost")
+    changed |= _value_changed(data, "rabbitmq_hosts", "rabbitmq_hosts")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:
@@ -117,7 +118,7 @@ def contrail_analytics_departed():
     if not units:
         for key in ["auth_info", "auth_mode", "orchestrator_info",
                     "ssl_ca", "ssl_cert", "ssl_key", "rabbitmq_vhost",
-                    "rabbitmq_user", "rabbitmq_password"]:
+                    "rabbitmq_user", "rabbitmq_password", "rabbitmq_hosts"]:
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):
             status_set(

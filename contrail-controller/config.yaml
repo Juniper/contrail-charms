@@ -27,3 +27,11 @@ options:
       Contrail API VIP to be used for configuring client-side software like neutron plugin.
       (to be set up also in KeepAlived charm configuration if it’s used for HA)
       Private IP of the first Contrail API unit will be used if not set.
+  use-external-rabbitmq:
+    type: boolean
+    default: false
+    description: |
+      Charm will wait for external AMQP relation if set.
+      Charm will use internal RabbitMQ server if not set.
+
+      NOTE: Changing this flag after deployment is dangerous!
