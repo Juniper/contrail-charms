@@ -47,7 +47,7 @@ from contrail_agent_utils import (
     fix_libvirt,
 )
 
-PACKAGES = ["contrail-vrouter-agent", "contrail-utils"
+PACKAGES = ["contrail-vrouter-agent", "contrail-utils",
             "contrail-vrouter-common", "contrail-setup"]
 
 PACKAGES_DKMS_INIT = ["contrail-vrouter-dkms", "contrail-vrouter-init"]
@@ -73,6 +73,10 @@ def install():
         else:
             # and another way with systemd
             for srv in ("contrail-vrouter-agent", "contrail-vrouter-dpdk"):
+                try:
+                    os.remove("/etc/systemd/system/{}.sevice".format(srv))
+                except OSError:
+                    pass
                 os.symlink("/dev/null", "/etc/systemd/system/{}.sevice"
                            .format(srv))
         packages.extend(PACKAGES_DKMS_INIT)
