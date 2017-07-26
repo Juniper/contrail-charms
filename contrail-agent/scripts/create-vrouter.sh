@@ -3,37 +3,43 @@
 # Script used to configure vRouter interface
 
 ARG_BRIDGE=b
+ARG_DPDK=d
 ARG_HELP=h
-OPTS=:${ARG_BRIDGE}${ARG_HELP}
+OPTS=:${ARG_BRIDGE}${ARG_DPDK}${ARG_HELP}
 USAGE="\
-create-vrouter [-${ARG_BRIDGE}${ARG_HELP}] [interface]
+create-vrouter [-${ARG_BRIDGE}${ARG_DPDK}${ARG_HELP}] [interface]
 Options:
   -$ARG_BRIDGE  remove bridge from interface if exists
+  -$ARG_DPDK  configure DPDK vRouter
   -$ARG_HELP  print this message"
 
 configVRouter()
 {
 	cat juju-header
-	if [ -s "$2" ]; then
-		printf "\n%s\n" "auto $1"
-		cat "$2"
-	elif [ ! -e "$2" ]; then
-		printf "\n%s\n%s\n" "auto $1" "iface $1 inet manual"
+	if [ -s "$3" ]; then
+		printf "\n%s\n" "auto $2"
+		cat "$3"
+	elif [ ! -e "$3" ]; then
+		printf "\n%s\n%s\n" "auto $2" "iface $2 inet manual"
 	fi
 	printf "\n%s\n"	"auto vhost0"
-	if [ -e "$3" ]; then
-		cat "$3"
+	if [ -e "$4" ]; then
+		cat "$4"
 	else
 		echo "iface vhost0 inet dhcp"
 	fi
-	cat <<-EOF
-		    pre-up ip link add vhost0 address \$(cat /sys/class/net/$1/address) type vhost
-		    pre-up vif --add $1 --mac \$(cat /sys/class/net/$1/address) --vrf 0 --vhost-phys --type physical
-		    pre-up vif --add vhost0 --mac \$(cat /sys/class/net/$1/address) --vrf 0 --type vhost --xconnect $1
-		    post-down vif --list | awk '/^vif.*OS: vhost0/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
-		    post-down vif --list | awk '/^vif.*OS: $1/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
-		    post-down ip link delete vhost0
-		EOF
+	if [ -n "$1" ]; then
+		echo "    post-up ip link set vhost0 address $(cat /sys/class/net/$2/address)"
+	else
+		cat <<-EOF
+			    pre-up ip link add address \$(cat /sys/class/net/$2/address) type vhost
+			    pre-up vif --add $2 --mac \$(cat /sys/class/net/$2/address) --vrf 0 --vhost-phys --type physical
+			    pre-up vif --add vhost0 --mac \$(cat /sys/class/net/$2/address) --vrf 0 --type vhost --xconnect $2
+			    post-down vif --list | awk '/^vif.*OS: vhost0/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
+			    post-down vif --list | awk '/^vif.*OS: $2/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
+			    post-down ip link delete vhost0
+			EOF
+	fi
 }
 
 configureInterfaces()
@@ -81,24 +87,28 @@ configureInterfacesDir()
 
 configureVRouter()
 {
-	if [ $# = 1 ]; then
-		iface_down=$1
-		iface_delete=$1
-		iface_up=$1
+	if [ $# = 2 ]; then
+		iface_down=$2
+		iface_delete=$2
+		iface_up=$2
 		iface_cfg=$TMP/interface.cfg
 	else
-		iface_down="$1 $2"
-		iface_delete=$2
-		iface_up=$1
+		iface_down="$2 $3"
+		iface_delete=$3
+		iface_up=$2
 		iface_cfg=/dev/null
 	fi
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
-	configVRouter $iface_up $iface_cfg $TMP/vrouter.cfg \
+	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg \
 	    > /etc/network/interfaces.d/vrouter.cfg
-	ifaceup $iface_up vhost0
-	restoreRoutes
+	ifaceup $iface_up
+	if [ -z "$1" ]; then
+	    ifaceup vhost0
+	    restoreRoutes
+	fi
+	echo $2 >&3
 }
 
 ifacebridge()
@@ -207,6 +217,9 @@ while getopts $OPTS opt; do
 	$ARG_BRIDGE)
 		remove_bridge=true
 		;;
+	$ARG_DPDK)
+		dpdk=true
+		;;
 	$ARG_HELP)
 		usage
 		exit 0
@@ -222,18 +235,20 @@ if [ $# -gt 1 ]; then
 	usageError "Too many arguments"
 fi
 
+exec 3>&1 >&2
+
 TMP=$(mktemp -d /tmp/create-vrouter.XXX)
 
 if [ $# -ne 0 ]; then
 	bridge=$(ifacebridge $1)
 	if [ -n "$bridge" ]; then
 		if [ -n "$remove_bridge" ]; then
-			configureVRouter $1 $bridge
+			configureVRouter "$dpdk" $1 $bridge
 		else
-			configureVRouter $bridge
+			configureVRouter "$dpdk" $bridge
 		fi
 	else
-		configureVRouter $1
+		configureVRouter "$dpdk" $1
 	fi
 else
 	# use default gateway interface
@@ -242,9 +257,9 @@ else
 	    && [ -z "$(find /sys/class/net/$gateway/brif -maxdepth 0 -empty)" ] \
 	    && [ -n "$remove_bridge" ]; then
 		interface=$(find /sys/class/net/$gateway/brif | sed -n -e '2p' | xargs basename)
-		configureVRouter $interface $gateway
+		configureVRouter "$dpdk" $interface $gateway
 	else
-		configureVRouter $gateway
+		configureVRouter "$dpdk" $gateway
 	fi
 fi
 

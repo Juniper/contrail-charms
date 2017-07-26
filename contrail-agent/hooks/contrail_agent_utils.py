@@ -7,6 +7,7 @@ from subprocess import (
     check_output,
 )
 from time import sleep, time
+import yaml
 
 import apt_pkg
 import json
@@ -15,6 +16,7 @@ import netaddr
 import netifaces
 
 from charmhelpers.contrib.network.ip import get_address_in_network
+from charmhelpers.core import sysctl
 from charmhelpers.core.hookenv import (
     config,
     log,
@@ -30,6 +32,8 @@ from charmhelpers.core.host import (
     restart_on_change,
     write_file,
     service_restart,
+    init_is_systemd,
+    get_total_ram,
 )
 
 from charmhelpers.core.templating import render
@@ -86,12 +90,24 @@ def retry(f=None, timeout=10, delay=2):
 def configure_vrouter_interface():
     # run external script to configure vrouter
     args = ["./create-vrouter.sh"]
-    if config["remove-juju-bridge"]:
+    if config.get("remove-juju-bridge"):
         args.append("-b")
+    if config.get("dpdk"):
+        args.append("-d")
     iface = config.get("physical-interface")
     if iface:
         args.append(iface)
-    check_call(args, cwd="scripts")
+    iface = check_output(args, cwd="scripts").rstrip()
+    if config["dpdk"]:
+        render("agent_param", "/etc/contrail/agent_param",
+               {"interface": iface})
+    config["vhost-physical"] = iface
+
+
+def vhost_phys(iface):
+    # run external script to determine physical interface of 'vhost0'
+    cmd = ["scripts/vhost-phys.sh", iface]
+    return (check_output(cmd).decode('UTF-8').rstrip())
 
 
 def drop_caches():
@@ -183,6 +199,8 @@ def provision_vrouter(op, self_ip=None):
             "--admin_user", identity.get("keystone_admin_user"),
             "--admin_password", identity.get("keystone_admin_password"),
             "--admin_tenant_name", identity.get("keystone_admin_tenant")]
+    if config["dpdk"] and op == "add":
+        params.append("--dpdk_enabled")
 
     @retry(timeout=65, delay=20)
     def _call():
@@ -226,12 +244,6 @@ def vhost_gateway(iface):
     return gateway
 
 
-def vhost_phys(iface):
-    # run external script to determine physical interface of 'vhost0'
-    cmd = ["scripts/vhost-phys.sh", iface]
-    return (check_output(cmd).decode('UTF-8').rstrip())
-
-
 def _load_json_from_config(key):
     value = config.get(key)
     return json.loads(value) if value else {}
@@ -259,6 +271,12 @@ def get_context():
     ctx["vhost_ip"] = vhost_ip(VROUTER_INTERFACE)
     ctx["vhost_gateway"] = vhost_gateway(VROUTER_INTERFACE)
     ctx["vhost_physical"] = vhost_phys(VROUTER_INTERFACE)
+
+    if config["dpdk"]:
+        ctx["dpdk"] = True
+        ctx["physical_interface_address"] = config["dpdk-pci"]
+        ctx["physical_interface_mac"] = config["dpdk-mac"]
+        ctx["physical_uio_driver"] = config.get("dpdk-driver")
 
     log("CTX: " + str(ctx))
 
@@ -367,3 +385,53 @@ def _get_agent_status():
 
         log("contrail-status: " + line)
         return s_status, line
+
+
+def set_dpdk_coremask(mask):
+    args = {"service": "/usr/bin/contrail-vrouter-dpdk",
+            "mask": mask if mask.startswith("0x") else "-c " + mask}
+    if not init_is_systemd():
+        check_call(["sed", "-i", "-e",
+            "s!^command=.*{service}!"
+            "command=taskset {mask} {service}!".format(**args),
+            "/etc/contrail/supervisord_vrouter_files"
+            "/contrail-vrouter-dpdk.ini"])
+    else:
+        check_call(["sed", "-i", "-e",
+            "s!^ExecStart=.*{service}!"
+            "ExecStart=taskset {mask} {service}!".format(**args),
+            "/etc/systemd/system/multi-user.target.wants"
+            "/contrail-vrouter-dpdk.service"])
+
+
+def configure_hugepages():
+    if not config["dpdk"]:
+        return
+
+    pages = get_hugepages()
+    map_max = pages * 2
+    if map_max < 65536:
+        map_max = 65536
+    options = {"vm.nr_hugepages": pages,
+               "vm.max_map_count": map_max,
+               "vm.hugetlb_shm_group": 0}
+    sysctl.create(yaml.dump(options), "/etc/sysctl.d/10-hugepage.conf")
+
+
+def get_hugepages():
+    pages = config.get("dpdk-hugepages")
+    if not pages:
+        pages = "70%"
+    if not pages.endswith("%"):
+        return pages
+    pp = int(pages.rstrip("%"))
+    return int(get_total_ram() * pp / 100 / 1024 / 2048)
+
+
+def fix_libvirt():
+    # add apparmor exception for huge pages
+    check_output(["sed", "-E", "-i", "-e",
+       "\!^[[:space:]]*owner \"/run/hugepages/kvm/libvirt/qemu/\*\*\" rw"
+       "!a\\\n  owner \"/hugepages/libvirt/qemu/**\" rw,",
+       "/etc/apparmor.d/abstractions/libvirt-qemu"])
+    service_restart("apparmor")

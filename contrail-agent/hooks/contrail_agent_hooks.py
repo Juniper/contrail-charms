@@ -20,8 +20,14 @@ from charmhelpers.fetch import (
     apt_upgrade,
     configure_sources
 )
-from charmhelpers.core.host import service_restart, lsb_release
+from charmhelpers.core.host import (
+    service_start,
+    service_restart,
+    init_is_systemd,
+    service
+)
 from charmhelpers.core.kernel import modprobe
+from charmhelpers.core.hugepage import hugepage_support
 from subprocess import (
     CalledProcessError,
     check_output,
@@ -34,6 +40,11 @@ from contrail_agent_utils import (
     write_configs,
     update_unit_status,
     reprovision_vrouter,
+    set_dpdk_coremask,
+    iface_addr,
+    configure_hugepages,
+    get_hugepages,
+    fix_libvirt,
 )
 
 PACKAGES = ["contrail-vrouter-agent", "contrail-utils"
@@ -55,6 +66,15 @@ def install():
     packages = list()
     packages.extend(PACKAGES)
     if config.get("dpdk"):
+        # services must not be started before config files creation
+        if not init_is_systemd():
+            with open("/etc/init/supervisor-vrouter.override", "w") as conf:
+                conf.write("manual\n")
+        else:
+            # and another way with systemd
+            for srv in ("contrail-vrouter-agent", "contrail-vrouter-dpdk"):
+                os.symlink("/dev/null", "/etc/systemd/system/{}.sevice"
+                           .format(srv))
         packages.extend(PACKAGES_DKMS_INIT)
     else:
         packages.extend(PACKAGES_DPDK_INIT)
@@ -71,15 +91,13 @@ def install():
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
 
-    # supervisord must be started after installation
-    release = lsb_release()["DISTRIB_CODENAME"]
-    if release == 'trusty':
-        # supervisord
-        service_restart("supervisor-vrouter")
-
     if config.get("dpdk"):
         install_dpdk()
     else:
+        # supervisord must be started after installation
+        if not init_is_systemd():
+            # supervisord
+            service_restart("supervisor-vrouter")
         install_dkms()
 
 
@@ -100,17 +118,46 @@ def install_dkms():
 
 def install_dpdk():
     dkms_autoinstall()
-    # TODO: add other code
+    hugepage_support("root", group="root", nr_hugepages=get_hugepages(),
+                     mnt_point="/hugepages")
+    service_restart("libvirt-bin")
+
+    configure_vrouter_interface()
+
+    set_dpdk_coremask(config.get("dpdk-coremask"))
+
+    iface = config["vhost-physical"]
+    fs = os.path.realpath("/sys/class/net/" + iface).split("/")
+    # NOTE: why it's not an error?
+    pci_address = fs[4] if fs[3].startswith("pci") else "0000:00:00.0"
+    config["dpdk-pci"] = pci_address
+    config["dpdk-mac"] = iface_addr(iface)["addr"]
+
+    write_configs()
+
+    if not init_is_systemd():
+        os.remove("/etc/init/supervisor-vrouter.override")
+        service_start("supervisor-vrouter")
+        service_restart("contrail-vrouter-agent")
+    else:
+        service("enable", "contrail-vrouter-agent")
+        service_start("contrail-vrouter-agent")
+        service("enable", "contrail-vrouter-dpdk")
+        service_start("contrail-vrouter-dpdk")
+
+    fix_libvirt()
 
 
 @hooks.hook("config-changed")
 def config_changed():
     # Charm doesn't support changing of some parameters that are used only in
     # install hook.
-    for key in ("remove-juju-bridge", "physical-interface"):
+    for key in ("remove-juju-bridge", "physical-interface", "dpdk"):
         if config.changed(key):
             raise Exception("Configuration parameter {} couldn't be changed"
                             .format(key))
+
+    configure_hugepages()
 
     write_configs()
     if config.changed("control-network"):
