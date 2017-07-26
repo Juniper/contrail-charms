@@ -102,16 +102,12 @@ def drop_caches():
         f.write("3\n")
 
 
-def dkms_autoinstall(module):
-    """Allows loading of a kernel module.
-
+def dkms_autoinstall():
+    """
     'dkms_autoinstall' is useful for DKMS kernel modules. Juju often upgrades
     units to newer kernels before charm install, which won't be used until the
     machine is rebooted. In these cases, some modules may not be compiled for
-    the newer kernel. Setting this argument to True will ensure these modules
-    are compiled for newer kernels.
-
-    :param module: module to load
+    the newer kernel.
     """
     current = check_output(["uname", "-r"]).rstrip()
     for kernel in os.listdir("/lib/modules"):

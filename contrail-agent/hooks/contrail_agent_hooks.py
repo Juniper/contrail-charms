@@ -36,12 +36,11 @@ from contrail_agent_utils import (
     reprovision_vrouter,
 )
 
-PACKAGES = ["contrail-vrouter-dkms", "contrail-vrouter-agent",
-            "contrail-vrouter-common", "contrail-setup",
-            "contrail-utils"]
+PACKAGES = ["contrail-vrouter-agent", "contrail-utils"
+            "contrail-vrouter-common", "contrail-setup"]
 
-PACKAGES_DKMS_INIT = ["contrail-vrouter-init"]
-PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk-init"]
+PACKAGES_DKMS_INIT = ["contrail-vrouter-dkms", "contrail-vrouter-init"]
+PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk", "contrail-vrouter-dpdk-init"]
 
 hooks = Hooks()
 config = config()
@@ -55,8 +54,10 @@ def install():
     apt_upgrade(fatal=True, dist=True)
     packages = list()
     packages.extend(PACKAGES)
-    # TODO: support dpdk config option
-    packages.extend(PACKAGES_DKMS_INIT)
+    if config.get("dpdk"):
+        packages.extend(PACKAGES_DKMS_INIT)
+    else:
+        packages.extend(PACKAGES_DPDK_INIT)
     apt_install(packages, fatal=True)
     try:
         output = check_output(["dpkg-query", "-f", "${Version}\\n",
@@ -76,6 +77,13 @@ def install():
         # supervisord
         service_restart("supervisor-vrouter")
 
+    if config.get("dpdk"):
+        install_dpdk()
+    else:
+        install_dkms()
+
+
+def install_dkms():
     try:
         log("Loading kernel module vrouter")
         modprobe("vrouter")
@@ -84,10 +92,15 @@ def install():
             " clearing pagecache and retrying")
         drop_caches()
         modprobe("vrouter")
-    dkms_autoinstall("vrouter")
+    dkms_autoinstall()
     configure_vrouter_interface()
     config["vrouter-expected-provision-state"] = False
     status_set("blocked", "Missing relation to contrail-controller")
+
+
+def install_dpdk():
+    dkms_autoinstall()
+    # TODO: add other code
 
 
 @hooks.hook("config-changed")
