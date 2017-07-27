@@ -128,9 +128,11 @@ def install_dpdk():
     except:
         pass
     dkms_autoinstall()
-    hugepage_support("root", group="root", nr_hugepages=get_hugepages(),
-                     mnt_point="/hugepages")
-    service_restart("libvirt-bin")
+    pages = get_hugepages()
+    if pages:
+        hugepage_support("root", group="root", nr_hugepages=pages,
+                         mnt_point="/hugepages")
+        service_restart("libvirt-bin")
 
     configure_vrouter_interface()
 

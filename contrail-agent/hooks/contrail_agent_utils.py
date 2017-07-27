@@ -423,6 +423,8 @@ def configure_hugepages():
         return
 
     pages = get_hugepages()
+    if not pages:
+        return
     map_max = pages * 2
     if map_max < 65536:
         map_max = 65536
@@ -430,12 +432,15 @@ def configure_hugepages():
                "vm.max_map_count": map_max,
                "vm.hugetlb_shm_group": 0}
     sysctl.create(yaml.dump(options), "/etc/sysctl.d/10-hugepage.conf")
+    check_call(["sysctl", "-w", "vm.nr_hugepages={}".format(pages)])
+    check_call(["sysctl", "-w", "vm.max_map_count={}".format(map_max)])
+    check_call(["sysctl", "-w", "vm.hugetlb_shm_group=0".format(pages)])
 
 
 def get_hugepages():
     pages = config.get("dpdk-hugepages")
     if not pages:
-        pages = "70%"
+        return None
     if not pages.endswith("%"):
         return pages
     pp = int(pages.rstrip("%"))
