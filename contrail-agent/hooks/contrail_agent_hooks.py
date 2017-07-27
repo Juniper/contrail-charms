@@ -170,8 +170,9 @@ def config_changed():
             raise Exception("Configuration parameter {} couldn't be changed"
                             .format(key))
 
-    set_dpdk_coremask(config.get("dpdk-coremask"))
-    configure_hugepages()
+    if config["dpdk"]:
+        set_dpdk_coremask(config.get("dpdk-coremask"))
+        configure_hugepages()
 
     write_configs()
     if config.changed("control-network"):
