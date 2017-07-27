@@ -87,6 +87,40 @@ def retry(f=None, timeout=10, delay=2):
     return func
 
 
+def _get_default_gateway_iface():
+    if hasattr(netifaces, "gateways"):
+        return netifaces.gateways()["default"][netifaces.AF_INET][1]
+
+    data = check_output("ip route | grep ^default", shell=True).split()
+    return data[data.index("dev") + 1]
+
+
+def _get_default_gateway_ip():
+    if hasattr(netifaces, "gateways"):
+        return netifaces.gateways()["default"][netifaces.AF_INET][0]
+
+    data = check_output("ip route | grep ^default", shell=True).split()
+    return data[2]
+
+
+def _vhost_cidr(iface):
+    # return a vhost formatted address and mask - x.x.x.x/xx
+    addr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
+    ip = addr["addr"]
+    cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
+    return ip + "/" + str(cidr)
+
+
+def _get_control_network_ip(control_network=None):
+    network = control_network
+    if not network:
+        network = config.get("control-network")
+    ip = get_address_in_network(network) if network else None
+    if not ip:
+        ip = config["vhost-cidr"].split('/')[0]
+    return ip
+
+
 def configure_vrouter_interface():
     # run external script to configure vrouter
     args = ["./create-vrouter.sh"]
@@ -95,13 +129,21 @@ def configure_vrouter_interface():
     if config.get("dpdk"):
         args.append("-d")
     iface = config.get("physical-interface")
-    if iface:
-        args.append(iface)
-    iface = check_output(args, cwd="scripts").rstrip()
+    if not iface:
+        iface = _get_default_gateway_iface()
+    config["vhost-physical"] = iface
+    config["vhost-cidr"] = _vhost_cidr(iface)
+    gateway_ip = config.get("vhost-gateway")
+    if gateway_ip == "auto":
+        gateway_ip = _get_default_gateway_ip()
+    config["vhost-gateway-ip"] = gateway_ip
+
+    args.append(iface)
+    check_call(args, cwd="scripts")
+
     if config["dpdk"]:
         render("agent_param", "/etc/contrail/agent_param",
                {"interface": iface})
-    config["vhost-physical"] = iface
 
 
 def drop_caches():
@@ -151,21 +193,11 @@ def update_vrouter_provision_status():
         config["vrouter-provisioned"] = False
 
 
-def get_control_network_ip(control_network=None):
-    network = control_network
-    if not network:
-        network = config.get("control-network")
-    ip = get_address_in_network(network) if network else None
-    if not ip:
-        ip = iface_addr(VROUTER_INTERFACE)["addr"]
-    return ip
-
-
 def reprovision_vrouter(old_ip):
     if not config.get("vrouter-provisioned"):
         return
 
-    old_ip = get_control_network_ip(config.prev("control-network"))
+    old_ip = _get_control_network_ip(config.prev("control-network"))
     try:
         provision_vrouter("del", old_ip)
     except Exception as e:
@@ -178,7 +210,7 @@ def reprovision_vrouter(old_ip):
 
 
 def provision_vrouter(op, self_ip=None):
-    ip = self_ip if self_ip else get_control_network_ip()
+    ip = self_ip if self_ip else _get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
     params = [
@@ -214,33 +246,6 @@ def get_controller_address():
     return (ip, port) if ip and port else (None, None)
 
 
-def iface_addr(iface):
-    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]
-
-
-def vhost_ip(addr):
-    try:
-        # return a vhost formatted address and mask - x.x.x.x/xx
-        addr = iface_addr(VROUTER_INTERFACE)
-        ip = addr["addr"]
-        cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
-        return ip + "/" + str(cidr)
-    except (ValueError, KeyError):
-        return None
-
-
-def vhost_gateway(iface):
-    # determine vhost gateway
-    gateway = config.get("vhost-gateway")
-    if gateway == "auto":
-        for line in check_output(["route", "-n"]).splitlines()[2:]:
-            l = line.decode('UTF-8').split()
-            if "G" in l[3] and l[7] == iface:
-                return l[1]
-        gateway = None
-    return gateway
-
-
 def _load_json_from_config(key):
     value = config.get(key)
     return json.loads(value) if value else {}
@@ -263,10 +268,10 @@ def get_context():
     info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
 
-    ctx["control_network_ip"] = get_control_network_ip()
+    ctx["control_network_ip"] = _get_control_network_ip()
 
-    ctx["vhost_ip"] = vhost_ip(VROUTER_INTERFACE)
-    ctx["vhost_gateway"] = vhost_gateway(VROUTER_INTERFACE)
+    ctx["vhost_ip"] = config["vhost-cidr"]
+    ctx["vhost_gateway"] = config["vhost-gateway-ip"]
     ctx["vhost_physical"] = config["vhost-physical"]
 
     if config["dpdk"]:

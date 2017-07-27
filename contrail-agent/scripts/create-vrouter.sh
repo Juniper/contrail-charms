@@ -108,7 +108,6 @@ configureVRouter()
 	    ifaceup vhost0
 	    restoreRoutes
 	fi
-	echo $2 >&3
 }
 
 ifacebridge()
@@ -234,8 +233,6 @@ shift $(($OPTIND - 1))
 if [ $# -gt 1 ]; then
 	usageError "Too many arguments"
 fi
-
-exec 3>&1 >&2
 
 TMP=$(mktemp -d /tmp/create-vrouter.XXX)
 
