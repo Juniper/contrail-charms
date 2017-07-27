@@ -3,6 +3,8 @@
 import os
 import sys
 
+import netifaces
+
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
@@ -41,13 +43,12 @@ from contrail_agent_utils import (
     update_unit_status,
     reprovision_vrouter,
     set_dpdk_coremask,
-    iface_addr,
     configure_hugepages,
     get_hugepages,
     fix_libvirt,
 )
 
-PACKAGES = ["contrail-vrouter-agent", "contrail-utils",
+PACKAGES = ["dkms", "contrail-vrouter-agent", "contrail-utils",
             "contrail-vrouter-common", "contrail-setup"]
 
 PACKAGES_DKMS_INIT = ["contrail-vrouter-dkms", "contrail-vrouter-init"]
@@ -65,7 +66,9 @@ def install():
     apt_upgrade(fatal=True, dist=True)
     packages = list()
     packages.extend(PACKAGES)
-    if config.get("dpdk"):
+    if not config.get("dpdk"):
+        packages.extend(PACKAGES_DKMS_INIT)
+    else:
         # services must not be started before config files creation
         if not init_is_systemd():
             with open("/etc/init/supervisor-vrouter.override", "w") as conf:
@@ -79,8 +82,6 @@ def install():
                     pass
                 os.symlink("/dev/null", "/etc/systemd/system/{}.sevice"
                            .format(srv))
-        packages.extend(PACKAGES_DKMS_INIT)
-    else:
         packages.extend(PACKAGES_DPDK_INIT)
     apt_install(packages, fatal=True)
     try:
@@ -121,6 +122,11 @@ def install_dkms():
 
 
 def install_dpdk():
+    modprobe(config["dpdk-driver"])
+    try:
+        modprobe("vfio-pci")
+    except:
+        pass
     dkms_autoinstall()
     hugepage_support("root", group="root", nr_hugepages=get_hugepages(),
                      mnt_point="/hugepages")
@@ -135,7 +141,8 @@ def install_dpdk():
     # NOTE: why it's not an error?
     pci_address = fs[4] if fs[3].startswith("pci") else "0000:00:00.0"
     config["dpdk-pci"] = pci_address
-    config["dpdk-mac"] = iface_addr(iface)["addr"]
+    addr = netifaces.ifaddresses(iface)[netifaces.AF_PACKET][0]
+    config["dpdk-mac"] = addr["addr"]
 
     write_configs()
 
@@ -161,6 +168,7 @@ def config_changed():
             raise Exception("Configuration parameter {} couldn't be changed"
                             .format(key))
 
+    set_dpdk_coremask(config.get("dpdk-coremask"))
     configure_hugepages()
 
     write_configs()

@@ -104,12 +104,6 @@ def configure_vrouter_interface():
     config["vhost-physical"] = iface
 
 
-def vhost_phys(iface):
-    # run external script to determine physical interface of 'vhost0'
-    cmd = ["scripts/vhost-phys.sh", iface]
-    return (check_output(cmd).decode('UTF-8').rstrip())
-
-
 def drop_caches():
     """Clears OS pagecache"""
     log("Clearing pagecache")
@@ -225,11 +219,14 @@ def iface_addr(iface):
 
 
 def vhost_ip(addr):
-    # return a vhost formatted address and mask - x.x.x.x/xx
-    addr = iface_addr(VROUTER_INTERFACE)
-    ip = addr["addr"]
-    cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
-    return ip + "/" + str(cidr)
+    try:
+        # return a vhost formatted address and mask - x.x.x.x/xx
+        addr = iface_addr(VROUTER_INTERFACE)
+        ip = addr["addr"]
+        cidr = netaddr.IPNetwork(ip + "/" + addr["netmask"]).prefixlen
+        return ip + "/" + str(cidr)
+    except (ValueError, KeyError):
+        return None
 
 
 def vhost_gateway(iface):
@@ -270,7 +267,7 @@ def get_context():
 
     ctx["vhost_ip"] = vhost_ip(VROUTER_INTERFACE)
     ctx["vhost_gateway"] = vhost_gateway(VROUTER_INTERFACE)
-    ctx["vhost_physical"] = vhost_phys(VROUTER_INTERFACE)
+    ctx["vhost_physical"] = config["vhost-physical"]
 
     if config["dpdk"]:
         ctx["dpdk"] = True
@@ -388,20 +385,37 @@ def _get_agent_status():
 
 
 def set_dpdk_coremask(mask):
-    args = {"service": "/usr/bin/contrail-vrouter-dpdk",
-            "mask": mask if mask.startswith("0x") else "-c " + mask}
+    service = "/usr/bin/contrail-vrouter-dpdk",
+    mask_arg = mask if mask.startswith("0x") else "-c " + mask
     if not init_is_systemd():
         check_call(["sed", "-i", "-e",
             "s!^command=.*{service}!"
-            "command=taskset {mask} {service}!".format(**args),
+            "command=taskset {mask} {service}!".format(service=service,
+                                                       mask=mask_arg),
             "/etc/contrail/supervisord_vrouter_files"
             "/contrail-vrouter-dpdk.ini"])
-    else:
-        check_call(["sed", "-i", "-e",
-            "s!^ExecStart=.*{service}!"
-            "ExecStart=taskset {mask} {service}!".format(**args),
-            "/etc/systemd/system/multi-user.target.wants"
-            "/contrail-vrouter-dpdk.service"])
+        return
+
+    # systemd magic
+    srv_orig = "/lib/systemd/system/contrail-vrouter-dpdk.service"
+    with open(srv_orig, "r") as f:
+        for line in f:
+            if line.startswith("ExecStart="):
+                args = line.split(service)[1]
+                break
+        else:
+            args = " --no-daemon --socket-mem 1024"
+
+    srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
+    try:
+        os.mkdir(srv_dir)
+    except:
+        pass
+    with open(srv_dir + "/override.conf", "w") as f:
+        f.write("[Service]\nExecStart=\n")
+        f.write("ExecStart=/usr/bin/taskset {mask} {service} {args}"
+                .format(service=service, mask=mask_arg, args=args))
+    check_call(["systemctl", "daemon-reload"])
 
 
 def configure_hugepages():
