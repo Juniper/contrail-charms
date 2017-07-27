@@ -385,7 +385,7 @@ def _get_agent_status():
 
 
 def set_dpdk_coremask(mask):
-    service = "/usr/bin/contrail-vrouter-dpdk",
+    service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
     if not init_is_systemd():
         check_call(["sed", "-i", "-e",
