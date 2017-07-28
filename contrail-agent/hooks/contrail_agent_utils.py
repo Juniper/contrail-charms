@@ -376,7 +376,7 @@ def _get_agent_status():
     output = check_output("contrail-status", shell=True)
     for line in output.splitlines()[1:]:
         if len(line) == 0:
-            return
+            continue
         lst = line.decode('UTF-8').split()
         if len(lst) < 2:
             continue
@@ -387,6 +387,8 @@ def _get_agent_status():
 
         log("contrail-status: " + line)
         return s_status, line
+
+    return "waiting", None
 
 
 def set_dpdk_coremask(mask):
