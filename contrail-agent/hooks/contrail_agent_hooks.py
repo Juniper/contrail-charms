@@ -135,17 +135,7 @@ def install_dpdk():
         service_restart("libvirt-bin")
 
     configure_vrouter_interface()
-
-    set_dpdk_coremask(config.get("dpdk-coremask"))
-
-    iface = config["vhost-physical"]
-    fs = os.path.realpath("/sys/class/net/" + iface).split("/")
-    # NOTE: why it's not an error?
-    pci_address = fs[4] if fs[3].startswith("pci") else "0000:00:00.0"
-    config["dpdk-pci"] = pci_address
-    addr = netifaces.ifaddresses(iface)[netifaces.AF_PACKET][0]
-    config["dpdk-mac"] = addr["addr"]
-
+    set_dpdk_coremask()
     write_configs()
 
     if not init_is_systemd():
@@ -171,7 +161,7 @@ def config_changed():
                             .format(key))
 
     if config["dpdk"]:
-        set_dpdk_coremask(config.get("dpdk-coremask"))
+        set_dpdk_coremask()
         configure_hugepages()
 
     write_configs()

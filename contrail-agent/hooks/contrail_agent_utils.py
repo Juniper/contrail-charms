@@ -138,6 +138,14 @@ def configure_vrouter_interface():
         gateway_ip = _get_default_gateway_ip()
     config["vhost-gateway-ip"] = gateway_ip
 
+    if config["dpdk"]:
+        fs = os.path.realpath("/sys/class/net/" + iface).split("/")
+        # NOTE: why it's not an error?
+        pci_address = fs[4] if fs[3].startswith("pci") else "0000:00:00.0"
+        config["dpdk-pci"] = pci_address
+        addr = netifaces.ifaddresses(iface)[netifaces.AF_PACKET][0]
+        config["dpdk-mac"] = addr["addr"]
+
     args.append(iface)
     check_call(args, cwd="scripts")
 
@@ -391,7 +399,8 @@ def _get_agent_status():
     return "waiting", None
 
 
-def set_dpdk_coremask(mask):
+def set_dpdk_coremask():
+    mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
     if not init_is_systemd():
