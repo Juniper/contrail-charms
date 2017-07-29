@@ -105,13 +105,13 @@ def contrail_controller_changed():
     _update_config("api_ip", "private-address")
     _update_config("api_port", "port")
 
-    data = config.get("agents-info")
-    if not data:
+    info = data.get("agents-info")
+    if not info:
         config["dpdk"] = False
         log("DPDK for current host is False. agents-info is not provided.")
     else:
         ip = unit_private_ip()
-        config["dpdk"] = json.loads(data).get(ip, False)
+        config["dpdk"] = json.loads(info).get(ip, False)
         log("DPDK for host {ip} is {dpdk}".format(ip=ip, dpdk=config["dpdk"]))
 
     config.save()
