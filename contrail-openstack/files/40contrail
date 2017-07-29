@@ -1,0 +1,14 @@
+Explanation: Use contrail versions of nova packages
+Package: nova-*
+Pin: version /contrail/
+Pin-Priority: 1001
+
+Explanation: Use contrail version of python-nova
+Package: python-nova
+Pin: version /contrail/
+Pin-Priority: 1001
+
+Explanation: Use contrail version of libvirt
+Package: libvirt*
+Pin: version /contrail/
+Pin-Priority: 1001
