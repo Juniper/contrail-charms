@@ -229,7 +229,7 @@ def neutron_api_joined():
 
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
-    if config["dpdk"]:
+    if config.get("dpdk", False):
         # contrail nova packages contain vrouter vhostuser vif
         shutil.copy("files/40contrail", "/etc/apt/preferences.d")
         apt_install(["nova-compute", "libvirt-bin", "contrail-nova-vif"],
