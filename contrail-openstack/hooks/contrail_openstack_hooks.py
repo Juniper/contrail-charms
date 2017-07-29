@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import shutil
 from subprocess import CalledProcessError, check_output
 import sys
 import uuid
@@ -24,6 +25,7 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.core.host import (
     restart_on_change,
+    service_restart,
 )
 
 from charmhelpers.fetch import (
@@ -227,6 +229,13 @@ def neutron_api_joined():
 
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
+    if config["dpdk"]:
+        # contrail nova packages contain vrouter vhostuser vif
+        shutil.copy("files/40contrail", "/etc/apt/preferences.d")
+        apt_install(["nova-compute", "libvirt-bin", "contrail-nova-vif"],
+                    options=["--reinstall", "--force-yes"], fatal=True)
+        service_restart("nova-api-metadata")
+
     # create plugin config
     sections = {
         "DEFAULT": [
