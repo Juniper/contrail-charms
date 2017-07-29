@@ -231,6 +231,7 @@ def update_southbound_relations(rid=None):
         "auth-info": config.get("auth_info"),
         "ssl-ca": config.get("ssl_ca"),
         "orchestrator-info": config.get("orchestrator_info"),
+        "agents-info": config.get("agents-info")
     }
     for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)
@@ -252,6 +253,13 @@ def contrail_controller_changed():
     # TODO: set error if orchestrator is changed and container was started
     # with another orchestrator
     if is_leader():
+        if "dpdk" in data:
+            # remote unit is an agent
+            address = data["private-address"]
+            flags = json_loads(config.get("agents-info"), dict())
+            flags[address] = data["dpdk"]
+            config["agents-info"] = json.dumps(flags)
+            config.save()
         update_southbound_relations()
         update_northbound_relations()
     update_charm_status()

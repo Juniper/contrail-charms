@@ -18,6 +18,7 @@ from charmhelpers.core.hookenv import (
     leader_get,
     leader_set,
     is_leader,
+    unit_private_ip,
     application_version_set,
 )
 
@@ -103,8 +104,22 @@ def contrail_controller_changed():
     _update_config("api_vip", "api-vip")
     _update_config("api_ip", "private-address")
     _update_config("api_port", "port")
+
+    data = config.get("agents-info")
+    if not data:
+        config["dpdk"] = False
+        log("DPDK for current host is False. agents-info is not provided.")
+    else:
+        ip = unit_private_ip()
+        config["dpdk"] = json.loads(data).get(ip, False)
+        log("DPDK for host {ip} is {dpdk}".format(ip=ip, dpdk=config["dpdk"]))
+
     config.save()
     write_configs()
+
+    # apply information from agents-info to nova
+    for rid in relation_ids("nova-compute"):
+        nova_compute_joined(rid)
 
     status_set("active", "Unit is ready")
 
@@ -213,14 +228,18 @@ def neutron_api_joined():
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
     # create plugin config
+    sections = {
+        "DEFAULT": [
+            ("firewall_driver", "nova.virt.firewall.NoopFirewallDriver")
+        ]
+    }
+    if config.get("dpdk", False):
+        sections["CONTRAIL"] = [("use_userspace_vhost", "True")]
+        sections["libvirt"] = [("use_huge_pages", "True")]
     conf = {
       "nova-compute": {
         "/etc/nova/nova.conf": {
-          "sections": {
-            "DEFAULT": [
-                ("firewall_driver", "nova.virt.firewall.NoopFirewallDriver")
-            ]
-          }
+          "sections": sections
         }
       }
     }

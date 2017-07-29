@@ -3,14 +3,13 @@
 import os
 import sys
 
-import netifaces
-
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
     config,
     log,
     relation_get,
+    relation_set,
     relation_ids,
     related_units,
     status_set,
@@ -167,6 +166,11 @@ def config_changed():
     write_configs()
     if config.changed("control-network"):
         reprovision_vrouter()
+
+
+@hooks.hook("contrail-controller-relation-joined")
+def contrail_controller_joined():
+    relation_set(dpdk=config["dpdk"])
 
 
 @hooks.hook("contrail-controller-relation-changed")
