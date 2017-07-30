@@ -114,7 +114,9 @@ def contrail_controller_changed():
         log("DPDK for current host is False. agents-info is not provided.")
     else:
         ip = unit_private_ip()
-        value = yaml.load(json.loads(info).get(ip, False))
+        value = json.loads(info).get(ip, False)
+        if not isinstance(value, bool):
+            value = yaml.load(value)
         config["dpdk"] = value
         log("DPDK for host {ip} is {dpdk}".format(ip=ip, dpdk=value))
 
@@ -236,7 +238,7 @@ def nova_compute_joined(rel_id=None):
         shutil.copy("files/40contrail", "/etc/apt/preferences.d")
         apt_install(["nova-compute", "libvirt-bin", "contrail-nova-vif"],
                     options=["--reinstall", "--force-yes", "-fy",
-                             "-o", "Dpkg::Options::=\"--force-confnew\""],
+                             "-o", "Dpkg::Options::=--force-confnew"],
                     fatal=True)
         service_restart("nova-api-metadata")
 
