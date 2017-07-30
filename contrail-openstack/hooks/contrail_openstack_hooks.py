@@ -5,6 +5,7 @@ import shutil
 from subprocess import CalledProcessError, check_output
 import sys
 import uuid
+import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -113,8 +114,9 @@ def contrail_controller_changed():
         log("DPDK for current host is False. agents-info is not provided.")
     else:
         ip = unit_private_ip()
-        config["dpdk"] = json.loads(info).get(ip, False)
-        log("DPDK for host {ip} is {dpdk}".format(ip=ip, dpdk=config["dpdk"]))
+        value = yaml.load(json.loads(info).get(ip, False))
+        config["dpdk"] = value
+        log("DPDK for host {ip} is {dpdk}".format(ip=ip, dpdk=value))
 
     config.save()
     write_configs()
