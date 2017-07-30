@@ -233,7 +233,9 @@ def nova_compute_joined(rel_id=None):
         # contrail nova packages contain vrouter vhostuser vif
         shutil.copy("files/40contrail", "/etc/apt/preferences.d")
         apt_install(["nova-compute", "libvirt-bin", "contrail-nova-vif"],
-                    options=["--reinstall", "--force-yes"], fatal=True)
+                    options=["--reinstall", "--force-yes", "-fy",
+                             "-o", "Dpkg::Options::=\"--force-confnew\""],
+                    fatal=True)
         service_restart("nova-api-metadata")
 
     # create plugin config
