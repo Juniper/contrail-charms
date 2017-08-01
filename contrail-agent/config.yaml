@@ -48,9 +48,11 @@ options:
       number of huge pages e.g. 1434.
   dpdk-coremask:
     type: string
-    default: "0xFFFFFFFF"
+    default: "1"
     description: |
       vRouter CPU affinity mask. Determines on which CPUs DPDK vRouter will run.
-      Value can be specified as either a hexidecimal bitmask e.g. 0xFFFFFFFF or
+      Value can be specified as either a hexidecimal bitmask e.g. 0xF or
       as a numbered list separated by commas e.g. 0,1 (ranges are also supported
       using '-' e.g. 0-2).
+      It must specify only real cores cause contrail-vrouter-dpdk service will
+      fail if specified core number is not present in the system.
