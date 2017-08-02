@@ -15,6 +15,10 @@ Options:
 
 configVRouter()
 {
+	# $1 - dpdk enabled if not empty
+	# $2 - interface to setup for vhost0
+	# $3 - file path. bridge interface to de-configure
+	# $4 - file path for vhost0 interface
 	cat juju-header
 	if [ -s "$3" ]; then
 		printf "\n%s\n" "auto $2"
@@ -29,7 +33,15 @@ configVRouter()
 		echo "iface vhost0 inet dhcp"
 	fi
 	if [ -n "$1" ]; then
-		echo "    post-up ip link set vhost0 address $(cat /sys/class/net/$2/address)"
+		ns=`grep nameserver /etc/resolv.conf | sed 's/nameserver //m'`
+		cat <<-EOF
+			    pre-up /opt/contrail/bin/if-vhost0
+			    network_name application
+			    dns-nameservers $ns
+			    post-up ip link set vhost0 address $(cat /sys/class/net/$2/address)
+			    post-up ip addr add $addr/$mask dev vhost0
+			    post-up ifconfig vhost0 up
+			EOF
 	else
 		cat <<-EOF
 			    pre-up ip link add address \$(cat /sys/class/net/$2/address) type vhost
@@ -87,6 +99,9 @@ configureInterfacesDir()
 
 configureVRouter()
 {
+	# $1 - dpdk enabled if not empty
+	# $2 - interface to setup for vhost0
+	# $3 - bridge to delete if not empty
 	if [ $# = 2 ]; then
 		iface_down=$2
 		iface_delete=$2
@@ -98,6 +113,8 @@ configureVRouter()
 		iface_up=$2
 		iface_cfg=/dev/null
 	fi
+	addr=`ifconfig $2 | grep -o "inet addr:[\.0-9]*" | cut -d ':' -f 2`
+	mask=`ifconfig $2 | grep -o "Mask:[\.0-9]*" | cut -d ':' -f 2`
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete

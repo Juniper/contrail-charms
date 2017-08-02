@@ -95,12 +95,13 @@ def _get_default_gateway_iface():
     return data[data.index("dev") + 1]
 
 
-def _get_default_gateway_ip():
+def _get_iface_gateway_ip(iface):
     if hasattr(netifaces, "gateways"):
-        return netifaces.gateways()["default"][netifaces.AF_INET][0]
+        data = netifaces.gateways()["default"][netifaces.AF_INET]
+        return data[0] if data[1] == iface else None
 
     data = check_output("ip route | grep ^default", shell=True).split()
-    return data[2]
+    return data[2] if data[4] == iface else None
 
 
 def _vhost_cidr(iface):
@@ -135,7 +136,7 @@ def configure_vrouter_interface():
     config["vhost-cidr"] = _vhost_cidr(iface)
     gateway_ip = config.get("vhost-gateway")
     if gateway_ip == "auto":
-        gateway_ip = _get_default_gateway_ip()
+        gateway_ip = _get_iface_gateway_ip(iface)
     config["vhost-gateway-ip"] = gateway_ip
 
     if config["dpdk"]:

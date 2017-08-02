@@ -5,6 +5,13 @@
 
 LOG=/var/log/contrail.log
 CONFIG=/etc/contrail/contrail-vrouter-agent.conf
+prog=/usr/bin/contrail-vrouter-agent
+kmod=vrouter
+pname=contrail-vrouter-agent
+LIBDIR=/usr/lib64
 DEVICE=vhost0
 dev={{ interface }}
 vgw_subnet_ip=__VGW_SUBNET_IP__
+vgw_intf=__VGW_INTF_LIST__
+qos_enabled=false
+LOGFILE=--log-file=/var/log/contrail/vrouter.log
