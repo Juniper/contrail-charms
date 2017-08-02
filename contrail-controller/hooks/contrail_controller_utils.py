@@ -33,6 +33,8 @@ config = config()
 CONTAINER_NAME = "contrail-controller"
 CONFIG_NAME = "controller"
 SERVICES_TO_CHECK = ["contrail-control", "contrail-api", "contrail-webui"]
+RABBITMQ_USER = "contrail"
+RABBITMQ_VHOST = "contrail"
 
 
 def get_controller_ips():
@@ -73,9 +75,14 @@ def get_context():
     ctx["db_user"] = leader_get("db_user")
     ctx["db_password"] = leader_get("db_password")
 
-    ctx["rabbitmq_user"] = leader_get("rabbitmq_user")
-    ctx["rabbitmq_password"] = leader_get("rabbitmq_password")
-    ctx["rabbitmq_vhost"] = leader_get("rabbitmq_vhost")
+    ctx["rabbitmq_user"] = RABBITMQ_USER
+    ctx["rabbitmq_vhost"] = RABBITMQ_VHOST
+    if config.get("use-external-rabbitmq"):
+        ctx["rabbitmq_password"] = config.get("rabbitmq_password")
+        ctx["rabbitmq_hosts"] = config.get("rabbitmq_hosts")
+    else:
+        ctx["rabbitmq_password"] = leader_get("rabbitmq_password_int")
+        ctx["rabbitmq_hosts"] = None
 
     ips = json_loads(leader_get("controller_ip_list"), list())
     ctx["controller_servers"] = ips
@@ -125,6 +132,10 @@ def update_charm_status(update_config=True):
     if not ctx.get("cloud_orchestrator"):
         status_set('blocked',
                    'Missing cloud orchestrator info in relations.')
+        return
+    if not ctx.get("rabbitmq_password"):
+        status_set('blocked',
+                   'Missing RabbitMQ info in external relations.')
         return
     if not ctx.get("keystone_ip"):
         status_set('blocked',

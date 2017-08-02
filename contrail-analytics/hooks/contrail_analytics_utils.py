@@ -95,6 +95,7 @@ def get_context():
     ctx["rabbitmq_user"] = config.get("rabbitmq_user")
     ctx["rabbitmq_password"] = config.get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = config.get("rabbitmq_vhost")
+    ctx["rabbitmq_hosts"] = config.get("rabbitmq_hosts")
 
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
@@ -150,10 +151,10 @@ def update_charm_status(update_config=True):
         status_set('blocked',
                    'Missing DB user/password info in '
                    'relation with contrail-controller.')
-    if not ctx.get("rabbitmq_user"):
+    if not ctx.get("rabbitmq_password"):
         # NOTE: Charms don't allow to deploy rabbitmq with guest access
         status_set('blocked',
-                   'Missing rabbitmq user/password info in '
+                   'Missing rabbitmq info in '
                    'relation with contrail-controller.')
     # TODO: what should happens if relation departed?
 
