@@ -230,6 +230,10 @@ def neutron_api_joined():
         "subordinate_configuration": json.dumps(conf)}
     relation_set(relation_settings=settings)
 
+    # if this hook raised after contrail-controller we need
+    # to overwrite default config file after installation
+    write_configs()
+
 
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
