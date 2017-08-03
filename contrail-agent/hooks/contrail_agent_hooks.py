@@ -142,10 +142,10 @@ def install_dpdk():
         service_start("supervisor-vrouter")
         service_restart("contrail-vrouter-agent")
     else:
-        service("enable", "contrail-vrouter-agent")
-        service_start("contrail-vrouter-agent")
         service("enable", "contrail-vrouter-dpdk")
         service_start("contrail-vrouter-dpdk")
+        service("enable", "contrail-vrouter-agent")
+        service_start("contrail-vrouter-agent")
 
     fix_libvirt()
 

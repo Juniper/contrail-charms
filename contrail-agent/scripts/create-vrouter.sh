@@ -124,6 +124,8 @@ configureVRouter()
 	if [ -z "$1" ]; then
 	    ifaceup vhost0
 	    restoreRoutes
+	else
+	    ifaceup vhost0 || /bin/true
 	fi
 }
 
