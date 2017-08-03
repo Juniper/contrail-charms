@@ -30,16 +30,21 @@ configVRouter()
 	if [ -e "$4" ]; then
 		cat "$4"
 	else
-		echo "iface vhost0 inet dhcp"
+		if [ -n "$1" ]; then
+			echo "iface vhost0 inet static"
+		else
+			echo "iface vhost0 inet dhcp"
+		fi
 	fi
 	if [ -n "$1" ]; then
 		ns=`grep nameserver /etc/resolv.conf | sed 's/nameserver //m'`
 		cat <<-EOF
 			    pre-up /opt/contrail/bin/if-vhost0
+			    address $addr
+			    netmask $mask
 			    network_name application
 			    dns-nameservers $ns
 			    post-up ip link set vhost0 address $(cat /sys/class/net/$2/address)
-			    post-up ip addr add $addr/$mask dev vhost0
 			    post-up ifconfig vhost0 up
 			EOF
 	else
@@ -124,8 +129,6 @@ configureVRouter()
 	if [ -z "$1" ]; then
 	    ifaceup vhost0
 	    restoreRoutes
-	else
-	    ifaceup vhost0 || /bin/true
 	fi
 }
 
