@@ -27,14 +27,12 @@ configVRouter()
 		printf "\n%s\n%s\n" "auto $2" "iface $2 inet manual"
 	fi
 	printf "\n%s\n"	"auto vhost0"
-	if [ -e "$4" ]; then
+	if [ -n "$1" ]; then
+		echo "iface vhost0 inet static"
+	elif [ -e "$4" ]; then
 		cat "$4"
 	else
-		if [ -n "$1" ]; then
-			echo "iface vhost0 inet static"
-		else
-			echo "iface vhost0 inet dhcp"
-		fi
+		echo "iface vhost0 inet dhcp"
 	fi
 	if [ -n "$1" ]; then
 		ns=`grep nameserver /etc/resolv.conf | sed 's/nameserver //m'`
