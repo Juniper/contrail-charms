@@ -227,7 +227,16 @@ def neutron_api_joined():
             "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
         "service-plugins": service_plugins,
         "quota-driver": base + ".quota.driver.QuotaDriver",
-        "subordinate_configuration": json.dumps(conf)}
+        "subordinate_configuration": json.dumps(conf),
+        "extra_middleware": [{
+            "name": "user_token",
+            "type": "filter",
+            "config": {
+                "paste.filter_factory":
+                    base + ".neutron_middleware:token_factory"
+            }
+        }],
+    }
     relation_set(relation_settings=settings)
 
     # if this hook raised after contrail-controller we need
