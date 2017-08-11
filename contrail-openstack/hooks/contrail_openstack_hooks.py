@@ -249,9 +249,8 @@ def neutron_api_joined(rel_id=None):
 
     # we need to update api-paste.ini cause old versions of neutron-api charm
     # doesn't support 'extra_middleware' feature
-    if auth_mode == "rbac":
-        ensure_neutron_api_paste("user_token", "paste.filter_factory",
-                                 base + ".neutron_middleware:token_factory")
+    ensure_neutron_api_paste("user_token", "paste.filter_factory",
+        base + ".neutron_middleware:token_factory", auth_mode == "rbac")
 
     # if this hook raised after contrail-controller we need
     # to overwrite default config file after installation
