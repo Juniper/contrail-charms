@@ -245,6 +245,8 @@ def neutron_api_joined(rel_id=None):
                     base + ".neutron_middleware:token_factory"
             }
         }]
+    else:
+        settings["extra_middleware"] = []
     relation_set(relation_id=rel_id, relation_settings=settings)
 
     # we need to update api-paste.ini cause old versions of neutron-api charm

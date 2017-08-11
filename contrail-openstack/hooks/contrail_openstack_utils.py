@@ -200,6 +200,6 @@ def ensure_neutron_api_paste(section, key, value, exist):
         lines.append("[{section}]\n".format(section=section))
         lines.append("{key} = {value}\n".format(key=key, value=value))
 
-    with open(api_paste_path, "r") as f:
+    with open(api_paste_path, "w") as f:
         for line in lines:
             f.write(line)
