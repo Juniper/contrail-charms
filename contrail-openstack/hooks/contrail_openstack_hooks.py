@@ -64,6 +64,7 @@ def config_changed():
         configure_sources(True, "install-sources", "install-keys")
         apt_update(fatal=True)
         apt_upgrade(fatal=True, dist=False)
+        _notify_neutron()
 
     if is_leader():
         _configure_metadata_shared_secret()
@@ -72,12 +73,14 @@ def config_changed():
 @hooks.hook("leader-elected")
 def leader_elected():
     _configure_metadata_shared_secret()
-    _notify_clients()
+    _notify_controller()
+    _notify_nova()
 
 
 @hooks.hook("leader-settings-changed")
 def leader_settings_changed():
-    _notify_clients()
+    _notify_controller()
+    _notify_nova()
 
 
 @hooks.hook("contrail-controller-relation-joined")
@@ -126,19 +129,15 @@ def contrail_controller_changed():
     write_configs()
 
     # apply information to base charms
-    for rid in relation_ids("nova-compute"):
-        nova_compute_joined(rid)
-    for rid in relation_ids("neutron-api"):
-        neutron_api_joined(rid)
+    _notify_nova()
+    _notify_neutron()
 
     status_set("active", "Unit is ready")
 
     # auth_info can affect endpoints
     changed = update_service_ips()
     if changed and is_leader():
-        data = _get_orchestrator_info()
-        for rid in relation_ids("contrail-controller"):
-            relation_set(relation_id=rid, **data)
+        _notify_controller()
 
 
 @hooks.hook("contrail-controller-relation-departed")
@@ -171,13 +170,25 @@ def _configure_metadata_shared_secret():
     leader_set(settings={"metadata-shared-secret": secret})
 
 
-def _notify_clients():
+def _notify_controller():
     # notify clients
     data = _get_orchestrator_info()
     for rid in relation_ids("contrail-controller"):
         relation_set(relation_id=rid, **data)
+
+
+def _notify_nova():
+    # notify clients
     for rid in relation_ids("nova-compute"):
-        nova_compute_joined(rid)
+        if related_units(rid):
+            nova_compute_joined(rid)
+
+
+def _notify_neutron():
+    # notify clients
+    for rid in relation_ids("neutron-api"):
+        if related_units(rid):
+            neutron_api_joined(rid)
 
 
 def _get_orchestrator_info():
