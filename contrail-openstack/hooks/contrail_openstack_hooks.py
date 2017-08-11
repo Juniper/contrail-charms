@@ -39,6 +39,7 @@ from charmhelpers.fetch import (
 from contrail_openstack_utils import (
     write_configs,
     update_service_ips,
+    fix_neutron_api_paste,
 )
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
@@ -107,6 +108,7 @@ def contrail_controller_changed():
     _update_config("api_vip", "api-vip")
     _update_config("api_ip", "private-address")
     _update_config("api_port", "port")
+    _update_config("auth_mode", "auth-mode")
 
     info = data.get("agents-info")
     if not info:
@@ -146,7 +148,9 @@ def contrail_cotroller_departed():
     if units:
         return
 
-    for key in ["auth_info", "ssl_ca", "api_vip", "api_ip", "api_port"]:
+    keys = ["auth_info", "ssl_ca", "api_vip", "api_ip", "api_port",
+            "auth_mode"]
+    for key in keys:
         config.pop(key, None)
     config.save()
     write_configs()
@@ -228,16 +232,24 @@ def neutron_api_joined():
         "service-plugins": service_plugins,
         "quota-driver": base + ".quota.driver.QuotaDriver",
         "subordinate_configuration": json.dumps(conf),
-        "extra_middleware": [{
+    }
+    auth_mode = config.get("auth_mode", "cloud-admin")
+    if auth_mode == "rbac":
+        settings["extra_middleware"] = [{
             "name": "user_token",
             "type": "filter",
             "config": {
                 "paste.filter_factory":
                     base + ".neutron_middleware:token_factory"
             }
-        }],
-    }
+        }]
     relation_set(relation_settings=settings)
+
+    # we need to update api-paste.ini cause old versions of neutron-api charm
+    # doesn't support 'extra_middleware' feature
+    if auth_mode == "rbac":
+        fix_neutron_api_paste("user_token", "paste.filter_factory",
+                              base + ".neutron_middleware:token_factory")
 
     # if this hook raised after contrail-controller we need
     # to overwrite default config file after installation

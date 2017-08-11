@@ -12,6 +12,10 @@ options:
       It represents 'aaa_mode' configuration key of Contrail.
       Can be one of: 'rbac', 'cloud-admin' or 'no-auth'
       Authentication mode. Detailed information can be found in the Contrail documentation.
+      https://github.com/Juniper/contrail-controller/wiki/RBAC
+      In case of 'rbac' charm will configure Contrail to RBAC mode and administrator must
+      configure RBAC rules to allow users to work.
+      In case of 'cloud-admin' charm will configure Contrail in compatible mode.
   cloud-admin-role:
     type: string
     default: admin
