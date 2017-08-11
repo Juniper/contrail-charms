@@ -39,7 +39,7 @@ from charmhelpers.fetch import (
 from contrail_openstack_utils import (
     write_configs,
     update_service_ips,
-    fix_neutron_api_paste,
+    ensure_neutron_api_paste,
 )
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
@@ -125,9 +125,11 @@ def contrail_controller_changed():
     config.save()
     write_configs()
 
-    # apply information from agents-info to nova
+    # apply information to base charms
     for rid in relation_ids("nova-compute"):
         nova_compute_joined(rid)
+    for rid in relation_ids("neutron-api"):
+        neutron_api_joined(rid)
 
     status_set("active", "Unit is ready")
 
@@ -196,7 +198,7 @@ def _get_orchestrator_info():
 
 
 @hooks.hook("neutron-api-relation-joined")
-def neutron_api_joined():
+def neutron_api_joined(rel_id=None):
     apt_install(NEUTRON_API_PACKAGES, fatal=True)
     try:
         cmd = ["dpkg-query", "-f", "${Version}\\n",
@@ -243,13 +245,13 @@ def neutron_api_joined():
                     base + ".neutron_middleware:token_factory"
             }
         }]
-    relation_set(relation_settings=settings)
+    relation_set(relation_id=rel_id, relation_settings=settings)
 
     # we need to update api-paste.ini cause old versions of neutron-api charm
     # doesn't support 'extra_middleware' feature
     if auth_mode == "rbac":
-        fix_neutron_api_paste("user_token", "paste.filter_factory",
-                              base + ".neutron_middleware:token_factory")
+        ensure_neutron_api_paste("user_token", "paste.filter_factory",
+                                 base + ".neutron_middleware:token_factory")
 
     # if this hook raised after contrail-controller we need
     # to overwrite default config file after installation

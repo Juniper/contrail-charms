@@ -168,26 +168,38 @@ def _save_file(path, data):
         os.remove(path)
 
 
-def fix_neutron_api_paste(section, key, value):
+def ensure_neutron_api_paste(section, key, value, exist):
     api_paste_path = "/etc/neutron/api-paste.ini"
     lines = list()
+    skip = False
+    _section = "[{section}]".format(section=section)
     with open(api_paste_path, "r") as f:
         for line in f:
-            if not line.startswith("keystone"):
-                lines.append(line)
+            if _section in line:
+                skip = True
+            elif line.strip().startswith("["):
+                skip = False
+            if skip:
                 continue
 
-            if section in line:
+            if line.startswith("keystone"):
                 # update is not needed
-                return
+                if section in line:
+                    if exist:
+                        return
+                    parts = line.split(section)
+                    line = parts[0] + parts[1]
+                if section not in line:
+                    if not exist:
+                        return
+                    line = "keystone = {section}{sections}".format(
+                        section=section, sections=line.split("=")[1])
+            lines.append(line)
 
-            new_line = "keystone = %{section} %{sections}".format(
-                section=section, sections=line.split("=")[1])
-            lines.append(new_line)
-
-    lines.append("[%{section}]".format(section=section))
-    lines.append("%{key} = %{value}".format(key=key, value=value))
+    if exist:
+        lines.append("[{section}]\n".format(section=section))
+        lines.append("{key} = {value}\n".format(key=key, value=value))
 
     with open(api_paste_path, "r") as f:
         for line in lines:
-            f.write(line + "\n")
+            f.write(line)
