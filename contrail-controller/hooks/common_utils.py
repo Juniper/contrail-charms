@@ -20,6 +20,7 @@ from charmhelpers.core.hookenv import (
     application_version_set,
 )
 from charmhelpers.core.host import write_file
+from charmhelpers.core.templating import render
 
 from docker_utils import (
     is_container_launched,
@@ -118,9 +119,9 @@ def update_services_status(name, services):
 
 def check_run_prerequisites(name, config_name, update_config_func, services):
     if is_container_launched(name):
+        # already launched. just sync config if needed.
         check = True
-        if update_config_func:
-            update_config_func()
+        if update_config_func and update_config_func():
             check = apply_config_in_container(name, config_name)
         if check:
             update_services_status(name, services)
@@ -156,3 +157,23 @@ def run_container(name, pkg_to_check):
 
 def json_loads(data, default=None):
     return json.loads(data) if data else default
+
+
+def render_and_check(ctx, template, conf_file, do_check):
+    log("Render and store new configuration: " + conf_file)
+    if do_check:
+        try:
+            with open(conf_file) as f:
+                old_lines = set(f.readlines())
+        except Exception:
+            old_lines = set()
+    lines = render(template, conf_file, ctx)
+    if not do_check:
+        return True
+    new_set = set(lines).difference(old_lines)
+    old_set = old_lines.difference(lines)
+    log("New lines:\n{new}".format(new=new_set))
+    log("Old lines:\n{old}".format(old=old_set))
+    changed = new_set or old_set
+    log("Configuration file is " + ("" if changed else "not ") + "changed.")
+    return changed

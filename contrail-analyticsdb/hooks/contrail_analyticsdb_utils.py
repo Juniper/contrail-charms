@@ -11,7 +11,6 @@ from charmhelpers.core.hookenv import (
     status_set,
     leader_get,
 )
-from charmhelpers.core.templating import render
 
 from common_utils import (
     get_ip,
@@ -20,6 +19,7 @@ from common_utils import (
     check_run_prerequisites,
     run_container,
     json_loads,
+    render_and_check,
 )
 
 
@@ -83,7 +83,7 @@ def get_context():
     return ctx
 
 
-def render_config(ctx=None):
+def render_config(ctx=None, do_check=True):
     if not ctx:
         ctx = get_context()
 
@@ -96,7 +96,8 @@ def render_config(ctx=None):
     ssl_key = ctx["ssl_key"]
     save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
 
-    render("analyticsdb.conf", "/etc/contrailctl/analyticsdb.conf", ctx)
+    return render_and_check(ctx, "analyticsdb.conf",
+                            "/etc/contrailctl/analyticsdb.conf", do_check)
 
 
 def update_charm_status(update_config=True):
@@ -130,5 +131,5 @@ def update_charm_status(update_config=True):
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx)
+    render_config(ctx, do_check=False)
     run_container(CONTAINER_NAME, "contrail-nodemgr")
