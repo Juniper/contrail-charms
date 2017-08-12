@@ -167,13 +167,15 @@ def render_and_check(ctx, template, conf_file, do_check):
                 old_lines = set(f.readlines())
         except Exception:
             old_lines = set()
-    lines = render(template, conf_file, ctx)
+    render(template, conf_file, ctx)
     if not do_check:
         return True
-    new_set = set(lines).difference(old_lines)
-    old_set = old_lines.difference(lines)
-    log("New lines:\n{new}".format(new=new_set))
-    log("Old lines:\n{old}".format(old=old_set))
+    with open(conf_file) as f:
+        new_lines = set(f.readlines())
+    new_set = new_lines.difference(old_lines)
+    old_set = old_lines.difference(new_lines)
+    log("New lines:\n{new}".format(new="".join(new_set)))
+    log("Old lines:\n{old}".format(old="".join(old_set)))
     changed = new_set or old_set
     log("Configuration file is " + ("" if changed else "not ") + "changed.")
     return changed
