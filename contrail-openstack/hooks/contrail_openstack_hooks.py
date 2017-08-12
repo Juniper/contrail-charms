@@ -67,19 +67,21 @@ def config_changed():
         _notify_neutron()
 
     if is_leader():
-        _configure_metadata_shared_secret()
+        res = _configure_metadata_shared_secret()
+        if res:
+            _notify_controller()
 
 
 @hooks.hook("leader-elected")
 def leader_elected():
-    _configure_metadata_shared_secret()
-    _notify_controller()
+    res = _configure_metadata_shared_secret()
+    if res:
+        _notify_controller()
     _notify_nova()
 
 
 @hooks.hook("leader-settings-changed")
 def leader_settings_changed():
-    _notify_controller()
     _notify_nova()
 
 
@@ -165,27 +167,26 @@ def _configure_metadata_shared_secret():
     elif not config["enable-metadata-server"] and secret:
         secret = None
     else:
-        return
+        return False
 
     leader_set(settings={"metadata-shared-secret": secret})
+    return True
 
 
 def _notify_controller():
-    # notify clients
     data = _get_orchestrator_info()
     for rid in relation_ids("contrail-controller"):
-        relation_set(relation_id=rid, **data)
+        if related_units(rid):
+            relation_set(relation_id=rid, **data)
 
 
 def _notify_nova():
-    # notify clients
     for rid in relation_ids("nova-compute"):
         if related_units(rid):
             nova_compute_joined(rid)
 
 
 def _notify_neutron():
-    # notify clients
     for rid in relation_ids("neutron-api"):
         if related_units(rid):
             neutron_api_joined(rid)

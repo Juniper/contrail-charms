@@ -174,8 +174,11 @@ def render_and_check(ctx, template, conf_file, do_check):
         new_lines = set(f.readlines())
     new_set = new_lines.difference(old_lines)
     old_set = old_lines.difference(new_lines)
-    log("New lines:\n{new}".format(new="".join(new_set)))
-    log("Old lines:\n{old}".format(old="".join(old_set)))
     changed = new_set or old_set
-    log("Configuration file is " + ("" if changed else "not ") + "changed.")
+    if changed:
+        log("New lines:\n{new}".format(new="".join(new_set)))
+        log("Old lines:\n{old}".format(old="".join(old_set)))
+        log("Configuration file has changed.")
+    else:
+        log("Configuration file has not changed.")
     return changed

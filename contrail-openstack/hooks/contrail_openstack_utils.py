@@ -26,26 +26,29 @@ config = config()
 def update_service_ips():
     try:
         endpoints = _get_endpoints()
+        log("services ips: {ips}".format(ips=endpoints))
     except Exception as e:
         log("Couldn't detect services ips: " + str(e),
             level=WARNING)
         return False
 
-    changed = {}
+    changed = False
 
     def _check_key(key):
         val = endpoints.get(key)
         if val and val != config.get(key):
             config[key] = val
-            changed[key] = val
+            changed = True
 
     _check_key("compute_service_ip")
     _check_key("image_service_ip")
     _check_key("network_service_ip")
     if changed:
+        log("services ips has changed")
         config.save()
         return True
 
+    log("services ips was not changed.")
     return False
 
 
