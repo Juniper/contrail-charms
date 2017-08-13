@@ -137,9 +137,10 @@ def contrail_controller_changed():
     status_set("active", "Unit is ready")
 
     # auth_info can affect endpoints
-    changed = update_service_ips()
-    if changed and is_leader():
-        _notify_controller()
+    if is_leader():
+        changed = update_service_ips()
+        if changed:
+            _notify_controller()
 
 
 @hooks.hook("contrail-controller-relation-departed")
@@ -199,7 +200,7 @@ def _get_orchestrator_info():
         info["metadata_shared_secret"] = leader_get("metadata-shared-secret")
 
     def _add_to_info(key):
-        value = config.get(key)
+        value = leader_get(key)
         if value:
             info[key] = value
 
@@ -302,6 +303,15 @@ def nova_compute_joined(rel_id=None):
         "metadata-shared-secret": leader_get("metadata-shared-secret"),
         "subordinate_configuration": json.dumps(conf)}
     relation_set(relation_id=rel_id, relation_settings=settings)
+
+
+@hooks.hook("update-status")
+def update_status():
+    if not is_leader():
+        return
+    changed = update_service_ips()
+    if changed:
+        _notify_controller()
 
 
 def main():

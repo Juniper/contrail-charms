@@ -178,7 +178,7 @@ def render_and_check(ctx, template, conf_file, do_check):
     if changed:
         log("New lines:\n{new}".format(new="".join(new_set)))
         log("Old lines:\n{old}".format(old="".join(old_set)))
-        log("Configuration file has changed.")
+        log("Configuration file has been changed.")
     else:
-        log("Configuration file has not changed.")
+        log("Configuration file has not been changed.")
     return changed

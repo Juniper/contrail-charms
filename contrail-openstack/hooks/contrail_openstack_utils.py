@@ -13,6 +13,8 @@ from charmhelpers.core.hookenv import (
     ERROR,
     relation_ids,
     related_units,
+    leader_get,
+    leader_set,
 )
 from charmhelpers.core.host import (
     write_file,
@@ -26,29 +28,27 @@ config = config()
 def update_service_ips():
     try:
         endpoints = _get_endpoints()
-        log("services ips: {ips}".format(ips=endpoints))
     except Exception as e:
-        log("Couldn't detect services ips: " + str(e),
+        log("Couldn't detect services ips: {exc}".format(exc=e),
             level=WARNING)
         return False
 
-    changed = False
+    values = dict()
 
     def _check_key(key):
         val = endpoints.get(key)
-        if val and val != config.get(key):
-            config[key] = val
-            changed = True
+        if val != leader_get(key):
+            values[key] = val
 
     _check_key("compute_service_ip")
     _check_key("image_service_ip")
     _check_key("network_service_ip")
-    if changed:
-        log("services ips has changed")
-        config.save()
+    if values:
+        log("services ips has been changed: {ips}".format(ips=values))
+        leader_set(**values)
         return True
 
-    log("services ips was not changed.")
+    log("services ips has not been changed.")
     return False
 
 
