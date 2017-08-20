@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     status_set,
     leader_get,
+    log,
 )
 
 from common_utils import (
@@ -79,7 +80,7 @@ def get_context():
 
     ctx.update(servers_ctx())
     ctx.update(analyticsdb_ctx())
-    log("CTX: " + str(ctx))
+    log("CTX: {}".format(ctx))
     ctx.update(json_loads(config.get("auth_info"), dict()))
     return ctx
 
