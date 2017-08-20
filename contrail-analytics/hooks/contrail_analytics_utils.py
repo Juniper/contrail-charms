@@ -100,6 +100,7 @@ def get_context():
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())
     ctx.update(analyticsdb_ctx())
+    log("CTX: " + str(ctx))
     ctx.update(json_loads(config.get("auth_info"), dict()))
     return ctx
 
