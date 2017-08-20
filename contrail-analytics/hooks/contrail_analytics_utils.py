@@ -154,11 +154,13 @@ def update_charm_status(update_config=True):
         status_set('blocked',
                    'Missing DB user/password info in '
                    'relation with contrail-controller.')
+        return
     if not ctx.get("rabbitmq_password"):
         # NOTE: Charms don't allow to deploy rabbitmq with guest access
         status_set('blocked',
                    'Missing rabbitmq info in '
                    'relation with contrail-controller.')
+        return
     # TODO: what should happens if relation departed?
 
     render_config(ctx, do_check=False)
