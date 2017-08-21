@@ -42,7 +42,7 @@ def update_relations(rid=None):
         data["keystone_ssl_ca"] = _decode_cert("ssl_ca")
         auth_info = json.dumps(data)
     settings = {
-        "auth-info": config.get("auth_info")
+        "auth-info": auth_info
     }
     for rid in ([rid] if rid else relation_ids("contrail-auth")):
         relation_set(relation_id=rid, relation_settings=settings)
