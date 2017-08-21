@@ -25,7 +25,6 @@ from charmhelpers.core.hookenv import (
 )
 
 from charmhelpers.core.host import (
-    restart_on_change,
     service_restart,
 )
 
@@ -95,8 +94,6 @@ def contrail_controller_joined():
 
 
 @hooks.hook("contrail-controller-relation-changed")
-@restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
-                        ["neutron-server"]})
 def contrail_controller_changed():
     data = relation_get()
 
@@ -144,8 +141,6 @@ def contrail_controller_changed():
 
 
 @hooks.hook("contrail-controller-relation-departed")
-@restart_on_change({"/etc/neutron/plugins/opencontrail/ContrailPlugin.ini":
-                        ["neutron-server"]})
 def contrail_cotroller_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]

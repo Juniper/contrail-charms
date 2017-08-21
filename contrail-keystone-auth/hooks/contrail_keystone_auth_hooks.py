@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from base64 import b64decode
 import json
 import sys
 
@@ -15,13 +16,31 @@ from charmhelpers.core.hookenv import (
     relation_id,
     related_units,
     status_set,
+    ERROR,
 )
 
 hooks = Hooks()
 config = config()
 
 
+def _decode_cert(key):
+    val = config.get(key)
+    if not val:
+        return None
+    try:
+        return b64decode(val)
+    except Exception as e:
+        log("Couldn't decode certificate from config['{}']: {}".format(
+            key, str(e)), level=ERROR)
+    return None
+
+
 def update_relations(rid=None):
+    auth_info = config.get("auth_info")
+    if auth_info:
+        data = json.loads(auth_info)
+        data["keystone_ssl_ca"] = _decode_cert("ssl_ca")
+        auth_info = json.dumps(data)
     settings = {
         "auth-info": config.get("auth_info")
     }
@@ -31,6 +50,7 @@ def update_relations(rid=None):
 
 @hooks.hook("config-changed")
 def config_changed():
+    _decode_cert("ssl_ca")
     if is_leader():
         update_relations()
     update_status()

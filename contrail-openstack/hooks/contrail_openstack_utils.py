@@ -17,6 +17,7 @@ from charmhelpers.core.hookenv import (
     leader_set,
 )
 from charmhelpers.core.host import (
+    restart_on_change,
     write_file,
 )
 from charmhelpers.core.templating import render
@@ -108,6 +109,10 @@ def _get_endpoints():
     return result
 
 
+@restart_on_change({
+    "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"],
+    "/etc/contrail/ssl/certs/keystone-ca-cert.pem": ["neutron-server"],
+})
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
 
@@ -118,11 +123,17 @@ def write_configs():
 
     ctx = _get_context()
 
-    # store files in standard path
+    # store file in standard path
     ca_path = "/etc/contrail/ssl/certs/ca-cert.pem"
     ssl_ca = ctx["ssl_ca"]
     _save_file(ca_path, ssl_ca)
     ctx["ssl_ca_path"] = ca_path
+
+    keystone_ssl_ca = ctx.get("keystone_ssl_ca")
+    path = "/etc/contrail/ssl/certs/keystone-ca-cert.pem"
+    _save_file(path, keystone_ssl_ca)
+    if keystone_ssl_ca:
+        ctx["keystone_ssl_ca_path"] = path
 
     render("ContrailPlugin.ini",
            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",

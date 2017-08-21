@@ -19,7 +19,7 @@ from charmhelpers.core.hookenv import (
     ERROR,
     application_version_set,
 )
-from charmhelpers.core.host import write_file
+from charmhelpers.core.host import file_hash, write_file
 from charmhelpers.core.templating import render
 
 from docker_utils import (
@@ -160,6 +160,8 @@ def json_loads(data, default=None):
 
 
 def render_and_check(ctx, template, conf_file, do_check):
+    """Returns True if configuration has been changed."""
+
     log("Render and store new configuration: " + conf_file)
     if do_check:
         try:
@@ -167,6 +169,17 @@ def render_and_check(ctx, template, conf_file, do_check):
                 old_lines = set(f.readlines())
         except Exception:
             old_lines = set()
+
+    ks_ca_path = "/etc/contrailctl/ssl/keystone-ca-cert.pem"
+    ks_ca_hash = file_hash(ks_ca_path) if do_check else None
+    ks_ca = ctx.get("keystone_ssl_ca")
+    save_file(ks_ca_path, ks_ca)
+    if ks_ca:
+        ctx["keystone_ssl_ca_path"] = ks_ca_path
+    ca_changed = (ks_ca_hash == file_hash(ks_ca_path)) if do_check else False
+    if ca_changed:
+        log("Keystone CA cert has been changed.")
+
     render(template, conf_file, ctx)
     if not do_check:
         return True
@@ -174,11 +187,10 @@ def render_and_check(ctx, template, conf_file, do_check):
         new_lines = set(f.readlines())
     new_set = new_lines.difference(old_lines)
     old_set = old_lines.difference(new_lines)
-    changed = new_set or old_set
-    if changed:
+    if new_set or old_set:
         log("New lines:\n{new}".format(new="".join(new_set)))
         log("Old lines:\n{old}".format(old="".join(old_set)))
         log("Configuration file has been changed.")
     else:
         log("Configuration file has not been changed.")
-    return changed
+    return ca_changed or new_set or old_set
