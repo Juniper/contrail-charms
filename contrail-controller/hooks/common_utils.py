@@ -76,12 +76,12 @@ def decode_cert(key):
     return None
 
 
-def save_file(path, data):
+def save_file(path, data, perms=0o400):
     if data:
         fdir = os.path.dirname(path)
         if not os.path.exists(fdir):
             os.makedirs(fdir)
-        write_file(path, data, perms=0o400)
+        write_file(path, data, perms=perms)
     elif os.path.exists(path):
         os.remove(path)
 
@@ -173,7 +173,7 @@ def render_and_check(ctx, template, conf_file, do_check):
     ks_ca_path = "/etc/contrailctl/keystone-ca-cert.pem"
     ks_ca_hash = file_hash(ks_ca_path) if do_check else None
     ks_ca = ctx.get("keystone_ssl_ca")
-    save_file(ks_ca_path, ks_ca)
+    save_file(ks_ca_path, ks_ca, 0o444)
     if ks_ca:
         ctx["keystone_ssl_ca_path"] = ks_ca_path
     ca_changed = (ks_ca_hash == file_hash(ks_ca_path)) if do_check else False
