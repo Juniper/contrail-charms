@@ -173,12 +173,15 @@ def render_and_check(ctx, template, conf_file, do_check):
     ks_ca_path = "/etc/contrailctl/keystone-ca-cert.pem"
     ks_ca_hash = file_hash(ks_ca_path) if do_check else None
     ks_ca = ctx.get("keystone_ssl_ca")
+    log("DGB CA: {}".format(ks_ca))
     save_file(ks_ca_path, ks_ca, 0o444)
+    ks_ca_hash_new = file_hash(ks_ca_path)
     if ks_ca:
         ctx["keystone_ssl_ca_path"] = ks_ca_path
-    ca_changed = (ks_ca_hash == file_hash(ks_ca_path)) if do_check else False
+    ca_changed = (ks_ca_hash == ks_ca_hash_new) if do_check else False
     if ca_changed:
-        log("Keystone CA cert has been changed.")
+        log("Keystone CA cert has been changed: {h1} != {h2}."
+            .format(h1=ks_ca_hash, h2=ks_ca_hash_new))
 
     render(template, conf_file, ctx)
     if not do_check:
