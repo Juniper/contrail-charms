@@ -170,7 +170,7 @@ def render_and_check(ctx, template, conf_file, do_check):
         except Exception:
             old_lines = set()
 
-    ks_ca_path = "/etc/contrailctl/ssl/keystone-ca-cert.pem"
+    ks_ca_path = "/etc/contrailctl/keystone-ca-cert.pem"
     ks_ca_hash = file_hash(ks_ca_path) if do_check else None
     ks_ca = ctx.get("keystone_ssl_ca")
     save_file(ks_ca_path, ks_ca)
