@@ -124,7 +124,8 @@ def contrail_analytics_departed():
             status_set(
                 "blocked",
                 "Container is present but cloud orchestrator was disappeared."
-                " Please kill container by yourself or restore cloud orchestrator.")
+                " Please kill container by yourself or "
+                "restore cloud orchestrator.")
     update_charm_status()
 
 

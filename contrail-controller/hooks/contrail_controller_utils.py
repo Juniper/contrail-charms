@@ -17,8 +17,6 @@ from charmhelpers.core.hookenv import (
 
 from common_utils import (
     get_ip,
-    decode_cert,
-    save_file,
     check_run_prerequisites,
     run_container,
     json_loads,
@@ -66,11 +64,7 @@ def get_context():
     ctx["global_read_only_role"] = config.get("global-read-only-role")
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
-    ssl_ca = decode_cert("ssl_ca")
-    ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_cert"] = decode_cert("ssl_cert")
-    ctx["ssl_key"] = decode_cert("ssl_key")
-    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    ctx["ssl_enabled"] = config.get("ssl_cert_path") is not None
 
     ctx["db_user"] = leader_get("db_user")
     ctx["db_password"] = leader_get("db_password")
@@ -96,15 +90,6 @@ def get_context():
 def render_config(ctx=None, do_check=True):
     if not ctx:
         ctx = get_context()
-
-    # NOTE: store files in default paths cause no way to pass this path to
-    # some of components (sandesh)
-    ssl_ca = ctx["ssl_ca"]
-    save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
-    ssl_cert = ctx["ssl_cert"]
-    save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
-    ssl_key = ctx["ssl_key"]
-    save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
 
     return render_and_check(ctx, "controller.conf",
                             "/etc/contrailctl/controller.conf", do_check)

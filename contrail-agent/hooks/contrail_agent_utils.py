@@ -24,7 +24,6 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     status_set,
-    ERROR,
     WARNING,
 )
 
@@ -222,13 +221,16 @@ def provision_vrouter(op, self_ip=None):
     ip = self_ip if self_ip else _get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
+    ssl_ca = config.get("ssl_ca")
+    use_ssl = "true" if ssl_ca is not None and len(ssl_ca) > 0 else "false"
     params = [
         "contrail-provision-vrouter",
         "--host_name", gethostname(),
         "--host_ip", ip,
         "--api_server_ip", api_ip,
         "--api_server_port", str(api_port),
-        "--oper", op]
+        "--oper", op,
+        "--api_server_use_ssl", use_ssl]
     if "keystone_admin_user" in identity:
         params += [
             "--admin_user", identity.get("keystone_admin_user"),
@@ -262,7 +264,7 @@ def _load_json_from_config(key):
 
 def get_context():
     ctx = {}
-    ssl_ca = _decode_cert("ssl_ca")
+    ssl_ca = config.get("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
 
@@ -295,18 +297,6 @@ def get_context():
     return ctx
 
 
-def _decode_cert(key):
-    val = config.get(key)
-    if not val:
-        return None
-    try:
-        return b64decode(val)
-    except Exception as e:
-        log("Couldn't decode certificate from config['{}']: {}".format(
-            key, str(e)), level=ERROR)
-    return None
-
-
 def _save_file(path, data):
     if data:
         fdir = os.path.dirname(path)
@@ -320,7 +310,7 @@ def _save_file(path, data):
 @restart_on_change({
     "/etc/contrail/ssl/certs/ca-cert.pem":
         ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
-    "/etc/contrail/ssl/keystone-ca-cert.pem":
+    "/etc/contrail/keystone/ssl/ca-cert.pem":
         ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
     "/etc/contrail/contrail-vrouter-agent.conf":
         ["contrail-vrouter-agent"],
@@ -337,7 +327,7 @@ def write_configs():
         ctx["ssl_ca_path"] = ca_path
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
-    path = "/etc/contrail/ssl/certs/keystone-ca-cert.pem"
+    path = "/etc/contrail/keystone/ssl/ca-cert.pem"
     _save_file(path, keystone_ssl_ca)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path

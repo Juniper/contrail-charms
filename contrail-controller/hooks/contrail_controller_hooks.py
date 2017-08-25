@@ -37,6 +37,7 @@ from charmhelpers.contrib.network.ip import (
 from contrail_controller_utils import (
     update_charm_status,
     CONTAINER_NAME,
+    CONFIG_NAME,
     get_analytics_list,
     get_controller_ips,
     RABBITMQ_USER,
@@ -46,11 +47,13 @@ from common_utils import (
     get_ip,
     fix_hostname,
     json_loads,
+    update_certificates,
 )
 from docker_utils import (
     add_docker_repo,
     DOCKER_PACKAGES,
     is_container_launched,
+    apply_config_in_container,
 )
 
 PACKAGES = []
@@ -287,8 +290,8 @@ def contrail_controller_departed():
     if is_container_launched(CONTAINER_NAME):
         status_set(
             "blocked",
-            "Container is present but cloud orchestrator was disappeared."
-            " Please kill container by yourself or restore cloud orchestrator.")
+            "Container is present but cloud orchestrator was disappeared. "
+            "Please kill container by yourself or restore cloud orchestrator.")
 
 
 @hooks.hook("contrail-analytics-relation-joined")
@@ -472,6 +475,65 @@ def amqp_changed():
 
     update_northbound_relations()
     update_charm_status()
+
+
+@hooks.hook('tls-certificates-relation-joined')
+def tls_certificates_relation_joined():
+    # a hostname could also be provided as a SAN
+    # (Subject Alternative Name) but having this one
+    # has certain implications
+    # https://tools.ietf.org/html/rfc2818#section-3.1
+    # "If a subjectAltName extension of type dNSName
+    # is present, that MUST be used as the identity"
+    # Therefore it is not used here as we don't need
+    # a DNS infrastructure dependency
+    ip_san = get_ip()
+    settings = {
+        'sans': json.dumps([ip_san, '127.0.0.1']),
+        'common_name': ip_san,
+        'certificate_name': local_unit().replace('/', '_')
+    }
+    relation_set(relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    # check that the -provides side have set the data we need
+    # and render the affected files
+    unitname = local_unit().replace('/', '_')
+    cert_name = '{0}.server.cert'.format(unitname)
+    key_name = '{0}.server.key'.format(unitname)
+    cert = relation_get(cert_name)
+    key = relation_get(key_name)
+    ca = relation_get('ca')
+
+    if not cert or not key or not ca:
+        log('tls-certificates relation data is not fully available')
+        cert = key = ca = None
+
+    _tls_changed(cert, key, ca)
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    _tls_changed(None, None, None)
+
+
+def _tls_changed(cert, key, ca):
+    changed = update_certificates(cert, key, ca)
+    if not changed:
+        return
+    apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
+    # notify relations
+
+    settings = {"ssl-cert": cert, "ssl-key": key, "ssl-ca": ca}
+    for rid in relation_ids("contrail-analytics"):
+        relation_set(relation_id=rid, relation_settings=settings)
+    for rid in relation_ids("contrail-analyticsdb"):
+        relation_set(relation_id=rid, relation_settings=settings)
+    settings = {"ssl_ca": ca}
+    for rid in ([rid] if rid else relation_ids("contrail-controller")):
+        relation_set(relation_id=rid, relation_settings=settings)
 
 
 def main():

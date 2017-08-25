@@ -111,7 +111,8 @@ def _get_endpoints():
 
 @restart_on_change({
     "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"],
-    "/etc/contrail/ssl/certs/keystone-ca-cert.pem": ["neutron-server"],
+    "/etc/contrail/keystone/ssl/ca-cert.pem": ["neutron-server"],
+    "/etc/contrail/ssl/certs/ca-cert.pem": ["neutron-server"],
 })
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
@@ -127,10 +128,11 @@ def write_configs():
     ca_path = "/etc/contrail/ssl/certs/ca-cert.pem"
     ssl_ca = ctx["ssl_ca"]
     _save_file(ca_path, ssl_ca)
-    ctx["ssl_ca_path"] = ca_path
+    if ssl_ca:
+        ctx["ssl_ca_path"] = ca_path
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
-    path = "/etc/contrail/ssl/certs/keystone-ca-cert.pem"
+    path = "/etc/contrail/keystone/ssl/ca-cert.pem"
     _save_file(path, keystone_ssl_ca)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
@@ -149,7 +151,7 @@ def _get_context():
     ctx["api_server"] = ip
     ctx["api_port"] = config.get("api_port")
 
-    ssl_ca = _decode_cert("ssl_ca")
+    ssl_ca = config.get("ssl_ca")
     ctx["ssl_ca"] = ssl_ca
     ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
     log("CTX: " + str(ctx))
@@ -158,18 +160,6 @@ def _get_context():
     if auth_info:
         ctx.update(json.loads(auth_info))
     return ctx
-
-
-def _decode_cert(key):
-    val = config.get(key)
-    if not val:
-        return None
-    try:
-        return b64decode(val)
-    except Exception as e:
-        log("Couldn't decode certificate from config['{}']: {}".format(
-            key, str(e)), level=ERROR)
-    return None
 
 
 def _save_file(path, data):
