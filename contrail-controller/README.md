@@ -51,3 +51,23 @@ and secured (like webUI:8143) via https-services.
 Such option allows to relate this charm to different haproxy applications
 where first haproxy app has ssl_cert/ssl_key in configuration and makes SSL termination itself
 but second doesn't have SSL parameters and acts as a proxy/load-balancer.
+
+SSL
+---
+
+This charm supports relation to easyrsa charm to obtain certificates for XMPP and Sandesh connections:
+
+    juju add-relation contrail-controller rabbitmq-server:amqp
+
+This mode supports only deployment where analitics and analiticsdb containers deployed
+on the same machines as controller container.
+
+External RabbitMQ
+-----------------
+
+Charm can be related to RabbitMQ:
+
+    juju add-relation contrail-controller rabbitmq-server:amqp
+
+In this case internal RabbitMQ server will not be run and Contrail software will be configured
+to use external one.

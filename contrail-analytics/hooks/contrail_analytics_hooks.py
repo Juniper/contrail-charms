@@ -98,9 +98,7 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "auth-mode", "auth_mode")
     changed |= _value_changed(data, "auth-info", "auth_info")
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
-    changed |= _value_changed(data, "ssl-ca", "ssl_ca")
-    changed |= _value_changed(data, "ssl-cert", "ssl_cert")
-    changed |= _value_changed(data, "ssl-key", "ssl_key")
+    changed |= _value_changed(data, "ssl-enabled", "ssl_enabled")
     changed |= _value_changed(data, "rabbitmq_user", "rabbitmq_user")
     changed |= _value_changed(data, "rabbitmq_password", "rabbitmq_password")
     changed |= _value_changed(data, "rabbitmq_vhost", "rabbitmq_vhost")
@@ -117,7 +115,7 @@ def contrail_analytics_departed():
                   for unit in related_units(rid)]
     if not units:
         for key in ["auth_info", "auth_mode", "orchestrator_info",
-                    "ssl_ca", "ssl_cert", "ssl_key", "rabbitmq_vhost",
+                    "ssl_enabled", "rabbitmq_vhost",
                     "rabbitmq_user", "rabbitmq_password", "rabbitmq_hosts"]:
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):

@@ -120,25 +120,28 @@ def _value_changed(rel_data, rel_key, cfg_key):
     if rel_key not in rel_data:
         # data is absent in relation. it means that remote charm doesn't
         # send it due to lack of information
-        return
+        return False
     value = rel_data[rel_key]
-    if value is not None:
+    if value is not None and value != config.get(cfg_key):
         config[cfg_key] = value
-    else:
+        return True
+    elif value is None and config.get(cfg_key) is not None:
         config.pop(cfg_key, None)
+        return True
+    return False
 
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
 def analyticsdb_changed():
     data = relation_get()
-    _value_changed(data, "auth-info", "auth_info")
-    _value_changed(data, "orchestrator-info", "orchestrator_info")
-    _value_changed(data, "ssl-ca", "ssl_ca")
-    _value_changed(data, "ssl-cert", "ssl_cert")
-    _value_changed(data, "ssl-key", "ssl_key")
+    changed = False
+    changed |= _value_changed(data, "auth-info", "auth_info")
+    changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
+    changed |= _value_changed(data, "ssl-enabled", "ssl_enabled")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
-    update_charm_status()
+    if changed:
+        update_charm_status()
 
 
 @hooks.hook("contrail-analyticsdb-relation-departed")
@@ -146,14 +149,14 @@ def analyticsdb_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "orchestrator_info",
-                    "ssl_ca", "ssl_cert", "ssl_key"]:
+        for key in ["auth_info", "orchestrator_info", "ssl_enabled"]:
             config.pop(key, None)
         if is_container_launched(CONTAINER_NAME):
             status_set(
                 "blocked",
                 "Container is present but cloud orchestrator was disappeared."
-                " Please kill container by yourself or restore cloud orchestrator.")
+                " Please kill container by yourself or restore"
+                " cloud orchestrator.")
     update_charm_status()
 
 

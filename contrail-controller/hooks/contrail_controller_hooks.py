@@ -206,13 +206,12 @@ def config_changed():
 
 
 def update_northbound_relations(rid=None):
+    ssl_cert = config.get("ssl_cert")
     settings = {
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
-        "ssl-ca": config.get("ssl_ca"),
-        "ssl-cert": config.get("ssl_cert"),
-        "ssl-key": config.get("ssl_key"),
+        "ssl-enabled": (ssl_cert is not None and len(ssl_cert) > 0),
         "rabbitmq_user": RABBITMQ_USER,
         "rabbitmq_vhost": RABBITMQ_VHOST,
     }
@@ -524,16 +523,15 @@ def _tls_changed(cert, key, ca):
     if not changed:
         return
     apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
-    # notify relations
 
-    settings = {"ssl-cert": cert, "ssl-key": key, "ssl-ca": ca}
-    for rid in relation_ids("contrail-analytics"):
-        relation_set(relation_id=rid, relation_settings=settings)
-    for rid in relation_ids("contrail-analyticsdb"):
-        relation_set(relation_id=rid, relation_settings=settings)
-    settings = {"ssl_ca": ca}
-    for rid in ([rid] if rid else relation_ids("contrail-controller")):
-        relation_set(relation_id=rid, relation_settings=settings)
+    # save certs & notify relations
+    config["ssl_cert"] = cert
+    config["ssl_key"] = key
+    config["ssl_ca"] = ca
+    config.save()
+    update_northbound_relations()
+    if is_leader():
+        update_southbound_relations()
 
 
 def main():

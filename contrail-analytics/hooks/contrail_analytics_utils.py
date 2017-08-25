@@ -15,12 +15,10 @@ from charmhelpers.core.hookenv import (
 
 from common_utils import (
     get_ip,
-    save_file,
     check_run_prerequisites,
     run_container,
     json_loads,
     render_and_check,
-    update_certificates,
 )
 
 apt_pkg.init()
@@ -84,15 +82,9 @@ def get_context():
     ctx = {}
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
-    ssl_cert = config.get("ssl_cert")
-    ctx["ssl_cert"] = ssl_cert
-    ctx["ssl_key"] = config.get("ssl_key")
-    ctx["ssl_ca"] = config.get("ssl_ca")
-    ctx["ssl_enabled"] = (ssl_cert is not None and len(ssl_cert) > 0)
-
+    ctx["ssl_enabled"] = config.get("ssl_enabled")
     ctx["db_user"] = config.get("db_user")
     ctx["db_password"] = config.get("db_password")
-
     ctx["rabbitmq_user"] = config.get("rabbitmq_user")
     ctx["rabbitmq_password"] = config.get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = config.get("rabbitmq_vhost")
@@ -110,11 +102,8 @@ def render_config(ctx=None, do_check=True):
     if not ctx:
         ctx = get_context()
 
-    cert_changed = update_certificates(ctx["ssl_cert"], ctx["ssl_key"],
-                                       ctx["ssl_ca"])
-    cfg_changed = render_and_check(
+    return render_and_check(
         ctx, "analytics.conf", "/etc/contrailctl/analytics.conf", do_check)
-    return cert_changed or cfg_changed
 
 
 def update_charm_status(update_config=True):
