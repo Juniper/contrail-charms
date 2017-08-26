@@ -206,12 +206,11 @@ def config_changed():
 
 
 def update_northbound_relations(rid=None):
-    ssl_cert = config.get("ssl_cert")
     settings = {
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
-        "ssl-enabled": (ssl_cert is not None and len(ssl_cert) > 0),
+        "ssl-enabled": config.get("ssl_enabled"),
         "rabbitmq_user": RABBITMQ_USER,
         "rabbitmq_vhost": RABBITMQ_VHOST,
     }
@@ -522,16 +521,16 @@ def _tls_changed(cert, key, ca):
     changed = update_certificates(cert, key, ca)
     if not changed:
         return
-    apply_config_in_container(CONTAINER_NAME, CONFIG_NAME)
 
     # save certs & notify relations
-    config["ssl_cert"] = cert
-    config["ssl_key"] = key
+    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
     config["ssl_ca"] = ca
     config.save()
     update_northbound_relations()
     if is_leader():
         update_southbound_relations()
+
+    update_charm_status(force=True)
 
 
 def main():
