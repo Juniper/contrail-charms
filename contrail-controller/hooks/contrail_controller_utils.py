@@ -87,7 +87,7 @@ def get_context():
     return ctx
 
 
-def update_charm_status(update_config=True, force=True):
+def update_charm_status(update_config=True, force=False):
 
     def _render_config(ctx=None, do_check=True):
         if not ctx:
