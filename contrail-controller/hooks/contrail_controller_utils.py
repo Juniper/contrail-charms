@@ -64,7 +64,7 @@ def get_context():
     ctx["global_read_only_role"] = config.get("global-read-only-role")
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
-    ctx["ssl_enabled"] = config.get("ssl_cert_path") is not None
+    ctx["ssl_enabled"] = config.get("ssl_enabled")
 
     ctx["db_user"] = leader_get("db_user")
     ctx["db_password"] = leader_get("db_password")
@@ -87,16 +87,17 @@ def get_context():
     return ctx
 
 
-def render_config(ctx=None, do_check=True):
-    if not ctx:
-        ctx = get_context()
+def update_charm_status(update_config=True, force=True):
 
-    return render_and_check(ctx, "controller.conf",
-                            "/etc/contrailctl/controller.conf", do_check)
+    def _render_config(ctx=None, do_check=True):
+        if not ctx:
+            ctx = get_context()
+        changed = render_and_check(
+            ctx, "controller.conf",
+            "/etc/contrailctl/controller.conf", do_check)
+        return (force or changed)
 
-
-def update_charm_status(update_config=True):
-    update_config_func = render_config if update_config else None
+    update_config_func = _render_config if update_config else None
     result = check_run_prerequisites(CONTAINER_NAME, CONFIG_NAME,
                                      update_config_func, SERVICES_TO_CHECK)
     if not result:
@@ -129,7 +130,7 @@ def update_charm_status(update_config=True):
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx, do_check=False)
+    _render_config(ctx, do_check=False)
     for port in ("8082", "8080", "8143"):
         open_port(port, "TCP")
 
