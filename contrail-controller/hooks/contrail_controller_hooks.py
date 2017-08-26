@@ -5,6 +5,7 @@ import sys
 import uuid
 import yaml
 
+from subprocess import check_output
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
@@ -37,7 +38,6 @@ from charmhelpers.contrib.network.ip import (
 from contrail_controller_utils import (
     update_charm_status,
     CONTAINER_NAME,
-    CONFIG_NAME,
     get_analytics_list,
     get_controller_ips,
     RABBITMQ_USER,
@@ -53,7 +53,6 @@ from docker_utils import (
     add_docker_repo,
     DOCKER_PACKAGES,
     is_container_launched,
-    apply_config_in_container,
 )
 
 PACKAGES = []
@@ -486,10 +485,12 @@ def tls_certificates_relation_joined():
     # Therefore it is not used here as we don't need
     # a DNS infrastructure dependency
     ip_san = get_ip()
+    cn = check_output(['getent', 'hosts', '172.31.7.63']).split()[1].split('.')[0]
+    #cn = local_unit().replace('/', '_')
     settings = {
         'sans': json.dumps([ip_san, '127.0.0.1']),
         'common_name': ip_san,
-        'certificate_name': local_unit().replace('/', '_')
+        'certificate_name': cn
     }
     relation_set(relation_settings=settings)
 
