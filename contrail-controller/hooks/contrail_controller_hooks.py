@@ -485,7 +485,7 @@ def tls_certificates_relation_joined():
     # Therefore it is not used here as we don't need
     # a DNS infrastructure dependency
     ip_san = get_ip()
-    cn = check_output(['getent', 'hosts', '172.31.7.63']).split()[1].split('.')[0]
+    cn = check_output(['getent', 'hosts', ip_san]).split()[1].split('.')[0]
     #cn = local_unit().replace('/', '_')
     settings = {
         'sans': json.dumps([ip_san, '127.0.0.1']),
