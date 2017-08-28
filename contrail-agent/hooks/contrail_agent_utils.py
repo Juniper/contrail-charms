@@ -305,8 +305,6 @@ def _save_file(path, data):
 
 
 @restart_on_change({
-    "/etc/contrail/ssl/certs/ca-cert.pem":
-        ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
     "/etc/contrail/keystone/ssl/ca-cert.pem":
         ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
     "/etc/contrail/contrail-vrouter-agent.conf":
@@ -315,13 +313,6 @@ def _save_file(path, data):
         ["contrail-vrouter-nodemgr"]})
 def write_configs():
     ctx = get_context()
-
-    # TODO: what we should do with two other certificates?
-    ca_path = "/etc/contrail/ssl/certs/ca-cert.pem"
-    ssl_ca = ctx["ssl_ca"]
-    _save_file(ca_path, ssl_ca)
-    if ssl_ca:
-        ctx["ssl_ca_path"] = ca_path
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
     path = "/etc/contrail/keystone/ssl/ca-cert.pem"

@@ -187,7 +187,6 @@ def contrail_controller_changed():
     _update_config("api_ip", "private-address")
     _update_config("api_port", "port")
     _update_config("api_vip", "api-vip")
-    _update_config("ssl_ca", "ssl-ca")
     _update_config("auth_info", "auth-info")
     _update_config("orchestrator_info", "orchestrator-info")
     config["vrouter-expected-provision-state"] = True
