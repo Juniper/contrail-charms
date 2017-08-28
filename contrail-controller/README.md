@@ -57,7 +57,8 @@ SSL
 
 This charm supports relation to easyrsa charm to obtain certificates for XMPP and Sandesh connections:
 
-    juju add-relation contrail-controller rabbitmq-server:amqp
+    juju add-relation contrail-controller easyrsa
+    juju add-relation contrail-agent easyrsa
 
 This mode supports only deployment where analitics and analiticsdb containers deployed
 on the same machines as controller container.
