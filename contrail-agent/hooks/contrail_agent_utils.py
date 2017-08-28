@@ -111,7 +111,7 @@ def _vhost_cidr(iface):
     return ip + "/" + str(cidr)
 
 
-def _get_control_network_ip(control_network=None):
+def get_control_network_ip(control_network=None):
     network = control_network
     if not network:
         network = config.get("control-network")
@@ -205,7 +205,7 @@ def reprovision_vrouter(old_ip):
     if not config.get("vrouter-provisioned"):
         return
 
-    old_ip = _get_control_network_ip(config.prev("control-network"))
+    old_ip = get_control_network_ip(config.prev("control-network"))
     try:
         provision_vrouter("del", old_ip)
     except Exception as e:
@@ -218,7 +218,7 @@ def reprovision_vrouter(old_ip):
 
 
 def provision_vrouter(op, self_ip=None):
-    ip = self_ip if self_ip else _get_control_network_ip()
+    ip = self_ip if self_ip else get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
     use_ssl = "false" if config.get("ssl_enabled", False) else "true"
@@ -263,7 +263,7 @@ def _load_json_from_config(key):
 
 def get_context():
     ctx = {}
-    ctx["ssl_enabled"] = config.get("ssl_enabled")
+    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
 
     ip, port = get_controller_address()
     ctx["api_server"] = ip
@@ -276,7 +276,7 @@ def get_context():
     info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
 
-    ctx["control_network_ip"] = _get_control_network_ip()
+    ctx["control_network_ip"] = get_control_network_ip()
 
     ctx["vhost_ip"] = config["vhost-cidr"]
     ctx["vhost_gateway"] = config["vhost-gateway-ip"]
@@ -475,7 +475,7 @@ def tls_changed(cert, key, ca):
         return
 
     log("Certificates was changed. Rewrite configs and rerun services.")
-    config["ssl_enabled"] = (ca is not None and len(ca) > 0)
+    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
     config.save()
     write_configs()
     service_restart("contrail-vrouter-agent")

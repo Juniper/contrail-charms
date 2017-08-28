@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import os
 import sys
 
@@ -14,6 +15,7 @@ from charmhelpers.core.hookenv import (
     related_units,
     status_set,
     application_version_set,
+    local_unit,
 )
 
 from charmhelpers.fetch import (
@@ -46,6 +48,7 @@ from contrail_agent_utils import (
     get_hugepages,
     fix_libvirt,
     tls_changed,
+    get_control_network_ip,
 )
 
 PACKAGES = ["dkms", "contrail-vrouter-agent", "contrail-utils",
@@ -209,11 +212,26 @@ def contrail_controller_node_departed():
     status_set("blocked", "Missing relation to contrail-controller")
 
 
+@hooks.hook('tls-certificates-relation-joined')
+def tls_certificates_relation_joined():
+    ip_san = get_control_network_ip()
+    cn = check_output(['getent', 'hosts', ip_san]).split()[1].split('.')[0]
+    settings = {
+        'sans': json.dumps([ip_san, '127.0.0.1']),
+        'common_name': ip_san,
+        'certificate_name': cn
+    }
+    relation_set(relation_settings=settings)
+
+
 @hooks.hook('tls-certificates-relation-changed')
 def tls_certificates_relation_changed():
-    cert = relation_get("client.cert")
-    key = relation_get("client.key")
-    ca = relation_get("ca")
+    unitname = local_unit().replace('/', '_')
+    cert_name = '{0}.server.cert'.format(unitname)
+    key_name = '{0}.server.key'.format(unitname)
+    cert = relation_get(cert_name)
+    key = relation_get(key_name)
+    ca = relation_get('ca')
 
     if not cert or not key:
         log("tls-certificates client's relation data is not fully available")
