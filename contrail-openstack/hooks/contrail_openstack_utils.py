@@ -115,10 +115,7 @@ def _get_endpoints():
 })
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
-
-    units = [unit for rid in relation_ids("neutron-api")
-                  for unit in related_units(rid)]
-    if not units:
+    if not _is_related_to("neutron-api"):
         return
 
     ctx = _get_context()
@@ -132,6 +129,12 @@ def write_configs():
     render("ContrailPlugin.ini",
            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
            ctx, "root", "neutron", 0o440)
+
+
+def _is_related_to(rel_name):
+    units = [unit for rid in relation_ids(rel_name)
+                  for unit in related_units(rid)]
+    return True if units else False
 
 
 def _get_context():
@@ -199,9 +202,9 @@ def ensure_neutron_api_paste(section, key, value, exist):
 
 
 def tls_changed(cert, key, ca):
-    files = {"/etc/contrail/ssl/certs/server.pem": cert,
-             "/etc/contrail/ssl/private/server-privkey.pem": key,
-             "/etc/contrail/ssl/certs/ca-cert.pem": ca}
+    files = {"/etc/contrail/ssl-co/certs/server.pem": cert,
+             "/etc/contrail/ssl-co/private/server-privkey.pem": key,
+             "/etc/contrail/ssl-co/certs/ca-cert.pem": ca}
     changed = False
     for cfile in files:
         data = files[cfile]
@@ -211,9 +214,13 @@ def tls_changed(cert, key, ca):
 
     if not changed:
         log("Certificates was not changed.")
+        return
 
     log("Certificates was changed. Rewrite configs and rerun services.")
     config["ssl_enabled"] = (ca is not None and len(ca) > 0)
     config.save()
+
+    if not _is_related_to("neutron-api"):
+        return
     write_configs()
     service_restart("neutron-server")
