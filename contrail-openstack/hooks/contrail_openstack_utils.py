@@ -15,9 +15,7 @@ from charmhelpers.core.hookenv import (
     leader_set,
 )
 from charmhelpers.core.host import (
-    file_hash,
     restart_on_change,
-    service_restart,
     write_file,
 )
 from charmhelpers.core.templating import render
@@ -199,28 +197,3 @@ def ensure_neutron_api_paste(section, key, value, exist):
     with open(api_paste_path, "w") as f:
         for line in lines:
             f.write(line)
-
-
-def tls_changed(cert, key, ca):
-    files = {"/etc/contrail/ssl-co/certs/server.pem": cert,
-             "/etc/contrail/ssl-co/private/server-privkey.pem": key,
-             "/etc/contrail/ssl-co/certs/ca-cert.pem": ca}
-    changed = False
-    for cfile in files:
-        data = files[cfile]
-        old_hash = file_hash(cfile)
-        _save_file(cfile, data)
-        changed |= (old_hash != file_hash(cfile))
-
-    if not changed:
-        log("Certificates was not changed.")
-        return
-
-    log("Certificates was changed. Rewrite configs and rerun services.")
-    config["ssl_enabled"] = (ca is not None and len(ca) > 0)
-    config.save()
-
-    if not _is_related_to("neutron-api"):
-        return
-    write_configs()
-    service_restart("neutron-server")

@@ -39,7 +39,6 @@ from contrail_openstack_utils import (
     write_configs,
     update_service_ips,
     ensure_neutron_api_paste,
-    tls_changed,
 )
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
@@ -297,24 +296,6 @@ def nova_compute_joined(rel_id=None):
         "metadata-shared-secret": leader_get("metadata-shared-secret"),
         "subordinate_configuration": json.dumps(conf)}
     relation_set(relation_id=rel_id, relation_settings=settings)
-
-
-@hooks.hook('tls-certificates-relation-changed')
-def tls_certificates_relation_changed():
-    cert = relation_get("client.cert")
-    key = relation_get("client.key")
-    ca = relation_get("ca")
-
-    if not cert or not key:
-        log("tls-certificates client's relation data is not fully available")
-        cert = key = None
-
-    tls_changed(cert, key, ca)
-
-
-@hooks.hook('tls-certificates-relation-departed')
-def tls_certificates_relation_departed():
-    tls_changed(None, None, None)
 
 
 @hooks.hook("update-status")

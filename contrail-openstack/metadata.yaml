@@ -25,6 +25,3 @@ requires:
   juju-info:
     interface: juju-info
     scope: container
-  tls-certificates:
-    interface: tls-certificates
-    optional: true
