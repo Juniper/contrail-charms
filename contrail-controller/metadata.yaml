@@ -26,6 +26,9 @@ requires:
   amqp:
     interface: rabbitmq
     optional: true
+  tls-certificates:
+    interface: tls-certificates
+    optional: true
 resources:
   contrail-controller:
     type: file

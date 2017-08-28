@@ -5,6 +5,7 @@ import sys
 import uuid
 import yaml
 
+from subprocess import check_output
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
@@ -46,6 +47,7 @@ from common_utils import (
     get_ip,
     fix_hostname,
     json_loads,
+    update_certificates,
 )
 from docker_utils import (
     add_docker_repo,
@@ -207,9 +209,7 @@ def update_northbound_relations(rid=None):
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
-        "ssl-ca": config.get("ssl_ca"),
-        "ssl-cert": config.get("ssl_cert"),
-        "ssl-key": config.get("ssl_key"),
+        "ssl-enabled": config.get("ssl_enabled"),
         "rabbitmq_user": RABBITMQ_USER,
         "rabbitmq_vhost": RABBITMQ_VHOST,
     }
@@ -236,7 +236,6 @@ def update_southbound_relations(rid=None):
         "analytics-server": json.dumps(get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
-        "ssl-ca": config.get("ssl_ca"),
         "orchestrator-info": config.get("orchestrator_info"),
         "agents-info": config.get("agents-info")
     }
@@ -287,8 +286,8 @@ def contrail_controller_departed():
     if is_container_launched(CONTAINER_NAME):
         status_set(
             "blocked",
-            "Container is present but cloud orchestrator was disappeared."
-            " Please kill container by yourself or restore cloud orchestrator.")
+            "Container is present but cloud orchestrator was disappeared. "
+            "Please kill container by yourself or restore cloud orchestrator.")
 
 
 @hooks.hook("contrail-analytics-relation-joined")
@@ -472,6 +471,52 @@ def amqp_changed():
 
     update_northbound_relations()
     update_charm_status()
+
+
+@hooks.hook('tls-certificates-relation-joined')
+def tls_certificates_relation_joined():
+    ip_san = get_ip()
+    cn = check_output(['getent', 'hosts', ip_san]).split()[1].split('.')[0]
+    settings = {
+        'sans': json.dumps([ip_san, '127.0.0.1']),
+        'common_name': ip_san,
+        'certificate_name': cn
+    }
+    relation_set(relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    unitname = local_unit().replace('/', '_')
+    cert_name = '{0}.server.cert'.format(unitname)
+    key_name = '{0}.server.key'.format(unitname)
+    cert = relation_get(cert_name)
+    key = relation_get(key_name)
+    ca = relation_get('ca')
+
+    if not cert or not key or not ca:
+        log('tls-certificates relation data is not fully available')
+        cert = key = ca = None
+
+    _tls_changed(cert, key, ca)
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    _tls_changed(None, None, None)
+
+
+def _tls_changed(cert, key, ca):
+    changed = update_certificates(cert, key, ca)
+    if not changed:
+        return
+
+    # save certs & notify relations
+    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
+    config.save()
+    update_northbound_relations()
+
+    update_charm_status(force=True)
 
 
 def main():

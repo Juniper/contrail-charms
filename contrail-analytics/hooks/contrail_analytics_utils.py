@@ -15,8 +15,6 @@ from charmhelpers.core.hookenv import (
 
 from common_utils import (
     get_ip,
-    decode_cert,
-    save_file,
     check_run_prerequisites,
     run_container,
     json_loads,
@@ -84,15 +82,9 @@ def get_context():
     ctx = {}
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
-    ssl_ca = decode_cert("ssl_ca")
-    ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_cert"] = decode_cert("ssl_cert")
-    ctx["ssl_key"] = decode_cert("ssl_key")
-    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
-
+    ctx["ssl_enabled"] = config.get("ssl_enabled")
     ctx["db_user"] = config.get("db_user")
     ctx["db_password"] = config.get("db_password")
-
     ctx["rabbitmq_user"] = config.get("rabbitmq_user")
     ctx["rabbitmq_password"] = config.get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = config.get("rabbitmq_vhost")
@@ -110,17 +102,8 @@ def render_config(ctx=None, do_check=True):
     if not ctx:
         ctx = get_context()
 
-    # NOTE: store files in default paths cause no way to pass this path to
-    # some of components (sandesh)
-    ssl_ca = ctx["ssl_ca"]
-    save_file("/etc/contrailctl/ssl/ca-cert.pem", ssl_ca)
-    ssl_cert = ctx["ssl_cert"]
-    save_file("/etc/contrailctl/ssl/server.pem", ssl_cert)
-    ssl_key = ctx["ssl_key"]
-    save_file("/etc/contrailctl/ssl/server-privkey.pem", ssl_key)
-
-    return render_and_check(ctx, "analytics.conf",
-                            "/etc/contrailctl/analytics.conf", do_check)
+    return render_and_check(
+        ctx, "analytics.conf", "/etc/contrailctl/analytics.conf", do_check)
 
 
 def update_charm_status(update_config=True):

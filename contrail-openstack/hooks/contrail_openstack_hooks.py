@@ -106,7 +106,6 @@ def contrail_controller_changed():
                 config.pop(key, None)
 
     _update_config("auth_info", "auth-info")
-    _update_config("ssl_ca", "ssl-ca")
     _update_config("api_vip", "api-vip")
     _update_config("api_ip", "private-address")
     _update_config("api_port", "port")
@@ -147,8 +146,7 @@ def contrail_cotroller_departed():
     if units:
         return
 
-    keys = ["auth_info", "ssl_ca", "api_vip", "api_ip", "api_port",
-            "auth_mode"]
+    keys = ["auth_info", "api_vip", "api_ip", "api_port", "auth_mode"]
     for key in keys:
         config.pop(key, None)
     config.save()

@@ -1,5 +1,4 @@
 import apt_pkg
-from base64 import b64decode
 import json
 import os
 import requests
@@ -10,7 +9,6 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     WARNING,
-    ERROR,
     relation_ids,
     related_units,
     leader_get,
@@ -111,26 +109,17 @@ def _get_endpoints():
 
 @restart_on_change({
     "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"],
-    "/etc/contrail/ssl/certs/keystone-ca-cert.pem": ["neutron-server"],
+    "/etc/contrail/keystone/ssl/ca-cert.pem": ["neutron-server"],
 })
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
-
-    units = [unit for rid in relation_ids("neutron-api")
-                  for unit in related_units(rid)]
-    if not units:
+    if not _is_related_to("neutron-api"):
         return
 
     ctx = _get_context()
 
-    # store file in standard path
-    ca_path = "/etc/contrail/ssl/certs/ca-cert.pem"
-    ssl_ca = ctx["ssl_ca"]
-    _save_file(ca_path, ssl_ca)
-    ctx["ssl_ca_path"] = ca_path
-
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
-    path = "/etc/contrail/ssl/certs/keystone-ca-cert.pem"
+    path = "/etc/contrail/keystone/ssl/ca-cert.pem"
     _save_file(path, keystone_ssl_ca)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
@@ -138,6 +127,12 @@ def write_configs():
     render("ContrailPlugin.ini",
            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
            ctx, "root", "neutron", 0o440)
+
+
+def _is_related_to(rel_name):
+    units = [unit for rid in relation_ids(rel_name)
+                  for unit in related_units(rid)]
+    return True if units else False
 
 
 def _get_context():
@@ -148,28 +143,13 @@ def _get_context():
         ip = config.get("api_ip")
     ctx["api_server"] = ip
     ctx["api_port"] = config.get("api_port")
-
-    ssl_ca = _decode_cert("ssl_ca")
-    ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     log("CTX: " + str(ctx))
 
     auth_info = config.get("auth_info")
     if auth_info:
         ctx.update(json.loads(auth_info))
     return ctx
-
-
-def _decode_cert(key):
-    val = config.get(key)
-    if not val:
-        return None
-    try:
-        return b64decode(val)
-    except Exception as e:
-        log("Couldn't decode certificate from config['{}']: {}".format(
-            key, str(e)), level=ERROR)
-    return None
 
 
 def _save_file(path, data):

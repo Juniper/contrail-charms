@@ -1,4 +1,3 @@
-from base64 import b64decode
 import functools
 import os
 from socket import gethostname
@@ -24,11 +23,11 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     status_set,
-    ERROR,
     WARNING,
 )
 
 from charmhelpers.core.host import (
+    file_hash,
     restart_on_change,
     write_file,
     service_restart,
@@ -112,7 +111,7 @@ def _vhost_cidr(iface):
     return ip + "/" + str(cidr)
 
 
-def _get_control_network_ip(control_network=None):
+def get_control_network_ip(control_network=None):
     network = control_network
     if not network:
         network = config.get("control-network")
@@ -206,7 +205,7 @@ def reprovision_vrouter(old_ip):
     if not config.get("vrouter-provisioned"):
         return
 
-    old_ip = _get_control_network_ip(config.prev("control-network"))
+    old_ip = get_control_network_ip(config.prev("control-network"))
     try:
         provision_vrouter("del", old_ip)
     except Exception as e:
@@ -219,16 +218,18 @@ def reprovision_vrouter(old_ip):
 
 
 def provision_vrouter(op, self_ip=None):
-    ip = self_ip if self_ip else _get_control_network_ip()
+    ip = self_ip if self_ip else get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
+    use_ssl = "false" if config.get("ssl_enabled", False) else "true"
     params = [
         "contrail-provision-vrouter",
         "--host_name", gethostname(),
         "--host_ip", ip,
         "--api_server_ip", api_ip,
         "--api_server_port", str(api_port),
-        "--oper", op]
+        "--oper", op,
+        "--api_server_use_ssl", use_ssl]
     if "keystone_admin_user" in identity:
         params += [
             "--admin_user", identity.get("keystone_admin_user"),
@@ -262,9 +263,7 @@ def _load_json_from_config(key):
 
 def get_context():
     ctx = {}
-    ssl_ca = _decode_cert("ssl_ca")
-    ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
 
     ip, port = get_controller_address()
     ctx["api_server"] = ip
@@ -277,7 +276,7 @@ def get_context():
     info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
 
-    ctx["control_network_ip"] = _get_control_network_ip()
+    ctx["control_network_ip"] = get_control_network_ip()
 
     ctx["vhost_ip"] = config["vhost-cidr"]
     ctx["vhost_gateway"] = config["vhost-gateway-ip"]
@@ -295,18 +294,6 @@ def get_context():
     return ctx
 
 
-def _decode_cert(key):
-    val = config.get(key)
-    if not val:
-        return None
-    try:
-        return b64decode(val)
-    except Exception as e:
-        log("Couldn't decode certificate from config['{}']: {}".format(
-            key, str(e)), level=ERROR)
-    return None
-
-
 def _save_file(path, data):
     if data:
         fdir = os.path.dirname(path)
@@ -318,9 +305,7 @@ def _save_file(path, data):
 
 
 @restart_on_change({
-    "/etc/contrail/ssl/certs/ca-cert.pem":
-        ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
-    "/etc/contrail/ssl/keystone-ca-cert.pem":
+    "/etc/contrail/keystone/ssl/ca-cert.pem":
         ["contrail-vrouter-agent", "contrail-vrouter-nodemgr"],
     "/etc/contrail/contrail-vrouter-agent.conf":
         ["contrail-vrouter-agent"],
@@ -329,15 +314,8 @@ def _save_file(path, data):
 def write_configs():
     ctx = get_context()
 
-    # TODO: what we should do with two other certificates?
-    ca_path = "/etc/contrail/ssl/certs/ca-cert.pem"
-    ssl_ca = ctx["ssl_ca"]
-    _save_file(ca_path, ssl_ca)
-    if ssl_ca:
-        ctx["ssl_ca_path"] = ca_path
-
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
-    path = "/etc/contrail/ssl/certs/keystone-ca-cert.pem"
+    path = "/etc/contrail/keystone/ssl/ca-cert.pem"
     _save_file(path, keystone_ssl_ca)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
@@ -479,3 +457,26 @@ def fix_libvirt():
        "!a\\\n  owner \"/hugepages/libvirt/qemu/**\" rw,",
        "/etc/apparmor.d/abstractions/libvirt-qemu"])
     service_restart("apparmor")
+
+
+def tls_changed(cert, key, ca):
+    files = {"/etc/contrail/ssl/certs/server.pem": cert,
+             "/etc/contrail/ssl/private/server-privkey.pem": key,
+             "/etc/contrail/ssl/certs/ca-cert.pem": ca}
+    changed = False
+    for cfile in files:
+        data = files[cfile]
+        old_hash = file_hash(cfile)
+        _save_file(cfile, data)
+        changed |= (old_hash != file_hash(cfile))
+
+    if not changed:
+        log("Certificates was not changed.")
+        return
+
+    log("Certificates was changed. Rewrite configs and rerun services.")
+    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
+    config.save()
+    write_configs()
+    service_restart("contrail-vrouter-agent")
+    service_restart("contrail-vrouter-nodemgr")

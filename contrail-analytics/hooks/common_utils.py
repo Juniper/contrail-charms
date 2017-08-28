@@ -196,3 +196,19 @@ def render_and_check(ctx, template, conf_file, do_check):
     else:
         log("Configuration file has not been changed.")
     return ca_changed or new_set or old_set
+
+
+def update_certificates(cert, key, ca):
+    # NOTE: store files in default paths cause no way to pass this path to
+    # some of components (sandesh)
+    files = {"/etc/contrailctl/ssl/server.pem": cert,
+             "/etc/contrailctl/ssl/server-privkey.pem": key,
+             "/etc/contrailctl/ssl/ca-cert.pem": ca}
+    changed = False
+    for cfile in files:
+        data = files[cfile]
+        old_hash = file_hash(cfile)
+        save_file(cfile, data)
+        changed |= (old_hash != file_hash(cfile))
+
+    return changed
