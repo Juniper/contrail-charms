@@ -221,7 +221,7 @@ def provision_vrouter(op, self_ip=None):
     ip = self_ip if self_ip else get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
-    use_ssl = "false" if config.get("ssl_enabled", False) else "true"
+    use_ssl = "true" if config.get("ssl_enabled", False) else "false"
     params = [
         "contrail-provision-vrouter",
         "--host_name", gethostname(),
