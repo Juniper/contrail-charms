@@ -236,7 +236,6 @@ def update_southbound_relations(rid=None):
         "analytics-server": json.dumps(get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
-        "ssl-ca": config.get("ssl_ca"),
         "orchestrator-info": config.get("orchestrator_info"),
         "agents-info": config.get("agents-info")
     }
@@ -476,17 +475,8 @@ def amqp_changed():
 
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
-    # a hostname could also be provided as a SAN
-    # (Subject Alternative Name) but having this one
-    # has certain implications
-    # https://tools.ietf.org/html/rfc2818#section-3.1
-    # "If a subjectAltName extension of type dNSName
-    # is present, that MUST be used as the identity"
-    # Therefore it is not used here as we don't need
-    # a DNS infrastructure dependency
     ip_san = get_ip()
     cn = check_output(['getent', 'hosts', ip_san]).split()[1].split('.')[0]
-    #cn = local_unit().replace('/', '_')
     settings = {
         'sans': json.dumps([ip_san, '127.0.0.1']),
         'common_name': ip_san,
@@ -497,8 +487,6 @@ def tls_certificates_relation_joined():
 
 @hooks.hook('tls-certificates-relation-changed')
 def tls_certificates_relation_changed():
-    # check that the -provides side have set the data we need
-    # and render the affected files
     unitname = local_unit().replace('/', '_')
     cert_name = '{0}.server.cert'.format(unitname)
     key_name = '{0}.server.key'.format(unitname)
@@ -525,11 +513,8 @@ def _tls_changed(cert, key, ca):
 
     # save certs & notify relations
     config["ssl_enabled"] = (cert is not None and len(cert) > 0)
-    config["ssl_ca"] = ca
     config.save()
     update_northbound_relations()
-    if is_leader():
-        update_southbound_relations()
 
     update_charm_status(force=True)
 

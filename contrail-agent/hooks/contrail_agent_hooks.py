@@ -45,6 +45,7 @@ from contrail_agent_utils import (
     configure_hugepages,
     get_hugepages,
     fix_libvirt,
+    tls_changed,
 )
 
 PACKAGES = ["dkms", "contrail-vrouter-agent", "contrail-utils",
@@ -207,6 +208,24 @@ def contrail_controller_node_departed():
     config["vrouter-expected-provision-state"] = False
     update_vrouter_provision_status()
     status_set("blocked", "Missing relation to contrail-controller")
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    cert = relation_get("client.cert")
+    key = relation_get("client.key")
+    ca = relation_get("ca")
+
+    if not cert or not key:
+        log("tls-certificates client's relation data is not fully available")
+        cert = key = None
+
+    tls_changed(cert, key, ca)
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    tls_changed(None, None, None)
 
 
 @hooks.hook("update-status")

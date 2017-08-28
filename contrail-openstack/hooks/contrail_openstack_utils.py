@@ -1,5 +1,4 @@
 import apt_pkg
-from base64 import b64decode
 import json
 import os
 import requests
@@ -10,14 +9,15 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     WARNING,
-    ERROR,
     relation_ids,
     related_units,
     leader_get,
     leader_set,
 )
 from charmhelpers.core.host import (
+    file_hash,
     restart_on_change,
+    service_restart,
     write_file,
 )
 from charmhelpers.core.templating import render
@@ -112,7 +112,6 @@ def _get_endpoints():
 @restart_on_change({
     "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini": ["neutron-server"],
     "/etc/contrail/keystone/ssl/ca-cert.pem": ["neutron-server"],
-    "/etc/contrail/ssl/certs/ca-cert.pem": ["neutron-server"],
 })
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
@@ -123,13 +122,6 @@ def write_configs():
         return
 
     ctx = _get_context()
-
-    # store file in standard path
-    ca_path = "/etc/contrail/ssl/certs/ca-cert.pem"
-    ssl_ca = ctx["ssl_ca"]
-    _save_file(ca_path, ssl_ca)
-    if ssl_ca:
-        ctx["ssl_ca_path"] = ca_path
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
     path = "/etc/contrail/keystone/ssl/ca-cert.pem"
@@ -150,10 +142,7 @@ def _get_context():
         ip = config.get("api_ip")
     ctx["api_server"] = ip
     ctx["api_port"] = config.get("api_port")
-
-    ssl_ca = config.get("ssl_ca")
-    ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     log("CTX: " + str(ctx))
 
     auth_info = config.get("auth_info")
@@ -207,3 +196,24 @@ def ensure_neutron_api_paste(section, key, value, exist):
     with open(api_paste_path, "w") as f:
         for line in lines:
             f.write(line)
+
+
+def tls_changed(cert, key, ca):
+    files = {"/etc/contrail/ssl/certs/server.pem": cert,
+             "/etc/contrail/ssl/private/server-privkey.pem": key,
+             "/etc/contrail/ssl/certs/ca-cert.pem": ca}
+    changed = False
+    for cfile in files:
+        data = files[cfile]
+        old_hash = file_hash(cfile)
+        _save_file(cfile, data)
+        changed |= (old_hash != file_hash(cfile))
+
+    if not changed:
+        log("Certificates was not changed.")
+
+    log("Certificates was changed. Rewrite configs and rerun services.")
+    config["ssl_enabled"] = (ca is not None and len(ca) > 0)
+    config.save()
+    write_configs()
+    service_restart("neutron-server")

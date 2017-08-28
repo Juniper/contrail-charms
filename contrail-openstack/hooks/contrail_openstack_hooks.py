@@ -39,6 +39,7 @@ from contrail_openstack_utils import (
     write_configs,
     update_service_ips,
     ensure_neutron_api_paste,
+    tls_changed,
 )
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
@@ -106,7 +107,6 @@ def contrail_controller_changed():
                 config.pop(key, None)
 
     _update_config("auth_info", "auth-info")
-    _update_config("ssl_ca", "ssl-ca")
     _update_config("api_vip", "api-vip")
     _update_config("api_ip", "private-address")
     _update_config("api_port", "port")
@@ -147,8 +147,7 @@ def contrail_cotroller_departed():
     if units:
         return
 
-    keys = ["auth_info", "ssl_ca", "api_vip", "api_ip", "api_port",
-            "auth_mode"]
+    keys = ["auth_info", "api_vip", "api_ip", "api_port", "auth_mode"]
     for key in keys:
         config.pop(key, None)
     config.save()
@@ -298,6 +297,24 @@ def nova_compute_joined(rel_id=None):
         "metadata-shared-secret": leader_get("metadata-shared-secret"),
         "subordinate_configuration": json.dumps(conf)}
     relation_set(relation_id=rel_id, relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    cert = relation_get("client.cert")
+    key = relation_get("client.key")
+    ca = relation_get("ca")
+
+    if not cert or not key:
+        log("tls-certificates client's relation data is not fully available")
+        cert = key = None
+
+    tls_changed(cert, key, ca)
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    tls_changed(None, None, None)
 
 
 @hooks.hook("update-status")

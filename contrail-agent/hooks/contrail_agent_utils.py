@@ -1,4 +1,3 @@
-from base64 import b64decode
 import functools
 import os
 from socket import gethostname
@@ -28,6 +27,7 @@ from charmhelpers.core.hookenv import (
 )
 
 from charmhelpers.core.host import (
+    file_hash,
     restart_on_change,
     write_file,
     service_restart,
@@ -221,8 +221,7 @@ def provision_vrouter(op, self_ip=None):
     ip = self_ip if self_ip else _get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
-    ssl_ca = config.get("ssl_ca")
-    use_ssl = "true" if ssl_ca is not None and len(ssl_ca) > 0 else "false"
+    use_ssl = "false" if config.get("ssl_enabled", False) else "true"
     params = [
         "contrail-provision-vrouter",
         "--host_name", gethostname(),
@@ -264,9 +263,7 @@ def _load_json_from_config(key):
 
 def get_context():
     ctx = {}
-    ssl_ca = config.get("ssl_ca")
-    ctx["ssl_ca"] = ssl_ca
-    ctx["ssl_enabled"] = (ssl_ca is not None and len(ssl_ca) > 0)
+    ctx["ssl_enabled"] = config.get("ssl_enabled")
 
     ip, port = get_controller_address()
     ctx["api_server"] = ip
@@ -469,3 +466,26 @@ def fix_libvirt():
        "!a\\\n  owner \"/hugepages/libvirt/qemu/**\" rw,",
        "/etc/apparmor.d/abstractions/libvirt-qemu"])
     service_restart("apparmor")
+
+
+def tls_changed(cert, key, ca):
+    files = {"/etc/contrail/ssl/certs/server.pem": cert,
+             "/etc/contrail/ssl/private/server-privkey.pem": key,
+             "/etc/contrail/ssl/certs/ca-cert.pem": ca}
+    changed = False
+    for cfile in files:
+        data = files[cfile]
+        old_hash = file_hash(cfile)
+        _save_file(cfile, data)
+        changed |= (old_hash != file_hash(cfile))
+
+    if not changed:
+        log("Certificates was not changed.")
+        return
+
+    log("Certificates was changed. Rewrite configs and rerun services.")
+    config["ssl_enabled"] = (ca is not None and len(ca) > 0)
+    config.save()
+    write_configs()
+    service_restart("contrail-vrouter-agent")
+    service_restart("contrail-vrouter-nodemgr")
