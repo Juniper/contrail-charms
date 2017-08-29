@@ -67,7 +67,7 @@ def get_context():
     ctx = {}
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
-    ctx["ssl_enabled"] = config.get("ssl_enabled")
+    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["db_user"] = leader_get("db_user")
     ctx["db_password"] = leader_get("db_password")
 

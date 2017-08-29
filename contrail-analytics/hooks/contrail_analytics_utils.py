@@ -82,7 +82,7 @@ def get_context():
     ctx = {}
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
-    ctx["ssl_enabled"] = config.get("ssl_enabled")
+    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["db_user"] = config.get("db_user")
     ctx["db_password"] = config.get("db_password")
     ctx["rabbitmq_user"] = config.get("rabbitmq_user")

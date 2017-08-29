@@ -209,7 +209,7 @@ def update_northbound_relations(rid=None):
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
-        "ssl-enabled": config.get("ssl_enabled"),
+        "ssl-enabled": config.get("ssl_enabled", False),
         "rabbitmq_user": RABBITMQ_USER,
         "rabbitmq_vhost": RABBITMQ_VHOST,
     }
