@@ -36,6 +36,7 @@ from subprocess import (
     check_output,
 )
 from contrail_agent_utils import (
+    configure_crashes,
     configure_vrouter_interface,
     drop_caches,
     dkms_autoinstall,
@@ -65,6 +66,7 @@ config = config()
 def install():
     status_set("maintenance", "Installing...")
 
+    configure_crashes()
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
     packages = list()

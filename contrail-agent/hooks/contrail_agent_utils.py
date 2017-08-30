@@ -33,6 +33,7 @@ from charmhelpers.core.host import (
     service_restart,
     init_is_systemd,
     get_total_ram,
+    mkdir,
 )
 
 from charmhelpers.core.templating import render
@@ -43,6 +44,12 @@ config = config()
 
 # as it's hardcoded in several scripts/configs
 VROUTER_INTERFACE = "vhost0"
+
+
+def configure_crashes():
+    mkdir("/var/crashes", perms=0o755, force=True)
+    options = {"kernel.core_pattern": "/var/crashes/core.%e.%p.%h.%t"}
+    sysctl.create(yaml.dump(options), "/etc/sysctl.d/10-core-pattern.conf")
 
 
 def retry(f=None, timeout=10, delay=2):
