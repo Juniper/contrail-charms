@@ -354,10 +354,17 @@ def update_unit_status():
             log("Run agent hack: reinitialize config client")
             ip = config.get("api_ip")
             try:
-                # TODO: apply SSL if needed
-                check_call(
-                    ["curl", "-s",
-                     "http://{}:8083/Snh_ConfigClientReinitReq?".format(ip)])
+                params = ["curl", "-s"]
+                ssl_enabled = config.get("ssl_enabled", False)
+                if ssl_enabled:
+                    params.extend([
+                        "--cacert", "/etc/contrail/ssl/certs/ca-cert.pem",
+                        "--cert", "/etc/contrail/ssl/certs/server.pem",
+                        "--key", "/etc/contrail/ssl/private/server-privkey.pem"
+                    ])
+                url = "http://{}:8083/Snh_ConfigClientReinitReq?".format(ip)
+                params.append(url)
+                check_call(params)
                 sleep(5)
                 status, _ = _get_agent_status()
             except Exception as e:

@@ -220,16 +220,20 @@ def contrail_controller_node_departed():
 def tls_certificates_relation_joined():
     cn = gethostname().split(".")[0]
     sans = [cn]
+    sans_ips = []
     try:
-        sans.append(gethostbyname(cn))
+        sans_ips.append(gethostbyname(cn))
     except:
         pass
     control_ip = get_control_network_ip()
-    if control_ip not in sans:
-        res = check_output(['getent', 'hosts', control_ip])
-        control_name = res.split()[1].split('.')[0]
-        sans.extend([control_ip, control_name])
-    sans.append("127.0.0.1")
+    if control_ip not in sans_ips:
+        sans_ips.append(control_ip)
+    res = check_output(['getent', 'hosts', control_ip])
+    control_name = res.split()[1].split('.')[0]
+    if control_name not in sans:
+        sans.append(control_name)
+    sans_ips.append("127.0.0.1")
+    sans.extend(sans_ips)
     settings = {
         'sans': json.dumps(sans),
         'common_name': cn,
