@@ -2,6 +2,7 @@
 
 import json
 import os
+from socket import gethostbyaddr, gethostname, gethostbyname
 import sys
 
 from charmhelpers.core.hookenv import (
@@ -16,6 +17,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     application_version_set,
     local_unit,
+    unit_private_ip,
 )
 
 from charmhelpers.fetch import (
@@ -216,13 +218,24 @@ def contrail_controller_node_departed():
 
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
-    ip_san = get_control_network_ip()
-    cn = check_output(['getent', 'hosts', ip_san]).split()[1].split('.')[0]
+    cn = gethostname().split(".")[0]
+    sans = [cn]
+    try:
+        sans.append(gethostbyname(cn))
+    except:
+        pass
+    control_ip = get_control_network_ip()
+    if control_ip not in sans:
+        res = check_output(['getent', 'hosts', control_ip])
+        control_name = res.split()[1].split('.')[0]
+        sans.extend([control_ip, control_name])
+    sans.append("127.0.0.1")
     settings = {
-        'sans': json.dumps([ip_san, '127.0.0.1']),
-        'common_name': ip_san,
+        'sans': json.dumps(sans),
+        'common_name': cn,
         'certificate_name': cn
     }
+    log("TLS_CTX: {}".format(settings))
     relation_set(relation_settings=settings)
 
 
