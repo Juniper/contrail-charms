@@ -228,7 +228,6 @@ def provision_vrouter(op, self_ip=None):
     ip = self_ip if self_ip else get_control_network_ip()
     api_ip, api_port = get_controller_address()
     identity = _load_json_from_config("auth_info")
-    use_ssl = "true" if config.get("ssl_enabled", False) else "false"
     params = [
         "contrail-provision-vrouter",
         "--host_name", gethostname(),
@@ -236,7 +235,9 @@ def provision_vrouter(op, self_ip=None):
         "--api_server_ip", api_ip,
         "--api_server_port", str(api_port),
         "--oper", op,
-        "--api_server_use_ssl", use_ssl]
+        "--api_server_use_ssl", "false"]
+    # api_server_use_ssl is needed only if contrail-api behind haproxy with
+    # ssl termination
     if "keystone_admin_user" in identity:
         params += [
             "--admin_user", identity.get("keystone_admin_user"),
@@ -355,6 +356,7 @@ def update_unit_status():
             ip = config.get("api_ip")
             try:
                 params = ["curl", "-s"]
+                proto = "http"
                 ssl_enabled = config.get("ssl_enabled", False)
                 if ssl_enabled:
                     params.extend([
@@ -362,7 +364,9 @@ def update_unit_status():
                         "--cert", "/etc/contrail/ssl/certs/server.pem",
                         "--key", "/etc/contrail/ssl/private/server-privkey.pem"
                     ])
-                url = "http://{}:8083/Snh_ConfigClientReinitReq?".format(ip)
+                    proto = "https"
+                url = ("{proto}://{ip}:8083/Snh_ConfigClientReinitReq?"
+                       .format(proto=proto, ip=ip))
                 params.append(url)
                 check_call(params)
                 sleep(5)
