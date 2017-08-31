@@ -382,7 +382,11 @@ def _get_agent_status():
 
     returns status from agent service:
     """
-    output = check_output("contrail-status", shell=True)
+    try:
+        output = check_output("contrail-status", shell=True)
+    except:
+        return "waiting", None
+
     for line in output.splitlines()[1:]:
         if len(line) == 0:
             continue
