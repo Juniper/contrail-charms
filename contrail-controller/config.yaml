@@ -41,7 +41,7 @@ options:
       NOTE: Changing this flag after deployment is dangerous!
   cassandra-minimum-diskgb:
     type: string
-    default: 20
+    default: "20"
     description: |
       Contrail has this as parameter and checks it at startup.
       If disk is smaller then status of DB is not good.
