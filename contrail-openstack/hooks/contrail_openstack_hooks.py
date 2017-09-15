@@ -38,7 +38,6 @@ from charmhelpers.fetch import (
 from contrail_openstack_utils import (
     write_configs,
     update_service_ips,
-    ensure_neutron_api_paste,
 )
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
@@ -251,14 +250,7 @@ def neutron_api_joined(rel_id=None):
                     base + ".neutron_middleware:token_factory"
             }
         }]
-    else:
-        settings["extra_middleware"] = [{}]
     relation_set(relation_id=rel_id, relation_settings=settings)
-
-    # we need to update api-paste.ini cause old versions of neutron-api charm
-    # doesn't support 'extra_middleware' feature
-    ensure_neutron_api_paste("user_token", "paste.filter_factory",
-        base + ".neutron_middleware:token_factory", auth_mode == "rbac")
 
     # if this hook raised after contrail-controller we need
     # to overwrite default config file after installation
