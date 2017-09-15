@@ -5,3 +5,9 @@ options:
       The IP address and netmask of the control network (e.g. 192.168.0.0/24).
       This network will be used for Contrail endpoints.
       If not specified, default network will be used.
+  cassandra-minimum-diskgb:
+    type: string
+    default: 20
+    description: |
+      Contrail has this as parameter and checks it at startup.
+      If disk is smaller then status of DB is not good.

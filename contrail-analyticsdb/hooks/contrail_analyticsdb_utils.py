@@ -70,6 +70,7 @@ def get_context():
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["db_user"] = leader_get("db_user")
     ctx["db_password"] = leader_get("db_password")
+    ctx["analyticsdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
 
     ctx.update(servers_ctx())
     ctx.update(analyticsdb_ctx())

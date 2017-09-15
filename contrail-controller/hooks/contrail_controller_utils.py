@@ -62,6 +62,7 @@ def get_context():
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
+    ctx["configdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
