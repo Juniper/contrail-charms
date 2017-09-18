@@ -2,7 +2,7 @@
 
 import json
 import os
-from socket import gethostbyaddr, gethostname, gethostbyname
+from socket import gethostname, gethostbyname
 import sys
 
 from charmhelpers.core.hookenv import (
@@ -17,7 +17,6 @@ from charmhelpers.core.hookenv import (
     status_set,
     application_version_set,
     local_unit,
-    unit_private_ip,
 )
 
 from charmhelpers.fetch import (
@@ -45,7 +44,6 @@ from contrail_agent_utils import (
     update_vrouter_provision_status,
     write_configs,
     update_unit_status,
-    reprovision_vrouter,
     set_dpdk_coremask,
     configure_hugepages,
     get_hugepages,
@@ -172,8 +170,6 @@ def config_changed():
         configure_hugepages()
 
     write_configs()
-    if config.changed("control-network"):
-        reprovision_vrouter()
 
 
 @hooks.hook("contrail-controller-relation-joined")

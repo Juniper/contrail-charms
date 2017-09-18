@@ -16,11 +16,6 @@ options:
     description: |
       Specify the gateway for vhost0, either an IPv4 address or keyword 'auto'.
       'auto' will set gateway automatically based on host's existing routes.
-  control-network:
-    type: string
-    description: |
-      The IP address and netmask of the control network channel (e.g. 192.168.0.0/24).
-      Default is to use vRouter interface that will be created.
   remove-juju-bridge:
     type: boolean
     default: true

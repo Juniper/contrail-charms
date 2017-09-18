@@ -118,14 +118,8 @@ def _vhost_cidr(iface):
     return ip + "/" + str(cidr)
 
 
-def get_control_network_ip(control_network=None):
-    network = control_network
-    if not network:
-        network = config.get("control-network")
-    ip = get_address_in_network(network) if network else None
-    if not ip:
-        ip = config["vhost-cidr"].split('/')[0]
-    return ip
+def get_control_network_ip():
+    return config["vhost-cidr"].split('/')[0]
 
 
 def configure_vrouter_interface():
@@ -206,22 +200,6 @@ def update_vrouter_provision_status():
         except Exception as e:
             log("Couldn't unprovision vrouter: " + str(e), level=WARNING)
         config["vrouter-provisioned"] = False
-
-
-def reprovision_vrouter(old_ip):
-    if not config.get("vrouter-provisioned"):
-        return
-
-    old_ip = get_control_network_ip(config.prev("control-network"))
-    try:
-        provision_vrouter("del", old_ip)
-    except Exception as e:
-        log("Couldn't unprovision vrouter: " + str(e), level=WARNING)
-    try:
-        provision_vrouter("add")
-    except Exception as e:
-        # vrouter is not up yet
-        log("Couldn't provision vrouter: " + str(e), level=WARNING)
 
 
 def provision_vrouter(op, self_ip=None):
