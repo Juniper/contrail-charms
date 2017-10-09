@@ -79,6 +79,14 @@ def _get_endpoints():
                     "password": {
                         "user": user
                     }
+                },
+                "scope": {
+                    "project": {
+                        "name": auth_info["keystone_admin_tenant"],
+                        "domain": {
+                            "name": auth_info["keystone_user_domain_name"]
+                        }
+                    }
                 }
             }
         }
@@ -128,6 +136,8 @@ def write_configs():
     render("ContrailPlugin.ini",
            "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
            ctx, "root", "neutron", 0o440)
+    # some code inside neutron-plugin uses auth info from next file
+    render("vnc_api_lib.ini", "/etc/contrail/vnc_api_lib.ini", ctx)
 
 
 def _is_related_to(rel_name):
