@@ -67,16 +67,17 @@ def _get_endpoints():
                     "username": auth_info["keystone_admin_user"],
                     "password": auth_info["keystone_admin_password"]}}}
     else:
+        user = {
+            "name": auth_info["keystone_admin_user"],
+            "domain": {"name": auth_info["keystone_user_domain_name"]},
+            "password": auth_info["keystone_admin_password"]
+        }
         req_data = {
             "auth": {
                 "identity": {
                     "methods": ["password"],
                     "password": {
-                        "user": {
-                            "name": auth_info["keystone_admin_user"],
-                            "domain": {"id": auth_info["keystone_user_domain_name"]},
-                            "password": auth_info["keystone_admin_password"]
-                        }
+                        "user": user
                     }
                 }
             }
