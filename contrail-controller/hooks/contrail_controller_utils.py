@@ -1,5 +1,6 @@
-from socket import inet_aton
+from socket import inet_aton, gethostname
 import struct
+import time
 
 import apt_pkg
 
@@ -9,6 +10,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     relation_get,
     status_set,
+    status_get,
     leader_get,
     log,
     open_port,
@@ -21,7 +23,10 @@ from common_utils import (
     run_container,
     json_loads,
     render_and_check,
+    update_services_status
 )
+
+import docker_utils
 
 
 apt_pkg.init()
@@ -101,6 +106,36 @@ def update_charm_status(update_config=True, force=False):
     update_config_func = _render_config if update_config else None
     result = check_run_prerequisites(CONTAINER_NAME, CONFIG_NAME,
                                      update_config_func, SERVICES_TO_CHECK)
+
+    # hack for 4.1 due to fat containers do not call provision_control
+    _, message = status_get()
+    if ('contrail-control' in message
+            and '(No BGP configuration for self)' in message):
+        bgp_asn = 64512
+        # register control node to config api server (no auth)
+        cmd = ('/usr/share/contrail-utils/provision_control.py '
+               '--api_server_ip 127.0.0.1 --router_asn {}'.format(bgp_asn))
+        docker_utils.docker_exec(CONTAINER_NAME, cmd)
+        # register control node as a BGP speaker without md5 (no auth)
+        cmd = ('/usr/share/contrail-utils/provision_control.py '
+               '--api_server_ip 127.0.0.1 '
+               '--host_name {host} '
+               '--host_ip {ip} '
+               '--oper add --router_asn {asn}'.format(
+                    host=gethostname(), ip=get_ip(), asn=bgp_asn))
+        identity = json_loads(config.get("auth_info"), dict())
+        if identity:
+            cmd += (' --admin_user {user}'
+                    ' --admin_password {password}'
+                    ' --admin_tenant_name {project}'.format(
+                        user=identity.get("keystone_admin_user"),
+                        password=identity.get("keystone_admin_password"),
+                        project=identity.get("keystone_admin_tenant")))
+        docker_utils.docker_exec(CONTAINER_NAME, cmd)
+        # wait a bit
+        time.sleep(8)
+        update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
+
     if not result:
         return
 
