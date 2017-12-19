@@ -103,6 +103,8 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "rabbitmq_password", "rabbitmq_password")
     changed |= _value_changed(data, "rabbitmq_vhost", "rabbitmq_vhost")
     changed |= _value_changed(data, "rabbitmq_hosts", "rabbitmq_hosts")
+    changed |= _value_changed(data, "configdb_cassandra_user", "configdb_cassandra_user")
+    changed |= _value_changed(data, "configdb_cassandra_password", "configdb_cassandra_password")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:

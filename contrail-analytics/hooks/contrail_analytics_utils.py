@@ -89,6 +89,8 @@ def get_context():
     ctx["rabbitmq_password"] = config.get("rabbitmq_password")
     ctx["rabbitmq_vhost"] = config.get("rabbitmq_vhost")
     ctx["rabbitmq_hosts"] = config.get("rabbitmq_hosts")
+    ctx["configdb_cassandra_user"] = config.get("configdb_cassandra_user")
+    ctx["configdb_cassandra_password"] = config.get("configdb_cassandra_password")
 
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())

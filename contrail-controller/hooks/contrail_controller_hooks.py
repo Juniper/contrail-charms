@@ -213,6 +213,8 @@ def update_northbound_relations(rid=None):
         "ssl-enabled": config.get("ssl_enabled", False),
         "rabbitmq_user": RABBITMQ_USER,
         "rabbitmq_vhost": RABBITMQ_VHOST,
+        "configdb_cassandra_user": leader_get("db_user"),
+        "configdb_cassandra_password": leader_get("db_password"),
     }
     if config.get("use-external-rabbitmq"):
         settings["rabbitmq_password"] = config.get("rabbitmq_password")
