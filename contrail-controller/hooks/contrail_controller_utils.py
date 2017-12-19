@@ -109,12 +109,19 @@ def update_charm_status(update_config=True, force=False):
 
     # hack for 4.1 due to fat containers do not call provision_control
     _, message = status_get()
-    if ('contrail-control' in message
+    identity = json_loads(config.get("auth_info"), dict())
+    if (identity and 'contrail-control' in message
             and '(No BGP configuration for self)' in message):
         bgp_asn = 64512
         # register control node to config api server (no auth)
         cmd = ('/usr/share/contrail-utils/provision_control.py '
                '--api_server_ip 127.0.0.1 --router_asn {}'.format(bgp_asn))
+        cmd += (' --admin_user {user}'
+                ' --admin_password {password}'
+                ' --admin_tenant_name {project}'.format(
+                    user=identity.get("keystone_admin_user"),
+                    password=identity.get("keystone_admin_password"),
+                    project=identity.get("keystone_admin_tenant")))
         docker_utils.docker_exec(CONTAINER_NAME, cmd)
         # register control node as a BGP speaker without md5 (no auth)
         cmd = ('/usr/share/contrail-utils/provision_control.py '
@@ -123,14 +130,12 @@ def update_charm_status(update_config=True, force=False):
                '--host_ip {ip} '
                '--oper add --router_asn {asn}'.format(
                     host=gethostname(), ip=get_ip(), asn=bgp_asn))
-        identity = json_loads(config.get("auth_info"), dict())
-        if identity:
-            cmd += (' --admin_user {user}'
-                    ' --admin_password {password}'
-                    ' --admin_tenant_name {project}'.format(
-                        user=identity.get("keystone_admin_user"),
-                        password=identity.get("keystone_admin_password"),
-                        project=identity.get("keystone_admin_tenant")))
+        cmd += (' --admin_user {user}'
+                ' --admin_password {password}'
+                ' --admin_tenant_name {project}'.format(
+                    user=identity.get("keystone_admin_user"),
+                    password=identity.get("keystone_admin_password"),
+                    project=identity.get("keystone_admin_tenant")))
         docker_utils.docker_exec(CONTAINER_NAME, cmd)
         # wait a bit
         time.sleep(8)
