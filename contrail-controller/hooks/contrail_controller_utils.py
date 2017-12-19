@@ -112,10 +112,11 @@ def update_charm_status(update_config=True, force=False):
     identity = json_loads(config.get("auth_info"), dict())
     if (identity and 'contrail-control' in message
             and '(No BGP configuration for self)' in message):
+        ip = get_ip()
         bgp_asn = 64512
         # register control node to config api server (no auth)
         cmd = ('/usr/share/contrail-utils/provision_control.py '
-               '--api_server_ip 127.0.0.1 --router_asn {}'.format(bgp_asn))
+               '--api_server_ip {} --router_asn {}'.format(ip, bgp_asn))
         cmd += (' --admin_user {user}'
                 ' --admin_password {password}'
                 ' --admin_tenant_name {project}'.format(
@@ -125,11 +126,11 @@ def update_charm_status(update_config=True, force=False):
         docker_utils.docker_exec(CONTAINER_NAME, cmd)
         # register control node as a BGP speaker without md5 (no auth)
         cmd = ('/usr/share/contrail-utils/provision_control.py '
-               '--api_server_ip 127.0.0.1 '
+               '--api_server_ip {ip} '
                '--host_name {host} '
                '--host_ip {ip} '
                '--oper add --router_asn {asn}'.format(
-                    host=gethostname(), ip=get_ip(), asn=bgp_asn))
+                    host=gethostname(), ip=ip, asn=bgp_asn))
         cmd += (' --admin_user {user}'
                 ' --admin_password {password}'
                 ' --admin_tenant_name {project}'.format(
