@@ -115,7 +115,7 @@ def update_charm_status(update_config=True, force=False):
             and '(No BGP configuration for self)' in message):
         try:
             ip = get_ip()
-            bgp_asn = 64512
+            bgp_asn = '64512'
             # register control node to config api server (no auth)
             cmd = [
                 '/usr/share/contrail-utils/provision_control.py',
