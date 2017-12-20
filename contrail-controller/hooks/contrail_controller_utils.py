@@ -15,6 +15,7 @@ from charmhelpers.core.hookenv import (
     log,
     open_port,
     local_unit,
+    ERROR,
 )
 
 from common_utils import (
@@ -112,35 +113,38 @@ def update_charm_status(update_config=True, force=False):
     identity = json_loads(config.get("auth_info"), dict())
     if (identity and 'contrail-control' in message
             and '(No BGP configuration for self)' in message):
-        ip = get_ip()
-        bgp_asn = 64512
-        # register control node to config api server (no auth)
-        cmd = ('/usr/share/contrail-utils/provision_control.py '
-               '--api_server_ip {} --router_asn {}'.format(ip, bgp_asn))
-        cmd += (' --admin_user {user}'
-                ' --admin_password {password}'
-                ' --admin_tenant_name {project}'.format(
-                    user=identity.get("keystone_admin_user"),
-                    password=identity.get("keystone_admin_password"),
-                    project=identity.get("keystone_admin_tenant")))
-        docker_utils.docker_exec(CONTAINER_NAME, cmd)
-        # register control node as a BGP speaker without md5 (no auth)
-        cmd = ('/usr/share/contrail-utils/provision_control.py '
-               '--api_server_ip {ip} '
-               '--host_name {host} '
-               '--host_ip {ip} '
-               '--oper add --router_asn {asn}'.format(
-                    host=gethostname(), ip=ip, asn=bgp_asn))
-        cmd += (' --admin_user {user}'
-                ' --admin_password {password}'
-                ' --admin_tenant_name {project}'.format(
-                    user=identity.get("keystone_admin_user"),
-                    password=identity.get("keystone_admin_password"),
-                    project=identity.get("keystone_admin_tenant")))
-        docker_utils.docker_exec(CONTAINER_NAME, cmd)
-        # wait a bit
-        time.sleep(8)
-        update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
+        try:
+            ip = get_ip()
+            bgp_asn = 64512
+            # register control node to config api server (no auth)
+            cmd = ('/usr/share/contrail-utils/provision_control.py '
+                   '--api_server_ip {} --router_asn {}'.format(ip, bgp_asn))
+            cmd += (' --admin_user {user}'
+                    ' --admin_password {password}'
+                    ' --admin_tenant_name {project}'.format(
+                        user=identity.get("keystone_admin_user"),
+                        password=identity.get("keystone_admin_password"),
+                        project=identity.get("keystone_admin_tenant")))
+            docker_utils.docker_exec(CONTAINER_NAME, cmd)
+            # register control node as a BGP speaker without md5 (no auth)
+            cmd = ('/usr/share/contrail-utils/provision_control.py '
+                   '--api_server_ip {ip} '
+                   '--host_name {host} '
+                   '--host_ip {ip} '
+                   '--oper add --router_asn {asn}'.format(
+                        host=gethostname(), ip=ip, asn=bgp_asn))
+            cmd += (' --admin_user {user}'
+                    ' --admin_password {password}'
+                    ' --admin_tenant_name {project}'.format(
+                        user=identity.get("keystone_admin_user"),
+                        password=identity.get("keystone_admin_password"),
+                        project=identity.get("keystone_admin_tenant")))
+            docker_utils.docker_exec(CONTAINER_NAME, cmd)
+            # wait a bit
+            time.sleep(8)
+            update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
+        except Exception as e:
+            log("Can't provision control: {}".format(e), level=ERROR)
 
     if not result:
         return
