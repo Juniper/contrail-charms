@@ -161,13 +161,16 @@ def docker_cp(name, src, dst):
     check_call([DOCKER_CLI, "cp", name + ":" + src, dst])
 
 
-def docker_exec(name, cmd):
+def docker_exec(name, cmd, shell=False):
     cli = [DOCKER_CLI, "exec", name]
     if isinstance(cmd, list):
         cli.extend(cmd)
     else:
         cli.append(cmd)
-    output = check_output(cli)
+    if shell:
+        output = check_output(' '.join(cli), shell=True)
+    else:
+        output = check_output(cli)
     return output.decode('UTF-8')
 
 

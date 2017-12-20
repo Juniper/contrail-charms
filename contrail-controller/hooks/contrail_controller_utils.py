@@ -123,7 +123,7 @@ def update_charm_status(update_config=True, force=False):
                 '--admin_user', identity.get("keystone_admin_user"),
                 '--admin_password', identity.get("keystone_admin_password"),
                 '--admin_tenant_name', identity.get("keystone_admin_tenant")]
-            docker_utils.docker_exec(CONTAINER_NAME, cmd)
+            docker_utils.docker_exec(CONTAINER_NAME, cmd, shell=True)
             # register control node as a BGP speaker without md5 (no auth)
             cmd = [
                 '/usr/share/contrail-utils/provision_control.py',
@@ -132,7 +132,7 @@ def update_charm_status(update_config=True, force=False):
                 '--admin_user', identity.get("keystone_admin_user"),
                 '--admin_password', identity.get("keystone_admin_password"),
                 '--admin_tenant_name', identity.get("keystone_admin_tenant")]
-            docker_utils.docker_exec(CONTAINER_NAME, cmd)
+            docker_utils.docker_exec(CONTAINER_NAME, cmd, shell=True)
             # wait a bit
             time.sleep(8)
             update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
