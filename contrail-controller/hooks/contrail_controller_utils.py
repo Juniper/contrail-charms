@@ -117,28 +117,21 @@ def update_charm_status(update_config=True, force=False):
             ip = get_ip()
             bgp_asn = 64512
             # register control node to config api server (no auth)
-            cmd = ('/usr/share/contrail-utils/provision_control.py '
-                   '--api_server_ip {} --router_asn {}'.format(ip, bgp_asn))
-            cmd += (' --admin_user {user}'
-                    ' --admin_password {password}'
-                    ' --admin_tenant_name {project}'.format(
-                        user=identity.get("keystone_admin_user"),
-                        password=identity.get("keystone_admin_password"),
-                        project=identity.get("keystone_admin_tenant")))
+            cmd = [
+                '/usr/share/contrail-utils/provision_control.py',
+                '--api_server_ip', ip, '--router_asn', bgp_asn,
+                '--admin_user', identity.get("keystone_admin_user"),
+                '--admin_password', identity.get("keystone_admin_password"),
+                '--admin_tenant_name', identity.get("keystone_admin_tenant")]
             docker_utils.docker_exec(CONTAINER_NAME, cmd)
             # register control node as a BGP speaker without md5 (no auth)
-            cmd = ('/usr/share/contrail-utils/provision_control.py '
-                   '--api_server_ip {ip} '
-                   '--host_name {host} '
-                   '--host_ip {ip} '
-                   '--oper add --router_asn {asn}'.format(
-                        host=gethostname(), ip=ip, asn=bgp_asn))
-            cmd += (' --admin_user {user}'
-                    ' --admin_password {password}'
-                    ' --admin_tenant_name {project}'.format(
-                        user=identity.get("keystone_admin_user"),
-                        password=identity.get("keystone_admin_password"),
-                        project=identity.get("keystone_admin_tenant")))
+            cmd = [
+                '/usr/share/contrail-utils/provision_control.py',
+                '--api_server_ip', ip, '--router_asn', bgp_asn,
+                '--host_name', gethostname(), '--host_ip', ip, '--oper', 'add',
+                '--admin_user', identity.get("keystone_admin_user"),
+                '--admin_password', identity.get("keystone_admin_password"),
+                '--admin_tenant_name', identity.get("keystone_admin_tenant")]
             docker_utils.docker_exec(CONTAINER_NAME, cmd)
             # wait a bit
             time.sleep(8)
