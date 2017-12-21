@@ -73,6 +73,10 @@ def install():
     packages.extend(PACKAGES)
     if not config.get("dpdk"):
         packages.extend(PACKAGES_DKMS_INIT)
+        # apt-get upgrade can install new kernel so we need to re-install
+        # packages with dpdk drivers
+        kver = check_output(["uname", "-r"]).rstrip()
+        packages.append("linux-image-extra-" + kver)
     else:
         # services must not be started before config files creation
         if not init_is_systemd():
