@@ -14,7 +14,6 @@ import json
 import netaddr
 import netifaces
 
-from charmhelpers.contrib.network.ip import get_address_in_network
 from charmhelpers.core import sysctl
 from charmhelpers.core.hookenv import (
     config,
@@ -34,6 +33,7 @@ from charmhelpers.core.host import (
     init_is_systemd,
     get_total_ram,
     mkdir,
+    lsb_release,
 )
 
 from charmhelpers.core.templating import render
@@ -451,11 +451,19 @@ def get_hugepages():
 
 
 def fix_libvirt():
+    # do some fixes for libvirt with DPDK
+    # it's not required for non-DPDK deployments
+
     # add apparmor exception for huge pages
     check_output(["sed", "-E", "-i", "-e",
        "\!^[[:space:]]*owner \"/run/hugepages/kvm/libvirt/qemu/\*\*\" rw"
        "!a\\\n  owner \"/hugepages/libvirt/qemu/**\" rw,",
        "/etc/apparmor.d/abstractions/libvirt-qemu"])
+
+    if lsb_release()['DISTRIB_CODENAME'] == 'xenial':
+        # fix libvirt tempate for xenial
+        render("TEMPLATE.qemu", "/etc/apparmor.d/libvirt/TEMPLATE.qemu")
+
     service_restart("apparmor")
 
 
