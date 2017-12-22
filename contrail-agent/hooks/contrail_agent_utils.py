@@ -462,7 +462,7 @@ def fix_libvirt():
 
     if lsb_release()['DISTRIB_CODENAME'] == 'xenial':
         # fix libvirt tempate for xenial
-        render("TEMPLATE.qemu", "/etc/apparmor.d/libvirt/TEMPLATE.qemu")
+        render("TEMPLATE.qemu", "/etc/apparmor.d/libvirt/TEMPLATE.qemu", dict())
 
     service_restart("apparmor")
 
