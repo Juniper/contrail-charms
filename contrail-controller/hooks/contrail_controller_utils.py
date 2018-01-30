@@ -139,6 +139,17 @@ def update_charm_status(update_config=True, force=False):
             update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
         except Exception as e:
             log("Can't provision control: {}".format(e), level=ERROR)
+    # hack for contrail-api that is started at inapropriate moment to keystone
+    if (identity and 'contrail-api' in message
+            and '(Generic Connection:Keystone[] connection down)' in message):
+        try:
+            cmd = ['systemctl', 'restart', 'contrail-api']
+            docker_utils.docker_exec(CONTAINER_NAME, cmd, shell=True)
+            # wait a bit
+            time.sleep(8)
+            update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
+        except Exception as e:
+            log("Can't provision control: {}".format(e), level=ERROR)
 
     if not result:
         return
