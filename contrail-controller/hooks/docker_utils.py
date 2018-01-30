@@ -98,15 +98,10 @@ def is_container_present(name):
         return False
 
 
-def dpkg_version(name, pkg):
-    try:
-        return check_output([DOCKER_CLI,
-                             "exec",
-                             name,
-                             "dpkg-query",
-                             "-f", "${Version}\\n", "-W", pkg]).rstrip()
-    except CalledProcessError:
-        return None
+def get_contrail_version(image_id, pkg="python-contrail"):
+    return check_output([DOCKER_CLI,
+        "run", "--entrypoint", "dpkg-query",
+        image_id, "-f", "${Version}", "-W", pkg]).rstrip()
 
 
 def load_docker_image(name):

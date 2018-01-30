@@ -65,6 +65,7 @@ def get_analytics_list():
 
 def get_context():
     ctx = {}
+    ctx["version"] = config.get("version", "4.0.0")
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
@@ -173,4 +174,4 @@ def update_charm_status(update_config=True, force=False):
     for port in ("8082", "8080", "8143"):
         open_port(port, "TCP")
 
-    run_container(CONTAINER_NAME, "contrail-control")
+    run_container(CONTAINER_NAME)

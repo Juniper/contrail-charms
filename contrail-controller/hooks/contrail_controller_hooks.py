@@ -448,9 +448,9 @@ def amqp_changed():
         return 1
     ssl_ca = relation_get('ssl_ca')
     if ssl_ca:
-        log("Charm not setup for ssl support but ssl ca found", level=WARNING)
+        log("Charm can't setup ssl support but ssl ca found", level=WARNING)
     if relation_get('ha_queues') is not None:
-        log("Charm not setup for HA queues but flag is found", level=WARNING)
+        log("Charm can't setup HA queues but flag is found", level=WARNING)
 
     rabbitmq_hosts = []
     ha_vip_only = relation_get('ha-vip-only',) is not None

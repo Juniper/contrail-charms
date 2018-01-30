@@ -80,6 +80,7 @@ def analyticsdb_ctx():
 
 def get_context():
     ctx = {}
+    ctx["version"] = config.get("version", "4.0.0")
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
@@ -151,4 +152,4 @@ def update_charm_status(update_config=True):
     render_config(ctx, do_check=False)
     open_port(8081, "TCP")
 
-    run_container(CONTAINER_NAME, "contrail-analytics")
+    run_container(CONTAINER_NAME)

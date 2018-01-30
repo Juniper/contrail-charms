@@ -141,7 +141,8 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
 
     version = get_contrail_version(image_id)
     application_version_set(version)
-    config["full_version"] = version
+    config["version_with_build"] = version
+    config["version"] = version.split('-')[0]
     config.save()
 
     return True
