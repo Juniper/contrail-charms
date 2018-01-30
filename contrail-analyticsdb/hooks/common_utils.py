@@ -7,7 +7,6 @@ from subprocess import (
     check_output
 )
 import netifaces
-import time
 import platform
 import json
 
@@ -29,7 +28,7 @@ from docker_utils import (
     get_docker_image_id,
     load_docker_image,
     launch_docker_image,
-    dpkg_version,
+    get_contrail_version,
     docker_exec,
 )
 
@@ -140,18 +139,19 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
             status_set("waiting", "Awaiting for container resource")
             return False
 
+    version = get_contrail_version(image_id)
+    application_version_set(version)
+    config["full_version"] = version
+    config.save()
+
     return True
 
 
-def run_container(name, pkg_to_check):
+def run_container(name):
     args = []
     if platform.linux_distribution()[2].strip() == "trusty":
         args.append("--pid=host")
     launch_docker_image(name, args)
-
-    time.sleep(5)
-    version = dpkg_version(name, pkg_to_check)
-    application_version_set(version)
     status_set("waiting", "Waiting services to run in container")
 
 
