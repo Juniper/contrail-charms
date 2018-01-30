@@ -139,22 +139,23 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
             status_set("waiting", "Awaiting for container resource")
             return False
 
-    # current jinja2 doesn't support version_compare filter.
-    # so build version variable as: a.b.c.d => a*1e4 + b*1e2 + c and then
-    # compare it with integers like: 40002, 40100
-    # 4.0.0 => 40000
-    # 4.0.1 => 40001
-    # 4.0.2 => 40002
-    # 4.1.0 => 40100
-    version = get_contrail_version(image_id)
-    application_version_set(version)
-    config["version_with_build"] = version
-    version = version.split('-')[0].split('.')
-    m = int(version[0])
-    r = int(version[1]) if len(version) > 1 else 0
-    a = int(version[2]) if len(version) > 2 else 0
-    config["version"] = (m * 1e4) + (r * 1e2) + a
-    config.save()
+    if "version" not in config:
+        # current jinja2 doesn't support version_compare filter.
+        # so build version variable as: a.b.c.d => a*1e4 + b*1e2 + c and then
+        # compare it with integers like: 40002, 40100
+        # 4.0.0 => 40000
+        # 4.0.1 => 40001
+        # 4.0.2 => 40002
+        # 4.1.0 => 40100
+        version = get_contrail_version(image_id)
+        application_version_set(version)
+        config["version_with_build"] = version
+        version = version.split('-')[0].split('.')
+        m = int(version[0])
+        r = int(version[1]) if len(version) > 1 else 0
+        a = int(version[2]) if len(version) > 2 else 0
+        config["version"] = (m * 1e4) + (r * 1e2) + a
+        config.save()
 
     return True
 
