@@ -149,7 +149,7 @@ def update_charm_status(update_config=True, force=False):
             time.sleep(8)
             update_services_status(CONTAINER_NAME, SERVICES_TO_CHECK)
         except Exception as e:
-            log("Can't provision control: {}".format(e), level=ERROR)
+            log("Can't restart contrail-api: {}".format(e), level=ERROR)
 
     if not result:
         return
