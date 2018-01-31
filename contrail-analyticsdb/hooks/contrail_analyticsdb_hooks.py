@@ -177,8 +177,8 @@ def upgrade_charm():
     # TODO: so think about killing the container
 
     # clear cached version of image
-    config.pop("version_with_build")
-    config.pop("version")
+    config.pop("version_with_build", None)
+    config.pop("version", None)
     config.save()
 
     # NOTE: this hook can be fired when either resource changed or charm code
