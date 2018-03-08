@@ -80,6 +80,7 @@ def analyticsdb_ctx():
 
 def get_context():
     ctx = {}
+    ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["version"] = config.get("version", "4.0.0")
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 

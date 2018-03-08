@@ -51,3 +51,9 @@ options:
       using '-' e.g. 0-2).
       It must specify only real cores cause contrail-vrouter-dpdk service will
       fail if specified core number is not present in the system.
+  log-level:
+    type: string
+    default: SYS_NOTICE
+    description: |
+      Log level for contrail services. Valid values are:
+      SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG

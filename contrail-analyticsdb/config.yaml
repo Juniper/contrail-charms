@@ -11,3 +11,9 @@ options:
     description: |
       Contrail has this as parameter and checks it at startup.
       If disk is smaller then status of DB is not good.
+  log-level:
+    type: string
+    default: SYS_NOTICE
+    description: |
+      Log level for contrail services. Valid values are:
+      SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG

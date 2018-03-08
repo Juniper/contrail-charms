@@ -65,6 +65,7 @@ def get_analytics_list():
 
 def get_context():
     ctx = {}
+    ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["version"] = config.get("version", "4.0.0")
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")

@@ -250,6 +250,7 @@ def _load_json_from_config(key):
 def get_context():
     ctx = {}
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
+    ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
 
     ip, port = get_controller_address()
     ctx["api_server"] = ip
