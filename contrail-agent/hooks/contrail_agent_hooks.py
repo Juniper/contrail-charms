@@ -178,7 +178,8 @@ def config_changed():
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    relation_set(dpdk=config["dpdk"])
+    settings = {'dpdk': config["dpdk"], 'unit-type': 'agent'}
+    relation_set(relation_settings=settings)
 
 
 @hooks.hook("contrail-controller-relation-changed")

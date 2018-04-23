@@ -36,10 +36,11 @@ def servers_ctx():
     analytics_ip_list = []
     for rid in relation_ids("contrail-analyticsdb"):
         for unit in related_units(rid):
+            utype = relation_get("unit-type", unit, rid)
             ip = relation_get("private-address", unit, rid)
-            if unit.startswith("contrail-controller"):
+            if utype == "controller":
                 controller_ip_list.append(ip)
-            if unit.startswith("contrail-analytics"):
+            if utype == "analytics":
                 analytics_ip_list.append(ip)
 
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]

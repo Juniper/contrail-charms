@@ -186,7 +186,7 @@ def _notify_neutron():
 
 
 def _get_orchestrator_info():
-    info = {"cloud_orchestrator": "openstack"}
+    info = {"cloud_orchestrator": "openstack", "unit-type": "openstack"}
 
     if config["enable-metadata-server"]:
         info["metadata_shared_secret"] = leader_get("metadata-shared-secret")

@@ -276,13 +276,14 @@ def contrail_controller_changed():
 
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_controller_departed():
-    if not remote_unit().startswith("contrail-openstack-compute"):
-        return
+    # while we have at least one openstack unit on the remote end
+    # then we can suggest that orchestrator is still openstack
+    for rid in relation_ids("contrail-controller"):
+        for unit in related_units(rid):
+            utype = relation_get('unit-type', unit, rid)
+            if utype == "openstack":
+                return
 
-    units = [unit for rid in relation_ids("contrail-openstack-compute")
-                  for unit in related_units(rid)]
-    if units:
-        return
     config.pop("orchestrator_info", None)
     if is_leader():
         update_northbound_relations()
@@ -295,7 +296,7 @@ def contrail_controller_departed():
 
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
-    settings = {"private-address": get_ip()}
+    settings = {"private-address": get_ip(), 'unit-type': 'controller'}
     relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
@@ -313,7 +314,7 @@ def analytics_changed_departed():
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
-    settings = {"private-address": get_ip()}
+    settings = {"private-address": get_ip(), 'unit-type': 'controller'}
     relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())

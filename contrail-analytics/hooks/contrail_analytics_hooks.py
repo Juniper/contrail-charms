@@ -131,7 +131,7 @@ def contrail_analytics_departed():
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def contrail_analyticsdb_joined():
-    settings = {"private-address": get_ip()}
+    settings = {"private-address": get_ip(), 'unit-type': 'analytics'}
     relation_set(relation_settings=settings)
 
 

@@ -40,7 +40,8 @@ def controller_ctx():
     controller_ip_list = []
     for rid in relation_ids("contrail-analytics"):
         for unit in related_units(rid):
-            if unit.startswith("contrail-controller"):
+            utype = relation_get('unit-type', unit, rid)
+            if utype == "controller":
                 ip = relation_get("private-address", unit, rid)
                 controller_ip_list.append(ip)
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
