@@ -91,6 +91,12 @@ def _get_endpoints():
             }
         }
 
+    endpoint_v2 = "publicURL"
+    endpoint_v3 = "public"
+    if config.get("use-internal-endpoints", False):
+        endpoint_v2 = "internalURL"
+        endpoint_v3 = "internal"
+
     url = "{proto}://{ip}:{port}/{tokens}".format(
         proto=auth_info["keystone_protocol"],
         ip=auth_info["keystone_ip"],
@@ -105,10 +111,10 @@ def _get_endpoints():
     for service in catalog:
         if api_ver == 2:
             # NOTE: 0 means first region. do we need to search for region?
-            url = service["endpoints"][0]["publicURL"]
+            url = service["endpoints"][0][endpoint_v2]
         else:
             for endpoint in service["endpoints"]:
-                if endpoint["interface"] == "public":
+                if endpoint["interface"] == endpoint_v3:
                     url = endpoint["url"]
                     break
         host = gethostbyname(urlparse(url).hostname)
