@@ -1,4 +1,5 @@
 import functools
+import platform
 from time import sleep, time
 
 from subprocess import (
@@ -11,6 +12,7 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     ERROR,
+    WARNING,
 )
 
 
@@ -66,15 +68,20 @@ def retry(f=None, timeout=10, delay=2):
 # name of docker image
 
 def add_docker_repo():
-    import platform
-    cmd = 'curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -'
-    check_output(cmd, shell=True)
-    dist = platform.linux_distribution()[2].strip()
-    cmd = "add-apt-repository " + \
-          "\"deb https://apt.dockerproject.org/repo/ " + \
-          "ubuntu-%s " % (dist) + \
-          "main\""
-    check_output(cmd, shell=True)
+    try:
+        cmd = ["/bin/bash", "-c",
+               "set -o pipefail ; curl -fsSL --connect-timeout 10 "
+               "https://apt.dockerproject.org/gpg | sudo apt-key add -"]
+        check_output(cmd)
+        dist = platform.linux_distribution()[2].strip()
+        cmd = "add-apt-repository " + \
+              "\"deb https://apt.dockerproject.org/repo/ " + \
+              "ubuntu-%s " % (dist) + \
+              "main\""
+        check_output(cmd, shell=True)
+    except CalledProcessError as e:
+        log("Official docker repo is not available: {}".format(e),
+            level=WARNING)
 
 
 def is_container_launched(name):
