@@ -107,7 +107,7 @@ def is_container_present(name):
 
 def get_contrail_version(image_id, pkg="python-contrail"):
     return check_output([DOCKER_CLI,
-        "run", "--entrypoint", "dpkg-query",
+        "run", "--rm", "--entrypoint", "dpkg-query",
         image_id, "-f", "${Version}", "-W", pkg]).rstrip()
 
 
