@@ -57,3 +57,23 @@ options:
     description: |
       Defines how much flow records will be exported by vRouter agent
       to the Contrail Collector when a flow is created or deleted.
+  docker-registry:
+    type: string
+    description: |
+      URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
+  docker-user:
+    type: string
+    description: |
+      Login to the docker registry.
+  docker-password:
+    type: string
+    description: |
+      Password to the docker registry.
+  image-name:
+    type: string
+    description: |
+      Full docker's image name.
+  image-tag:
+    type: string
+    description: |
+      Tag of docker image.
