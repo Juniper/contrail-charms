@@ -25,7 +25,6 @@ from docker_utils import (
     is_container_launched,
     is_container_present,
     apply_config_in_container,
-    get_docker_image_id,
     load_docker_image,
     launch_docker_image,
     get_contrail_version,
@@ -132,12 +131,18 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
             "Container is present but is not running. Run or remove it.")
         return False
 
-    image_id = get_docker_image_id(name)
-    if not image_id:
-        image_id = load_docker_image(name)
-        if not image_id:
-            status_set("waiting", "Awaiting for container resource")
+    image_name = config.get("image-name")
+    image_tag = config.get("image-tag")
+    if not image_name or not image_tag:
+        image_name, image_tag = load_docker_image(name)
+        if not image_name or not image_tag:
+            status_set("blocked", "No image is available. Resourse is not "
+                       "attached and there are no image-name/image-tag "
+                       "defined in charm configuration.")
             return False
+        config["image-name"] = image_name
+        config["image-tag"] = image_tag
+        config.save()
 
     if "version" not in config:
         # current jinja2 doesn't support version_compare filter.
@@ -147,7 +152,7 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
         # 4.0.1 => 40001
         # 4.0.2 => 40002
         # 4.1.0 => 40100
-        version = get_contrail_version(image_id)
+        version = get_contrail_version()
         application_version_set(version)
         config["version_with_build"] = version
         version = version.split('-')[0].split('.')

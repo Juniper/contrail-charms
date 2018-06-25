@@ -1,3 +1,4 @@
+import json
 import functools
 import platform
 from time import sleep, time
@@ -14,6 +15,7 @@ from charmhelpers.core.hookenv import (
     ERROR,
     WARNING,
 )
+from charmhelpers.core.host import service_restart
 
 
 config = config()
@@ -84,6 +86,39 @@ def add_docker_repo():
             level=WARNING)
 
 
+def apply_docker_insecure():
+    docker_registry = config.get("docker-registry")
+    if not docker_registry:
+        return
+
+    log("Re-configure docker daemon")
+    dc = {}
+    try:
+        with open("/etc/docker/daemon.json") as f:
+            dc = json.load(f)
+    except Exception as e:
+        log("There is no docker config. Creating... (Err = {})".format(e))
+
+    cv = dc.get("insecure-registries", list())
+    if docker_registry in cv:
+        return
+    cv.append(docker_registry)
+    dc["insecure-registries"] = cv
+
+    with open("/etc/docker/daemon.json", "w") as f:
+        json.dump(dc, f)
+
+    log("Restarting docker service")
+    service_restart('docker')
+
+
+def docker_login():
+    login = config.get("docker-user")
+    password = config.get("docker-password")
+    if login and password:
+        check_call([DOCKER_CLI, "login", "-u", login, "-p", password])
+
+
 def is_container_launched(name):
     # NOTE: 'paused' state is not getting into account if someone paused it
     # NOTE: assume that this cmd is the same as inspect of state:
@@ -105,7 +140,10 @@ def is_container_present(name):
         return False
 
 
-def get_contrail_version(image_id, pkg="python-contrail"):
+def get_contrail_version(pkg="python-contrail"):
+    image_name = config.get("image-name")
+    image_tag = config.get("image-tag")
+    image_id = "{}:{}".format(image_name, image_tag)
     return check_output([DOCKER_CLI,
         "run", "--rm", "--entrypoint", "dpkg-query",
         image_id, "-f", "${Version}", "-W", pkg]).rstrip()
@@ -114,35 +152,28 @@ def get_contrail_version(image_id, pkg="python-contrail"):
 def load_docker_image(name):
     img_path = resource_get(name)
     if not img_path:
-        return None
-    image_id = get_docker_image_id(name)
-    if image_id:
-        # remove previous image
-        check_call([DOCKER_CLI, "rmi", image_id])
-    check_call([DOCKER_CLI, "load", "-i", img_path])
-    return get_docker_image_id(name)
+        return None, None
+    output = check_output([DOCKER_CLI, "load", "-q", "-i", img_path])
+    if "sha256:" not in output:
+        # suppose that file has name/tag inside. just eval it from output
+        res = output.rstrip().split(' ')[2].split(":")
+        return res[0], res[1]
 
-
-def get_docker_image_id(name):
-    try:
-        output = check_output(DOCKER_CLI + ' images | grep -w ' + name,
-                              shell=True)
-    except CalledProcessError:
-        return None
-    output = output.decode('UTF-8').split('\n')
-    for line in output:
-        parts = line.split()
-        if name in parts[0]:
-            return parts[2].strip()
-    return None
+    sha = output.rstrip().split(' ')[2].split(":")[1]
+    # name can be sha[0:12] but looks like that resource name can be used
+    tag = "latest"
+    check_call([DOCKER_CLI, "tag", sha, "{}:{}".format(name, tag)])
+    return name, tag
 
 
 def launch_docker_image(name, additional_args=[]):
-    image_id = get_docker_image_id(name)
-    if not image_id:
-        log(name + " docker image is not available", level=ERROR)
+    image_name = config.get("image-name")
+    image_tag = config.get("image-tag")
+    if not image_name or not image_tag:
+        log("Docker image is not available", level=ERROR)
         return
 
+    image_id = "{}:{}".format(image_name, image_tag)
     orchestrator = config.get("cloud_orchestrator")
     args = [DOCKER_CLI,
             "run",

@@ -52,6 +52,8 @@ from common_utils import (
 )
 from docker_utils import (
     add_docker_repo,
+    apply_docker_insecure,
+    docker_login,
     DOCKER_PACKAGES,
     is_container_launched,
 )
@@ -73,6 +75,9 @@ def install():
     add_docker_repo()
     apt_update(fatal=False)
     apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
+
+    apply_docker_insecure()
+    docker_login()
 
     update_charm_status()
 
@@ -195,6 +200,11 @@ def config_changed():
             relation_set(relation_id=rid, relation_settings=settings)
         if is_leader():
             _address_changed(local_unit(), ip)
+
+    if config.changed("docker-registry"):
+        apply_docker_insecure()
+    if config.changed("docker-user") or config.changed("docker-password"):
+        docker_login()
 
     update_charm_status()
 
