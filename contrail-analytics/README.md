@@ -32,6 +32,14 @@ through attach-resource:
 
     juju attach contrail-analytics contrail-analytics="$PATH_TO_IMAGE"
 
+External Docker repository
+--------------------------
+
+Istead of attaching resource with docker image charm can accept image from remote docker repository.
+docker-registry should be specified if the registry is only accessible via http protocol (insecure registry).
+docker-user / docker-password can be specified if registry requires authentification.
+And image-name / image-tag are the parameters for the image itself.
+
 High Availability (HA)
 ----------------------
 
