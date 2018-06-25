@@ -152,7 +152,7 @@ def get_contrail_version(pkg="python-contrail"):
 def load_docker_image(name):
     img_path = resource_get(name)
     if not img_path:
-        return None
+        return None, None
     output = check_output([DOCKER_CLI, "load", "-q", "-i", img_path])
     if "sha256:" not in output:
         # suppose that file has name/tag inside. just eval it from output
