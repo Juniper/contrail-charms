@@ -156,10 +156,10 @@ def load_docker_image(name):
     output = check_output([DOCKER_CLI, "load", "-q", "-i", img_path])
     if "sha256:" not in output:
         # suppose that file has name/tag inside. just eval it from output
-        res = output.split(' ')[2].split(":")
+        res = output.rstrip().split(' ')[2].split(":")
         return res[0], res[1]
 
-    sha = output.split(' ')[2].split(":")[1]
+    sha = output.rstrip().split(' ')[2].split(":")[1]
     # name can be sha[0:12] but looks like that resource name can be used
     tag = "latest"
     check_call([DOCKER_CLI, "tag", sha, "{}:{}".format(name, tag)])
