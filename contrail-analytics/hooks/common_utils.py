@@ -10,7 +10,10 @@ import netifaces
 import platform
 import json
 
-from charmhelpers.contrib.network.ip import get_address_in_network
+from charmhelpers.contrib.network.ip import (
+    get_address_in_network,
+    get_iface_addr,
+)
 from charmhelpers.core.hookenv import (
     config,
     status_set,
@@ -36,10 +39,19 @@ config = config()
 
 def get_ip():
     network = config.get("control-network")
-    ip = get_address_in_network(network) if network else None
-    if not ip:
-        ip = _get_default_ip()
-    return ip
+    if network:
+        # try to get ip from CIDR
+        try:
+            return get_address_in_network(network)
+        except Exception:
+            pass
+        # try to get ip from interface name
+        try:
+            return get_iface_addr(network)
+        except Exception:
+            pass
+
+    return _get_default_ip()
 
 
 def _get_default_ip():
