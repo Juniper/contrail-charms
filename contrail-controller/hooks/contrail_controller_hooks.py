@@ -76,6 +76,9 @@ def install():
     apt_update(fatal=False)
     apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
 
+    apply_docker_insecure()
+    docker_login()
+
     update_charm_status()
 
 
