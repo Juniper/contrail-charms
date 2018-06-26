@@ -223,11 +223,14 @@ def provision_vrouter(op, self_ip=None):
             "--admin_tenant_name", identity.get("keystone_admin_tenant")]
     if config["dpdk"] and op == "add":
         params.append("--dpdk_enabled")
+    # add API IP at the end to be able to substitute it for each server
+    params.append(["--api_server_ip", ""])
 
     @retry(timeout=65, delay=20)
     def _call():
         for api_ip in api_ips:
-            check_call(list(params).append(["--api_server_ip", api_ip]))
+            params[-1] = api_ip
+            check_call(params)
             log("vrouter operation '{}' was successful at API={}"
                 .format(op, api_ip))
             break
