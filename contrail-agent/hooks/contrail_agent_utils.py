@@ -227,7 +227,7 @@ def provision_vrouter(op, self_ip=None):
     @retry(timeout=65, delay=20)
     def _call():
         for api_ip in api_ips:
-            check_call(list(params).append("--api_server_ip", api_ip))
+            check_call(list(params).append(["--api_server_ip", api_ip]))
             log("vrouter operation '{}' was successful at API={}"
                 .format(op, api_ip))
             break
