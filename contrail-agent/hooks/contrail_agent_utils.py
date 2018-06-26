@@ -224,7 +224,7 @@ def provision_vrouter(op, self_ip=None):
     if config["dpdk"] and op == "add":
         params.append("--dpdk_enabled")
     # add API IP at the end to be able to substitute it for each server
-    params.append(["--api_server_ip", ""])
+    params += ["--api_server_ip", ""]
 
     @retry(timeout=65, delay=20)
     def _call():
