@@ -210,6 +210,13 @@ def neutron_api_joined(rel_id=None):
                "-W", "neutron-plugin-contrail"]
         version = check_output(cmd).decode("UTF-8").rstrip()
         application_version_set(version)
+        # save version for future using
+        version = version.split('-')[0].split('.')
+        m = int(version[0])
+        r = int(version[1]) if len(version) > 1 else 0
+        a = int(version[2]) if len(version) > 2 else 0
+        config["version"] = (m * 1e4) + (r * 1e2) + a
+        config.save()
     except CalledProcessError as e:
         log("Couldn't detect installed application version: " + str(e))
 

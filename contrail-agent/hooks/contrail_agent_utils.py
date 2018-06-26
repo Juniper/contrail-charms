@@ -183,7 +183,7 @@ def update_vrouter_provision_status():
     info = _load_json_from_config("orchestrator_info")
     ready = (
         config.get("api_port")
-        and (config.get("api_ip") or config.get("api_vip"))
+        and config.get("api_ip")
         and config.get("analytics_servers")
         and info.get("cloud_orchestrator"))
     if config.get("vrouter-expected-provision-state"):
@@ -204,13 +204,13 @@ def update_vrouter_provision_status():
 
 def provision_vrouter(op, self_ip=None):
     ip = self_ip if self_ip else get_control_network_ip()
-    api_ip, api_port = get_controller_address()
+    api_ips = get_controller_addresses()
+    api_port = config.get("api_port")
     identity = _load_json_from_config("auth_info")
     params = [
         "contrail-provision-vrouter",
         "--host_name", gethostname(),
         "--host_ip", ip,
-        "--api_server_ip", api_ip,
         "--api_server_port", str(api_port),
         "--oper", op,
         "--api_server_use_ssl", "false"]
@@ -226,20 +226,20 @@ def provision_vrouter(op, self_ip=None):
 
     @retry(timeout=65, delay=20)
     def _call():
-        check_call(params)
-        log("vrouter operation '{}' was successful".format(op))
+        for api_ip in api_ips:
+            check_call(list(params).append("--api_server_ip", api_ip))
+            log("vrouter operation '{}' was successful at API={}"
+                .format(op, api_ip))
+            break
 
-    log("{} vrouter {}".format(op, ip))
+    log("{} vrouter {}. API-IPs {}".format(op, ip, api_ips))
     _call()
 
 
-def get_controller_address():
-    ip = config.get("api_ip")
-    port = config.get("api_port")
-    api_vip = config.get("api_vip")
-    if api_vip:
-        ip = api_vip
-    return (ip, port) if ip and port else (None, None)
+def get_controller_addresses():
+    return [relation_get("private-address", unit, rid)
+            for rid in relation_ids("contrail-controller")
+            for unit in related_units(rid)]
 
 
 def _load_json_from_config(key):
@@ -252,13 +252,13 @@ def get_context():
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
 
-    ip, port = get_controller_address()
-    ctx["api_server"] = ip
-    ctx["api_port"] = port
+    ips = get_controller_addresses()
+    ctx["api_servers"] = ips
+    ctx["api_port"] = config.get("api_port")
     ctx["control_nodes"] = [
         relation_get("private-address", unit, rid)
-         for rid in relation_ids("contrail-controller")
-         for unit in related_units(rid)]
+        for rid in relation_ids("contrail-controller")
+        for unit in related_units(rid)]
     ctx["analytics_nodes"] = _load_json_from_config("analytics_servers")
     info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")

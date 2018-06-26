@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     log,
     WARNING,
     relation_ids,
+    relation_get,
     related_units,
     leader_get,
     leader_set,
@@ -154,11 +155,17 @@ def _is_related_to(rel_name):
 
 def _get_context():
     ctx = {}
+    ctx["version"] = config.get("version", "4.0.0")
 
+    # this is still needed for version < 4.1.1
     ip = config.get("api_vip")
     if not ip:
         ip = config.get("api_ip")
     ctx["api_server"] = ip
+
+    ctx["api_servers"] = [relation_get("private-address", unit, rid)
+                          for rid in relation_ids("contrail-controller")
+                          for unit in related_units(rid)]
     ctx["api_port"] = config.get("api_port")
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     log("CTX: " + str(ctx))
