@@ -102,12 +102,14 @@ def _get_default_gateway_iface():
 
 
 def _get_iface_gateway_ip(iface):
-    if hasattr(netifaces, "gateways"):
-        data = netifaces.gateways()["default"][netifaces.AF_INET]
-        return data[0] if data[1] == iface else None
-
-    data = check_output("ip route | grep ^default", shell=True).split()
-    return data[2] if data[4] == iface else None
+    for line in check_output(["route", "-n"]).splitlines()[2:]:
+        l = line.split()
+        if "G" in l[3] and l[7] == iface:
+            log("Found gateway {} for interface {}".format(l[1], iface))
+            return l[1]
+    log("vrouter-gateway set to 'auto' but gateway could not be determined "
+        "from routing table for interface {}".format(iface), level=WARNING)
+    return None
 
 
 def _vhost_cidr(iface):
