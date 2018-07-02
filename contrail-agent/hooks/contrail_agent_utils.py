@@ -396,11 +396,22 @@ def set_dpdk_coremask():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
+    vr_mempool_sz = config.get("vr-mempool-sz")
+    if vr_mempool_sz:
+        vr_mempool_args = " --vr_mempool_sz " + vr_mempool_sz
+    dpdk_txd_sz = config.get("dpdk-txd-sz")
+    if dpdk_txd_sz:
+        dpdk_txd_args = " --dpdk_txd_sz " + dpdk_txd_sz
+    dpdk_rxd_sz = config.get("dpdk-rxd-sz")
+    if dpdk_rxd_sz:
+        dpdk_rxd_args = " --dpdk_rxd_sz " + dpdk_rxd_sz
+    dpdk_args = vr_mempool_args + dpdk_txd_args + dpdk_rxd_args
     if not init_is_systemd():
         check_call(["sed", "-i", "-e",
             "s!^command=.*{service}!"
-            "command=taskset {mask} {service}!".format(service=service,
-                                                       mask=mask_arg),
+            "command=taskset {mask} {service} {dpdk}!".format(service=service,
+                                                              mask=mask_arg,
+                                                              dpdk=dpdk_args),
             "/etc/contrail/supervisord_vrouter_files"
             "/contrail-vrouter-dpdk.ini"])
         return
