@@ -421,10 +421,10 @@ def set_dpdk_coremask():
     with open(srv_orig, "r") as f:
         for line in f:
             if line.startswith("ExecStart="):
-                args = line.split(service)[1]
+                args += line.split(service)[1]
                 break
         else:
-            args = " --no-daemon --socket-mem 1024"
+            args += " --no-daemon --socket-mem 1024"
 
     srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
     try:
