@@ -392,7 +392,7 @@ def _get_agent_status():
     return "waiting", None
 
 
-def set_dpdk_coremask():
+def set_dpdk_options():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
@@ -421,7 +421,13 @@ def set_dpdk_coremask():
     with open(srv_orig, "r") as f:
         for line in f:
             if line.startswith("ExecStart="):
-                args += line.split(service)[1]
+                systemd_args = line.split(service)[1]
+                iter_args = iter(enumerate(systemd_args.split(' ')))
+                for index, arg in iter_args:
+                    if arg in ["--vr_mempool_sz", "--dpdk_txd_sz", "--dpdk_rxd_sz"]:
+                        next(iter_args)
+                    else:
+                        args += ' ' + arg
                 break
         else:
             args += " --no-daemon --socket-mem 1024"
