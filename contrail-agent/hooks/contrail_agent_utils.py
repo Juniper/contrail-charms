@@ -396,22 +396,22 @@ def set_dpdk_coremask():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
-    vr_mempool_sz = config.get("vr-mempool-sz")
-    if vr_mempool_sz:
-        vr_mempool_args = " --vr_mempool_sz " + vr_mempool_sz
-    dpdk_txd_sz = config.get("dpdk-txd-sz")
-    if dpdk_txd_sz:
-        dpdk_txd_args = " --dpdk_txd_sz " + dpdk_txd_sz
-    dpdk_rxd_sz = config.get("dpdk-rxd-sz")
-    if dpdk_rxd_sz:
-        dpdk_rxd_args = " --dpdk_rxd_sz " + dpdk_rxd_sz
-    dpdk_args = vr_mempool_args + dpdk_txd_args + dpdk_rxd_args
+    args = ''
+    dpdk_main_mempool_size = config.get("dpdk-main-mempool-size")
+    if dpdk_main_mempool_size:
+        args += " --vr_mempool_sz " + dpdk_main_mempool_size
+    dpdk_pmd_txd_size = config.get("dpdk-pmd-txd-size")
+    if dpdk_pmd_txd_size:
+        args += " --dpdk_txd_sz " + dpdk_pmd_txd_size
+    dpdk_pmd_rxd_size = config.get("dpdk-pmd-rxd-size")
+    if dpdk_pmd_rxd_size:
+        args += " --dpdk_rxd_sz " + dpdk_pmd_rxd_size
     if not init_is_systemd():
         check_call(["sed", "-i", "-e",
             "s!^command=.*{service}!"
-            "command=taskset {mask} {service} {dpdk}!".format(service=service,
+            "command=taskset {mask} {service} {args}!".format(service=service,
                                                               mask=mask_arg,
-                                                              dpdk=dpdk_args),
+                                                              args=args),
             "/etc/contrail/supervisord_vrouter_files"
             "/contrail-vrouter-dpdk.ini"])
         return

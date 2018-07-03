@@ -51,15 +51,15 @@ options:
       using '-' e.g. 0-2).
       It must specify only real cores cause contrail-vrouter-dpdk service will
       fail if specified core number is not present in the system.
-  vr-mempool-sz:
+  dpdk-main-mempool-size:
     type: string
     description: |
       Main packet pool size.
-  dpdk-txd-sz:
+  dpdk-pmd-txd-size:
     type: string
     description: |
       DPDK PMD Tx Descriptor size.
-  dpdk-rxd-sz:
+  dpdk-pmd-rxd-size:
     type: string
     description: |
       DPDK PMD Rx Descriptor size.
