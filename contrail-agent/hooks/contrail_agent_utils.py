@@ -1,5 +1,6 @@
 import functools
 import os
+import re
 from socket import gethostname
 from subprocess import (
     check_call,
@@ -392,6 +393,17 @@ def _get_agent_status():
     return "waiting", None
 
 
+def _get_args(command_line, delimiter, args):
+    original_args = command_line.split(delimiter)[1]
+    iter_args = iter(enumerate(originl_args.split(' ')))
+    for index, arg in iter_args:
+        if arg in ["--vr_mempool_sz", "--dpdk_txd_sz", "--dpdk_rxd_sz"]:
+            next(iter_args)
+        else:
+            args += ' ' + arg
+    return args
+
+
 def set_dpdk_options():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
@@ -407,28 +419,29 @@ def set_dpdk_options():
     if dpdk_pmd_rxd_size:
         args += " --dpdk_rxd_sz " + dpdk_pmd_rxd_size
     if not init_is_systemd():
-        check_call(["sed", "-i", "-e",
-            "s!^command=.*{service}!"
-            "command=taskset {mask} {service} {args}!".format(service=service,
-                                                              mask=mask_arg,
-                                                              args=args),
-            "/etc/contrail/supervisord_vrouter_files"
-            "/contrail-vrouter-dpdk.ini"])
+        srv = "/etc/contrail/supervisord_vrouter_files/contrail-vrouter-dpdk.ini"
+        with open(srv, "r") as f:
+            data = f.readlines()
+            for ix, line in enumerate(data):
+                if re.search('command=(.*?)' + service, line):
+                    args = _get_args(line, service, args)
+                    newline = 'command=taskset ' + mask_arg + ' ' + service + args
+                    data[ix] = newline
+
+        with open(srv, "w") as f:
+            f.writelines(data)
+
+        check_call(["systemctl", "daemon-reload"])
         return
 
     # systemd magic
     srv_orig = "/lib/systemd/system/contrail-vrouter-dpdk.service"
     with open(srv_orig, "r") as f:
         for line in f:
-            if line.startswith("ExecStart="):
-                systemd_args = line.split(service)[1]
-                iter_args = iter(enumerate(systemd_args.split(' ')))
-                for index, arg in iter_args:
-                    if arg in ["--vr_mempool_sz", "--dpdk_txd_sz", "--dpdk_rxd_sz"]:
-                        next(iter_args)
-                    else:
-                        args += ' ' + arg
-                break
+            if not line.startswith("ExecStart="):
+                continue
+            args = _get_args(line, service, args)
+            break
         else:
             args += " --no-daemon --socket-mem 1024"
 
