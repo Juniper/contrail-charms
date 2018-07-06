@@ -393,45 +393,61 @@ def _get_agent_status():
     return "waiting", None
 
 
-def _get_args(command_line, delimiter, args):
-    original_args = command_line.split(delimiter)[1]
-    iter_args = iter(enumerate(originl_args.split(' ')))
+def _get_args(original_args):
+    args_other = ''
+    args_dpdk = {}
+
+    args_list = original_args.split(' ')
+    iter_args = iter(enumerate(args_list))
+    # divide dpdk arguments and other
     for index, arg in iter_args:
         if arg in ["--vr_mempool_sz", "--dpdk_txd_sz", "--dpdk_rxd_sz"]:
+            args_dpdk[arg] = args_list[index+1]
             next(iter_args)
         else:
-            args += ' ' + arg
+            args_other += ' ' + arg
+    args_dpdk_string = _get_dpdk_args(args_dpdk)
+    args = args_dpdk_string + args_other
+
     return args
+
+
+def _get_dpdk_args(args_dict):
+    # get dpdk parameters from config
+    dpdk_main_mempool_size = config.get("dpdk-main-mempool-size")
+    if dpdk_main_mempool_size:
+        args_dict["--vr_mempool_sz"] = dpdk_main_mempool_size
+    dpdk_pmd_txd_size = config.get("dpdk-pmd-txd-size")
+    if dpdk_pmd_txd_size:
+        args_dict["--dpdk_txd_sz"] = dpdk_pmd_txd_size
+    dpdk_pmd_rxd_size = config.get("dpdk-pmd-rxd-size")
+    if dpdk_pmd_rxd_size:
+        args_dict["--dpdk_rxd_sz"] = dpdk_pmd_rxd_size
+    # convert arguments from dictionary to string
+    args_string = ''
+    for arg in args_dict:
+        args_string += ' ' + arg + ' ' + args_dict[arg]
+    return args_string
 
 
 def set_dpdk_options():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
-    args = ''
-    dpdk_main_mempool_size = config.get("dpdk-main-mempool-size")
-    if dpdk_main_mempool_size:
-        args += " --vr_mempool_sz " + dpdk_main_mempool_size
-    dpdk_pmd_txd_size = config.get("dpdk-pmd-txd-size")
-    if dpdk_pmd_txd_size:
-        args += " --dpdk_txd_sz " + dpdk_pmd_txd_size
-    dpdk_pmd_rxd_size = config.get("dpdk-pmd-rxd-size")
-    if dpdk_pmd_rxd_size:
-        args += " --dpdk_rxd_sz " + dpdk_pmd_rxd_size
     if not init_is_systemd():
         srv = "/etc/contrail/supervisord_vrouter_files/contrail-vrouter-dpdk.ini"
         with open(srv, "r") as f:
             data = f.readlines()
-            for ix, line in enumerate(data):
+            for index, line in enumerate(data):
                 if re.search('command=(.*?)' + service, line):
-                    args = _get_args(line, service, args)
-                    newline = 'command=taskset ' + mask_arg + ' ' + service + args
-                    data[ix] = newline
+                    original_args = line.split(service)[1].rstrip()
+                    args = _get_args(original_args)
+                    newline = 'command=taskset ' + mask + ' ' + service + args + '\n'
+                    data[index] = newline
 
         with open(srv, "w") as f:
             f.writelines(data)
-
-        check_call(["systemctl", "daemon-reload"])
+        service_restart("contrail-vrouter-dpdk")
         return
 
     # systemd magic
@@ -440,10 +456,11 @@ def set_dpdk_options():
         for line in f:
             if not line.startswith("ExecStart="):
                 continue
-            args = _get_args(line, service, args)
+            original_args = line.split(service)[1].rstrip()
+            args = _get_args(original_args)
             break
         else:
-            args += " --no-daemon --socket-mem 1024"
+            args = _get_dpdk_args({}) + " --no-daemon --socket-mem 1024"
 
     srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
     try:
@@ -454,7 +471,7 @@ def set_dpdk_options():
         f.write("[Service]\nExecStart=\n")
         f.write("ExecStart=/usr/bin/taskset {mask} {service} {args}"
                 .format(service=service, mask=mask_arg, args=args))
-    check_call(["systemctl", "daemon-reload"])
+    service_restart("contrail-vrouter-dpdk")
 
 
 def configure_hugepages():
