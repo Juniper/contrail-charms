@@ -421,14 +421,6 @@ def _dpdk_args_from_config_to_dict():
     return config_args_dict
 
 
-def  _args_dict_to_string(args_dict):
-    # convert arguments from dictionary to string
-    args_string = ''
-    for arg in args_dict:
-        args_string += ' ' + arg + ' ' + args_dict[arg]
-    return args_string
-
-
 def set_dpdk_options():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
@@ -444,8 +436,9 @@ def set_dpdk_options():
                 command_args_dict, other_args = _get_args_from_command_string(original_args)
                 config_args_dict = _dpdk_args_from_config_to_dict()
                 command_args_dict.update(config_args_dict)
-                args = _args_dict_to_string(command_args_dict) + other_args
-                newline = 'command=taskset ' + mask_arg + ' ' + service + args + '\n'
+                dpdk_args_string = " ".join(" ".join(_) for _ in command_args_dict.items())
+                args = dpdk_args_string + other_args
+                newline = 'command=taskset ' + mask_arg + ' ' + service + ' ' + args + '\n'
                 data[index] = newline
 
         with open(srv, "w") as f:
@@ -467,7 +460,8 @@ def set_dpdk_options():
         else:
             dpdk_args_dict = _dpdk_args_from_config_to_dict()
             other_args = " --no-daemon --socket-mem 1024"
-        args = _args_dict_to_string(dpdk_args_dict) + other_args
+        dpdk_args_string = " ".join(" ".join(_) for _ in dpdk_args_dict.items())
+        args = dpdk_args_string + other_args
 
     srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
     try:
