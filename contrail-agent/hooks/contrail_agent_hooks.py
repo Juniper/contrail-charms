@@ -170,10 +170,9 @@ def config_changed():
                             .format(key))
 
     if config["dpdk"]:
-        for key in ("dpdk-main-mempool-size", "dpdk-pmd-txd-size", "dpdk-pmd-rxd-size", "dpdk-coremask"):
-            if config.changed(key):
-                set_dpdk_options()
-                break
+        if (config.changed("dpdk-main-mempool-size") or config.changed("dpdk-pmd-txd-size")
+                or config.changed("dpdk-pmd-rxd-size") or config.changed("dpdk-coremask")):
+            set_dpdk_options()
         configure_hugepages()
 
     write_configs()

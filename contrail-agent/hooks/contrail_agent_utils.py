@@ -1,6 +1,5 @@
 import functools
 import os
-import re
 from socket import gethostname
 from subprocess import (
     check_call,
@@ -393,36 +392,36 @@ def _get_agent_status():
     return "waiting", None
 
 
-def _get_args(original_args):
+def _get_args_from_command_string(original_args):
     args_other = ''
-    args_dpdk = {}
-
+    command_args_dict = {}
     args_list = original_args.split(' ')
     iter_args = iter(enumerate(args_list))
     # divide dpdk arguments and other
     for index, arg in iter_args:
         if arg in ["--vr_mempool_sz", "--dpdk_txd_sz", "--dpdk_rxd_sz"]:
-            args_dpdk[arg] = args_list[index+1]
+            command_args_dict[arg] = args_list[index+1]
             next(iter_args)
         else:
             args_other += ' ' + arg
-    args_dpdk_string = _get_dpdk_args(args_dpdk)
-    args = args_dpdk_string + args_other
-
-    return args
+    return command_args_dict, args_other
 
 
-def _get_dpdk_args(args_dict):
-    # get dpdk parameters from config
+def _dpdk_args_from_config_to_dict():
+    config_args_dict = {}
     dpdk_main_mempool_size = config.get("dpdk-main-mempool-size")
     if dpdk_main_mempool_size:
-        args_dict["--vr_mempool_sz"] = dpdk_main_mempool_size
+        config_args_dict["--vr_mempool_sz"] = dpdk_main_mempool_size
     dpdk_pmd_txd_size = config.get("dpdk-pmd-txd-size")
     if dpdk_pmd_txd_size:
-        args_dict["--dpdk_txd_sz"] = dpdk_pmd_txd_size
+        config_args_dict["--dpdk_txd_sz"] = dpdk_pmd_txd_size
     dpdk_pmd_rxd_size = config.get("dpdk-pmd-rxd-size")
     if dpdk_pmd_rxd_size:
-        args_dict["--dpdk_rxd_sz"] = dpdk_pmd_rxd_size
+        config_args_dict["--dpdk_rxd_sz"] = dpdk_pmd_rxd_size
+    return config_args_dict
+
+
+def  _args_dict_to_string(args_dict):
     # convert arguments from dictionary to string
     args_string = ''
     for arg in args_dict:
@@ -439,11 +438,15 @@ def set_dpdk_options():
         with open(srv, "r") as f:
             data = f.readlines()
             for index, line in enumerate(data):
-                if re.search('command=(.*?)' + service, line):
-                    original_args = line.split(service)[1].rstrip()
-                    args = _get_args(original_args)
-                    newline = 'command=taskset ' + mask + ' ' + service + args + '\n'
-                    data[index] = newline
+                if not (line.startswith("command=") and service in line):
+                    continue
+                original_args = line.split(service)[1].rstrip()
+                command_args_dict, other_args = _get_args_from_command_string(original_args)
+                config_args_dict = _dpdk_args_from_config_to_dict()
+                command_args_dict.update(config_args_dict)
+                args = _args_dict_to_string(command_args_dict) + other_args
+                newline = 'command=taskset ' + mask_arg + ' ' + service + args + '\n'
+                data[index] = newline
 
         with open(srv, "w") as f:
             f.writelines(data)
@@ -457,10 +460,14 @@ def set_dpdk_options():
             if not line.startswith("ExecStart="):
                 continue
             original_args = line.split(service)[1].rstrip()
-            args = _get_args(original_args)
+            dpdk_args_dict, other_args = _get_args_from_command_string(original_args)
+            config_args_dict = _dpdk_args_from_config_to_dict()
+            dpdk_args_dict.update(config_args_dict)
             break
         else:
-            args = _get_dpdk_args({}) + " --no-daemon --socket-mem 1024"
+            dpdk_args_dict = _dpdk_args_from_config_to_dict()
+            other_args = " --no-daemon --socket-mem 1024"
+        args = _args_dict_to_string(dpdk_args_dict) + other_args
 
     srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
     try:
