@@ -63,6 +63,10 @@ options:
     type: string
     description: |
       DPDK PMD Rx Descriptor size.
+  mtu-vhost:
+    type: string
+    description: |
+      MTU for vhost0 interface
   log-level:
     type: string
     default: SYS_NOTICE

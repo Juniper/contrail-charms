@@ -5,12 +5,14 @@
 ARG_BRIDGE=b
 ARG_DPDK=d
 ARG_HELP=h
-OPTS=:${ARG_BRIDGE}${ARG_DPDK}${ARG_HELP}
+MTU=m
+OPTS=:${ARG_BRIDGE}${ARG_DPDK}${ARG_HELP}${MTU}:
 USAGE="\
-create-vrouter [-${ARG_BRIDGE}${ARG_DPDK}${ARG_HELP}] [interface]
+create-vrouter [-${ARG_BRIDGE}${ARG_DPDK}${ARG_HELP}] [-${MTU} mtu] [interface]
 Options:
   -$ARG_BRIDGE  remove bridge from interface if exists
   -$ARG_DPDK  configure DPDK vRouter
+  -$MTU configure MTU for vhost0
   -$ARG_HELP  print this message"
 
 configVRouter()
@@ -19,6 +21,7 @@ configVRouter()
 	# $2 - interface to setup for vhost0
 	# $3 - file path. bridge interface to de-configure
 	# $4 - file path for vhost0 interface
+	# $5 - mtu for vhost0
 	cat juju-header
 	if [ -s "$3" ]; then
 		printf "\n%s\n" "auto $2"
@@ -53,6 +56,11 @@ configVRouter()
 			    post-down vif --list | awk '/^vif.*OS: vhost0/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
 			    post-down vif --list | awk '/^vif.*OS: $2/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
 			    post-down ip link delete vhost0
+			EOF
+	fi
+	if [-n "$mtu"]; then
+		cat <<-EOF
+			    mtu $5
 			EOF
 	fi
 }
@@ -105,6 +113,7 @@ configureVRouter()
 	# $1 - dpdk enabled if not empty
 	# $2 - interface to setup for vhost0
 	# $3 - bridge to delete if not empty
+	# $4 - mtu
 	if [ $# = 2 ]; then
 		iface_down=$2
 		iface_delete=$2
@@ -118,10 +127,11 @@ configureVRouter()
 	fi
 	addr=`ifconfig $2 | grep -o "inet addr:[\.0-9]*" | cut -d ':' -f 2`
 	mask=`ifconfig $2 | grep -o "Mask:[\.0-9]*" | cut -d ':' -f 2`
+	mtu=$4
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
-	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg \
+	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg $mtu\
 	    > /etc/network/interfaces.d/vrouter.cfg
 	ifaceup $iface_up
 	if [ -z "$1" ]; then
@@ -243,8 +253,14 @@ while getopts $OPTS opt; do
 		usage
 		exit 0
 		;;
+	$MTU)
+		mtu=$OPTARG
+		;;
 	"?")
 		usageError "Unknown argument: $OPTARG"
+		;;
+	:)
+		usageError "Option -$OPTARG requires an argument"
 		;;
 	esac
 done
@@ -274,9 +290,9 @@ else
 	    && [ -z "$(find /sys/class/net/$gateway/brif -maxdepth 0 -empty)" ] \
 	    && [ -n "$remove_bridge" ]; then
 		interface=$(find /sys/class/net/$gateway/brif | sed -n -e '2p' | xargs basename)
-		configureVRouter "$dpdk" $interface $gateway
+		configureVRouter "$dpdk" $interface $gateway $mtu
 	else
-		configureVRouter "$dpdk" $gateway
+		configureVRouter "$dpdk" $gateway $mtu
 	fi
 fi
 
