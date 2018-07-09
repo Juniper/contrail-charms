@@ -149,6 +149,10 @@ def configure_vrouter_interface():
         addr = netifaces.ifaddresses(iface)[netifaces.AF_PACKET][0]
         config["dpdk-mac"] = addr["addr"]
 
+    if config.get("vhost-mtu"):
+        args.append("-m")
+        args.append(config["vhost-mtu"])
+
     args.append(iface)
     check_call(args, cwd="scripts")
 
@@ -392,28 +396,77 @@ def _get_agent_status():
     return "waiting", None
 
 
-def set_dpdk_coremask():
+def _get_args_from_command_string(original_args):
+    args_other = ''
+    command_args_dict = {}
+    args_list = original_args.split(' ')
+    iter_args = iter(enumerate(args_list))
+    # divide dpdk arguments and other
+    for index, arg in iter_args:
+        if arg in ["--vr_mempool_sz", "--dpdk_txd_sz", "--dpdk_rxd_sz"]:
+            command_args_dict[arg] = args_list[index+1]
+            next(iter_args)
+        else:
+            args_other += ' ' + arg
+    return command_args_dict, args_other
+
+
+def _dpdk_args_from_config_to_dict():
+    config_args_dict = {}
+    dpdk_main_mempool_size = config.get("dpdk-main-mempool-size")
+    if dpdk_main_mempool_size:
+        config_args_dict["--vr_mempool_sz"] = dpdk_main_mempool_size
+    dpdk_pmd_txd_size = config.get("dpdk-pmd-txd-size")
+    if dpdk_pmd_txd_size:
+        config_args_dict["--dpdk_txd_sz"] = dpdk_pmd_txd_size
+    dpdk_pmd_rxd_size = config.get("dpdk-pmd-rxd-size")
+    if dpdk_pmd_rxd_size:
+        config_args_dict["--dpdk_rxd_sz"] = dpdk_pmd_rxd_size
+    return config_args_dict
+
+
+def set_dpdk_options():
     mask = config.get("dpdk-coremask")
     service = "/usr/bin/contrail-vrouter-dpdk"
     mask_arg = mask if mask.startswith("0x") else "-c " + mask
     if not init_is_systemd():
-        check_call(["sed", "-i", "-e",
-            "s!^command=.*{service}!"
-            "command=taskset {mask} {service}!".format(service=service,
-                                                       mask=mask_arg),
-            "/etc/contrail/supervisord_vrouter_files"
-            "/contrail-vrouter-dpdk.ini"])
+        srv = "/etc/contrail/supervisord_vrouter_files/contrail-vrouter-dpdk.ini"
+        with open(srv, "r") as f:
+            data = f.readlines()
+        for index, line in enumerate(data):
+            if not (line.startswith("command=") and service in line):
+                continue
+            original_args = line.split(service)[1].rstrip()
+            command_args_dict, other_args = _get_args_from_command_string(original_args)
+            config_args_dict = _dpdk_args_from_config_to_dict()
+            command_args_dict.update(config_args_dict)
+            dpdk_args_string = " ".join(" ".join(_) for _ in command_args_dict.items())
+            args = dpdk_args_string + other_args
+            newline = 'command=taskset ' + mask_arg + ' ' + service + ' ' + args + '\n'
+            data[index] = newline
+
+        with open(srv, "w") as f:
+            f.writelines(data)
+        service_restart("contrail-vrouter-dpdk")
         return
 
     # systemd magic
     srv_orig = "/lib/systemd/system/contrail-vrouter-dpdk.service"
     with open(srv_orig, "r") as f:
-        for line in f:
-            if line.startswith("ExecStart="):
-                args = line.split(service)[1]
-                break
-        else:
-            args = " --no-daemon --socket-mem 1024"
+        data = f.readlines()
+    for line in data:
+        if not line.startswith("ExecStart="):
+            continue
+        original_args = line.split(service)[1].rstrip()
+        dpdk_args_dict, other_args = _get_args_from_command_string(original_args)
+        config_args_dict = _dpdk_args_from_config_to_dict()
+        dpdk_args_dict.update(config_args_dict)
+        break
+    else:
+        dpdk_args_dict = _dpdk_args_from_config_to_dict()
+        other_args = " --no-daemon --socket-mem 1024"
+    dpdk_args_string = " ".join(" ".join(_) for _ in dpdk_args_dict.items())
+    args = dpdk_args_string + other_args
 
     srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
     try:
@@ -425,6 +478,7 @@ def set_dpdk_coremask():
         f.write("ExecStart=/usr/bin/taskset {mask} {service} {args}"
                 .format(service=service, mask=mask_arg, args=args))
     check_call(["systemctl", "daemon-reload"])
+    service_restart("contrail-vrouter-dpdk")
 
 
 def configure_hugepages():

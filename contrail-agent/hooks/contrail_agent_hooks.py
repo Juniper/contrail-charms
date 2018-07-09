@@ -44,7 +44,7 @@ from contrail_agent_utils import (
     update_vrouter_provision_status,
     write_configs,
     update_unit_status,
-    set_dpdk_coremask,
+    set_dpdk_options,
     configure_hugepages,
     get_hugepages,
     fix_libvirt,
@@ -144,7 +144,7 @@ def install_dpdk():
         service_restart("libvirt-bin")
 
     configure_vrouter_interface()
-    set_dpdk_coremask()
+    set_dpdk_options()
     write_configs()
 
     if not init_is_systemd():
@@ -170,7 +170,9 @@ def config_changed():
                             .format(key))
 
     if config["dpdk"]:
-        set_dpdk_coremask()
+        if (config.changed("dpdk-main-mempool-size") or config.changed("dpdk-pmd-txd-size")
+                or config.changed("dpdk-pmd-rxd-size") or config.changed("dpdk-coremask")):
+            set_dpdk_options()
         configure_hugepages()
 
     write_configs()
