@@ -82,10 +82,10 @@ def install():
             # and another way with systemd
             for srv in ("contrail-vrouter-agent", "contrail-vrouter-dpdk"):
                 try:
-                    os.remove("/etc/systemd/system/{}.sevice".format(srv))
+                    os.remove("/etc/systemd/system/{}.service".format(srv))
                 except OSError:
                     pass
-                os.symlink("/dev/null", "/etc/systemd/system/{}.sevice"
+                os.symlink("/dev/null", "/etc/systemd/system/{}.service"
                            .format(srv))
         packages.extend(PACKAGES_DPDK_INIT)
         # apt-get upgrade can install new kernel so we need to re-install
