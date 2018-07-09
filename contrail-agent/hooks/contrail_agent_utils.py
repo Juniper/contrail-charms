@@ -433,17 +433,17 @@ def set_dpdk_options():
         srv = "/etc/contrail/supervisord_vrouter_files/contrail-vrouter-dpdk.ini"
         with open(srv, "r") as f:
             data = f.readlines()
-            for index, line in enumerate(data):
-                if not (line.startswith("command=") and service in line):
-                    continue
-                original_args = line.split(service)[1].rstrip()
-                command_args_dict, other_args = _get_args_from_command_string(original_args)
-                config_args_dict = _dpdk_args_from_config_to_dict()
-                command_args_dict.update(config_args_dict)
-                dpdk_args_string = " ".join(" ".join(_) for _ in command_args_dict.items())
-                args = dpdk_args_string + other_args
-                newline = 'command=taskset ' + mask_arg + ' ' + service + ' ' + args + '\n'
-                data[index] = newline
+        for index, line in enumerate(data):
+            if not (line.startswith("command=") and service in line):
+                continue
+            original_args = line.split(service)[1].rstrip()
+            command_args_dict, other_args = _get_args_from_command_string(original_args)
+            config_args_dict = _dpdk_args_from_config_to_dict()
+            command_args_dict.update(config_args_dict)
+            dpdk_args_string = " ".join(" ".join(_) for _ in command_args_dict.items())
+            args = dpdk_args_string + other_args
+            newline = 'command=taskset ' + mask_arg + ' ' + service + ' ' + args + '\n'
+            data[index] = newline
 
         with open(srv, "w") as f:
             f.writelines(data)
@@ -453,19 +453,20 @@ def set_dpdk_options():
     # systemd magic
     srv_orig = "/lib/systemd/system/contrail-vrouter-dpdk.service"
     with open(srv_orig, "r") as f:
-        for line in f:
-            if not line.startswith("ExecStart="):
-                continue
-            original_args = line.split(service)[1].rstrip()
-            dpdk_args_dict, other_args = _get_args_from_command_string(original_args)
-            config_args_dict = _dpdk_args_from_config_to_dict()
-            dpdk_args_dict.update(config_args_dict)
-            break
-        else:
-            dpdk_args_dict = _dpdk_args_from_config_to_dict()
-            other_args = " --no-daemon --socket-mem 1024"
-        dpdk_args_string = " ".join(" ".join(_) for _ in dpdk_args_dict.items())
-        args = dpdk_args_string + other_args
+        data = f.readlines()
+    for line in data:
+        if not line.startswith("ExecStart="):
+            continue
+        original_args = line.split(service)[1].rstrip()
+        dpdk_args_dict, other_args = _get_args_from_command_string(original_args)
+        config_args_dict = _dpdk_args_from_config_to_dict()
+        dpdk_args_dict.update(config_args_dict)
+        break
+    else:
+        dpdk_args_dict = _dpdk_args_from_config_to_dict()
+        other_args = " --no-daemon --socket-mem 1024"
+    dpdk_args_string = " ".join(" ".join(_) for _ in dpdk_args_dict.items())
+    args = dpdk_args_string + other_args
 
     srv_dir = "/etc/systemd/system/contrail-vrouter-dpdk.service.d/"
     try:
