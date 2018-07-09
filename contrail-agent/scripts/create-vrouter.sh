@@ -58,7 +58,7 @@ configVRouter()
 			    post-down ip link delete vhost0
 			EOF
 	fi
-	if [-n "$mtu"]; then
+	if [ -n "$5" ]; then
 		cat <<-EOF
 			    mtu $5
 			EOF
@@ -131,7 +131,7 @@ configureVRouter()
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
-	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg $mtu\
+	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg $mtu \
 	    > /etc/network/interfaces.d/vrouter.cfg
 	ifaceup $iface_up
 	if [ -z "$1" ]; then

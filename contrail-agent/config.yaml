@@ -63,7 +63,7 @@ options:
     type: string
     description: |
       DPDK PMD Rx Descriptor size.
-  mtu-vhost:
+  vhost-mtu:
     type: string
     description: |
       MTU for vhost0 interface

@@ -149,9 +149,9 @@ def configure_vrouter_interface():
         addr = netifaces.ifaddresses(iface)[netifaces.AF_PACKET][0]
         config["dpdk-mac"] = addr["addr"]
 
-    if config.get("mtu-vhost"):
+    if config.get("vhost-mtu"):
         args.append("-m")
-        args.append(config["mtu-vhost"])
+        args.append(config["vhost-mtu"])
 
     args.append(iface)
     check_call(args, cwd="scripts")
