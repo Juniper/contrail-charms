@@ -477,6 +477,7 @@ def set_dpdk_options():
         f.write("[Service]\nExecStart=\n")
         f.write("ExecStart=/usr/bin/taskset {mask} {service} {args}"
                 .format(service=service, mask=mask_arg, args=args))
+    check_call(["systemctl", "daemon-reload"])
     service_restart("contrail-vrouter-dpdk")
 
 
