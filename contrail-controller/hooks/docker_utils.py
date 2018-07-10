@@ -115,8 +115,9 @@ def apply_docker_insecure():
 def docker_login():
     login = config.get("docker-user")
     password = config.get("docker-password")
+    docker_registry = config.get("docker-registry")
     if login and password:
-        check_call([DOCKER_CLI, "login", "-u", login, "-p", password])
+        check_call([DOCKER_CLI, "login", "-u", login, "-p", password, docker_registry])
 
 
 def is_container_launched(name):
