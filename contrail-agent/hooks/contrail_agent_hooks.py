@@ -152,6 +152,12 @@ def install_dpdk():
         service_start("supervisor-vrouter")
         service_restart("contrail-vrouter-agent")
     else:
+        # unmask them first
+        for srv in ("contrail-vrouter-agent", "contrail-vrouter-dpdk"):
+            try:
+                os.remove("/etc/systemd/system/{}.service".format(srv))
+            except OSError:
+                pass
         service("enable", "contrail-vrouter-dpdk")
         service_start("contrail-vrouter-dpdk")
         service("enable", "contrail-vrouter-agent")
