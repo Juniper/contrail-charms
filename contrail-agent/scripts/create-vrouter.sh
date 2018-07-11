@@ -59,7 +59,7 @@ configVRouter()
 			EOF
 	fi
 	mtu=$5
-	if [[ "$mtu" != '' ]]; then
+	if [ -n "$mtu" ]; then
 		cat <<-EOF
 			    post-up ifconfig vhost0 mtu $mtu
 			EOF
