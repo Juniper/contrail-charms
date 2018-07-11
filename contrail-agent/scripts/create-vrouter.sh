@@ -58,9 +58,10 @@ configVRouter()
 			    post-down ip link delete vhost0
 			EOF
 	fi
-	if [ -n "$5" ]; then
+	mtu=$5
+	if [[ "$mtu" != 'default' ]]; then
 		cat <<-EOF
-			    mtu $5
+			    post-up ifconfig vhost0 mtu $mtu
 			EOF
 	fi
 }
@@ -114,20 +115,21 @@ configureVRouter()
 	# $2 - interface to setup for vhost0
 	# $3 - bridge to delete if not empty
 	# $4 - mtu
-	if [ $# = 2 ]; then
+	if [ $# = 3 ]; then
 		iface_down=$2
 		iface_delete=$2
 		iface_up=$2
 		iface_cfg=$TMP/interface.cfg
+		mtu=$3
 	else
 		iface_down="$2 $3"
 		iface_delete=$3
 		iface_up=$2
 		iface_cfg=/dev/null
+		mtu=$4
 	fi
 	addr=`ifconfig $2 | grep -o "inet addr:[\.0-9]*" | cut -d ':' -f 2`
 	mask=`ifconfig $2 | grep -o "Mask:[\.0-9]*" | cut -d ':' -f 2`
-	mtu=$4
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
@@ -240,6 +242,8 @@ usageError()
 	usage 2
 	exit 1
 }
+
+mtu='default'
 
 while getopts $OPTS opt; do
 	case $opt in
