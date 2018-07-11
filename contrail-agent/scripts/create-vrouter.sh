@@ -59,7 +59,7 @@ configVRouter()
 			EOF
 	fi
 	mtu=$5
-	if [[ "$mtu" != 'default' ]]; then
+	if [[ "$mtu" != '' ]]; then
 		cat <<-EOF
 			    post-up ifconfig vhost0 mtu $mtu
 			EOF
@@ -133,7 +133,7 @@ configureVRouter()
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
-	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg $mtu \
+	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg "$mtu" \
 	    > /etc/network/interfaces.d/vrouter.cfg
 	ifaceup $iface_up
 	if [ -z "$1" ]; then
@@ -243,7 +243,7 @@ usageError()
 	exit 1
 }
 
-mtu='default'
+mtu=''
 
 while getopts $OPTS opt; do
 	case $opt in
@@ -294,9 +294,9 @@ else
 	    && [ -z "$(find /sys/class/net/$gateway/brif -maxdepth 0 -empty)" ] \
 	    && [ -n "$remove_bridge" ]; then
 		interface=$(find /sys/class/net/$gateway/brif | sed -n -e '2p' | xargs basename)
-		configureVRouter "$dpdk" $interface $gateway $mtu
+		configureVRouter "$dpdk" $interface $gateway "$mtu"
 	else
-		configureVRouter "$dpdk" $gateway $mtu
+		configureVRouter "$dpdk" $gateway "$mtu"
 	fi
 fi
 
