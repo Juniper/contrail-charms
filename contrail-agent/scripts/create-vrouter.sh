@@ -243,8 +243,6 @@ usageError()
 	exit 1
 }
 
-mtu=''
-
 while getopts $OPTS opt; do
 	case $opt in
 	$ARG_BRIDGE)
@@ -280,12 +278,12 @@ if [ $# -ne 0 ]; then
 	bridge=$(ifacebridge $1)
 	if [ -n "$bridge" ]; then
 		if [ -n "$remove_bridge" ]; then
-			configureVRouter "$dpdk" $1 $bridge
+			configureVRouter "$dpdk" $1 $bridge "$mtu"
 		else
-			configureVRouter "$dpdk" $bridge
+			configureVRouter "$dpdk" $bridge "$mtu"
 		fi
 	else
-		configureVRouter "$dpdk" $1
+		configureVRouter "$dpdk" $1 "$mtu"
 	fi
 else
 	# use default gateway interface
