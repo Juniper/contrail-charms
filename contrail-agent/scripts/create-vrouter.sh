@@ -58,9 +58,10 @@ configVRouter()
 			    post-down ip link delete vhost0
 			EOF
 	fi
-	if [ -n "$5" ]; then
+	mtu=$5
+	if [ -n "$mtu" ]; then
 		cat <<-EOF
-			    mtu $5
+			    post-up ifconfig vhost0 mtu $mtu
 			EOF
 	fi
 }
@@ -114,24 +115,25 @@ configureVRouter()
 	# $2 - interface to setup for vhost0
 	# $3 - bridge to delete if not empty
 	# $4 - mtu
-	if [ $# = 2 ]; then
+	if [ $# = 3 ]; then
 		iface_down=$2
 		iface_delete=$2
 		iface_up=$2
 		iface_cfg=$TMP/interface.cfg
+		mtu=$3
 	else
 		iface_down="$2 $3"
 		iface_delete=$3
 		iface_up=$2
 		iface_cfg=/dev/null
+		mtu=$4
 	fi
 	addr=`ifconfig $2 | grep -o "inet addr:[\.0-9]*" | cut -d ':' -f 2`
 	mask=`ifconfig $2 | grep -o "Mask:[\.0-9]*" | cut -d ':' -f 2`
-	mtu=$4
 	ifacedown $iface_down vhost0; sleep 5
 	configureInterfacesDir
 	configureInterfaces $iface_delete
-	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg $mtu \
+	configVRouter "$1" $iface_up $iface_cfg $TMP/vrouter.cfg "$mtu" \
 	    > /etc/network/interfaces.d/vrouter.cfg
 	ifaceup $iface_up
 	if [ -z "$1" ]; then
@@ -241,6 +243,8 @@ usageError()
 	exit 1
 }
 
+mtu=''
+
 while getopts $OPTS opt; do
 	case $opt in
 	$ARG_BRIDGE)
@@ -290,9 +294,9 @@ else
 	    && [ -z "$(find /sys/class/net/$gateway/brif -maxdepth 0 -empty)" ] \
 	    && [ -n "$remove_bridge" ]; then
 		interface=$(find /sys/class/net/$gateway/brif | sed -n -e '2p' | xargs basename)
-		configureVRouter "$dpdk" $interface $gateway $mtu
+		configureVRouter "$dpdk" $interface $gateway "$mtu"
 	else
-		configureVRouter "$dpdk" $gateway $mtu
+		configureVRouter "$dpdk" $gateway "$mtu"
 	fi
 fi
 
