@@ -38,7 +38,7 @@ from charmhelpers.core.hugepage import hugepage_support
 from subprocess import (
     CalledProcessError,
     check_output,
-    call,
+    check_call,
 )
 from contrail_agent_utils import (
     configure_crashes,
@@ -83,7 +83,6 @@ def install():
         packages.extend(PACKAGES_DKMS_INIT)
         if config.get("agilio-vrouter"):
             output = check_output(["cat", "/proc/cmdline"]).rstrip()
-            print output
             if not "intel_iommu=on" in output or not "iommu=pt" in output:
                 log("intel_iommu=on missing in cmdline", ERROR)
                 status_set("blocked", "Missing iommu in cmdline")
@@ -143,10 +142,10 @@ def install_agilio():
     service("enable","virtio-forwarder")
     configure_apparmor()
     iface = config.get("physical-interface")
-    call("ifdown " + iface, shell=True)
+    check_call("ifdown " + iface, shell=True)
     configure_initramfs()
-    call("ifup " + iface, shell=True)
-    call("ifup vhost0", shell=True)
+    check_call("ifup " + iface, shell=True)
+    check_call("ifup vhost0", shell=True)
 
 def install_dkms():
     try:
