@@ -4,7 +4,6 @@ from socket import gethostname
 from subprocess import (
     check_call,
     check_output,
-    call,
 )
 from time import sleep, time
 import yaml
@@ -167,11 +166,11 @@ def configure_virtioforwarder():
     render("virtioforwarder", "/etc/default/virtioforwarder", ctx)
 
 def configure_initramfs():
-    call("/opt/netronome/bin/ns-vrouter-ctl start", shell=True)
-    call("update-initramfs -u", shell=True)
+    check_call("/opt/netronome/bin/ns-vrouter-ctl start", shell=True)
+    check_call("update-initramfs -u", shell=True)
 
 def configure_apparmor():
-    call('grep -qF "/{var/,}run/vrouter/** rwmix," ' \
+    check_call('grep -qF "/{var/,}run/vrouter/** rwmix," ' \
         '/etc/apparmor.d/abstractions/libvirt-qemu || ' \
         'echo "/{var/,}run/vrouter/** rwmix," >> ' \
         '/etc/apparmor.d/abstractions/libvirt-qemu',
