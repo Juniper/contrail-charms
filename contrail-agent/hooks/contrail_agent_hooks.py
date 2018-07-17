@@ -10,6 +10,8 @@ from charmhelpers.core.hookenv import (
     UnregisteredHookError,
     config,
     log,
+    ERROR,
+    action_fail,
     relation_get,
     relation_set,
     relation_ids,
@@ -28,6 +30,7 @@ from charmhelpers.core.host import (
     service_start,
     service_restart,
     init_is_systemd,
+    lsb_release,
     service
 )
 from charmhelpers.core.kernel import modprobe
@@ -35,10 +38,14 @@ from charmhelpers.core.hugepage import hugepage_support
 from subprocess import (
     CalledProcessError,
     check_output,
+    call,
 )
 from contrail_agent_utils import (
     configure_crashes,
     configure_vrouter_interface,
+    configure_virtioforwarder,
+    configure_initramfs,
+    configure_apparmor,
     drop_caches,
     dkms_autoinstall,
     update_vrouter_provision_status,
@@ -57,6 +64,7 @@ PACKAGES = ["dkms", "contrail-vrouter-agent", "contrail-utils",
 
 PACKAGES_DKMS_INIT = ["contrail-vrouter-dkms", "contrail-vrouter-init"]
 PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk", "contrail-vrouter-dpdk-init"]
+PACKAGES_AGILIO_INIT = ["ns-agilio-vrouter", "virtio-forwarder"]
 
 hooks = Hooks()
 config = config()
@@ -73,6 +81,20 @@ def install():
     packages.extend(PACKAGES)
     if not config.get("dpdk"):
         packages.extend(PACKAGES_DKMS_INIT)
+        if config.get("agilio-vrouter"):
+            output = check_output(["cat", "/proc/cmdline"]).rstrip()
+            print output
+            if not "intel_iommu=on" in output or not "iommu=pt" in output:
+                log("intel_iommu=on missing in cmdline", ERROR)
+                status_set("blocked", "Missing iommu in cmdline")
+                raise Exception("iommu not in kernel cmdline parameters ")
+            if lsb_release()['DISTRIB_CODENAME'] != 'xenial':
+                log("Only xenial is supported by agilio-vrouter", ERROR)
+                status_set("blocked", 
+                    "Only xenial is supported by agilio-vrouter")
+                raise Exception("Only xenial is supported by agilio-vrouter")
+            else:
+                packages.extend(PACKAGES_AGILIO_INIT)
     else:
         # services must not be started before config files creation
         if not init_is_systemd():
@@ -113,7 +135,18 @@ def install():
             # supervisord
             service_restart("supervisor-vrouter")
         install_dkms()
+        if config.get("agilio-vrouter"):
+            install_agilio()
 
+def install_agilio():
+    configure_virtioforwarder()
+    service("enable","virtio-forwarder")
+    configure_apparmor()
+    iface = config.get("physical-interface")
+    call("ifdown " + iface, shell=True)
+    configure_initramfs()
+    call("ifup " + iface, shell=True)
+    call("ifup vhost0", shell=True)
 
 def install_dkms():
     try:
