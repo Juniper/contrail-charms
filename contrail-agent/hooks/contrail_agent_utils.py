@@ -160,6 +160,21 @@ def configure_vrouter_interface():
         render("agent_param", "/etc/contrail/agent_param",
                {"interface": iface})
 
+def configure_virtioforwarder():
+    ctx = {}
+    ctx["virtioforwarder_coremask"] = config.get("virtioforwarder-coremask")
+    render("virtioforwarder", "/etc/default/virtioforwarder", ctx)
+
+def configure_initramfs():
+    check_call("/opt/netronome/bin/ns-vrouter-ctl start", shell=True)
+    check_call("update-initramfs -u", shell=True)
+
+def configure_apparmor():
+    check_call('grep -qF "/{var/,}run/vrouter/** rwmix," ' \
+        '/etc/apparmor.d/abstractions/libvirt-qemu || ' \
+        'echo "/{var/,}run/vrouter/** rwmix," >> ' \
+        '/etc/apparmor.d/abstractions/libvirt-qemu',
+        shell=True)
 
 def drop_caches():
     """Clears OS pagecache"""
@@ -283,6 +298,9 @@ def get_context():
         ctx["physical_interface_address"] = config["dpdk-pci"]
         ctx["physical_interface_mac"] = config["dpdk-mac"]
         ctx["physical_uio_driver"] = config.get("dpdk-driver")
+
+    if config.get("agilio-vrouter"):
+        ctx["agilio_vrouter"] = True
 
     log("CTX: " + str(ctx))
 
