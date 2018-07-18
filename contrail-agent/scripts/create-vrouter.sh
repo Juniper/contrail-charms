@@ -79,7 +79,7 @@ configureInterfaces()
 		[ -e "$cfg" ] || continue
 		awk -v interface=$1 -v interface_cfg=$TMP/interface.cfg \
 		    -v vrouter_cfg=$TMP/vrouter.cfg -v route_cfg=$TMP/route.cfg \
-			-f vrouter-interfaces.awk "$cfg" > $TMP/interfaces.cfg
+		    -f vrouter-interfaces.awk "$cfg" > $TMP/interfaces.cfg
 		if ! diff $TMP/interfaces.cfg "$cfg" > /dev/null; then
 			# create backup
 			mv "$cfg" "$cfg.save"
