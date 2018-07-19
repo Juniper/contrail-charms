@@ -26,6 +26,10 @@ s_iface == 1 {
     if (iface == 1) {
         if (match($1, "^address|netmask|broadcast|metric|gateway$")) {
             cfg = vrouter_cfg
+        } else if ((match($1, "^post-up$") || match($1, "^pre-down$")) \
+                   && (match($2, "^route$") || \
+                       (match($2, "^ip$") && match($3, "r.*")))) {
+            cfg = route_cfg
         } else {
             cfg = interface_cfg
         }

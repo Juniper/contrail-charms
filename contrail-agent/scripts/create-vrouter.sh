@@ -58,6 +58,9 @@ configVRouter()
 			    post-down ip link delete vhost0
 			EOF
 	fi
+	if [ -f $TMP/route.cfg ]; then
+		cat $TMP/route.cfg
+	fi
 	mtu=$5
 	if [ -n "$mtu" ]; then
 		cat <<-EOF
@@ -75,8 +78,8 @@ configureInterfaces()
 		# subsequent replacement config
 		[ -e "$cfg" ] || continue
 		awk -v interface=$1 -v interface_cfg=$TMP/interface.cfg \
-		    -v vrouter_cfg=$TMP/vrouter.cfg -f vrouter-interfaces.awk \
-		    "$cfg" > $TMP/interfaces.cfg
+		    -v vrouter_cfg=$TMP/vrouter.cfg -v route_cfg=$TMP/route.cfg \
+		    -f vrouter-interfaces.awk "$cfg" > $TMP/interfaces.cfg
 		if ! diff $TMP/interfaces.cfg "$cfg" > /dev/null; then
 			# create backup
 			mv "$cfg" "$cfg.save"
