@@ -29,6 +29,7 @@ s_iface == 1 {
         } else if ((match($1, "^post-up$") || match($1, "^pre-down$")) \
                    && (match($2, "^route$") || \
                        (match($2, "^ip$") && match($3, "r.*")))) {
+            sub(interface, "vhost0", $0)
             cfg = route_cfg
         } else {
             cfg = interface_cfg
