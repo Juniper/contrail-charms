@@ -140,6 +140,7 @@ def install():
 def install_agilio():
     configure_virtioforwarder()
     service("enable","virtio-forwarder")
+    service("start","virtio-forwarder")
     configure_apparmor()
     iface = config.get("physical-interface")
     check_call("ifdown " + iface, shell=True)
