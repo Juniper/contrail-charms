@@ -7,7 +7,7 @@
 
 # CPUs to use for worker threads (either comma separated integers or hex bitmap
 # starting with 0x)
-VIRTIOFWD_CPU_MASK= {{ virtioforwarder_coremask }}
+VIRTIOFWD_CPU_MASK={{ virtioforwarder_coremask }}
 
 # Log threshold 0-7 (least to most verbose)
 VIRTIOFWD_LOG_LEVEL=6
