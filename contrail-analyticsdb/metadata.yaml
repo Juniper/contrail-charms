@@ -12,9 +12,4 @@ peers:
 provides:
   contrail-analyticsdb:
     interface: contrail-analyticsdb
-resources:
-  contrail-analyticsdb:
-    type: file
-    filename: contrail-analyticsdb.tar.gz
-    description: "Contrail analyticsdb docker image"
 

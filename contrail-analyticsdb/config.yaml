@@ -19,8 +19,14 @@ options:
       SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
   docker-registry:
     type: string
+    default: opencontrailnightly
     description: |
-      URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
+      URL of docker-registry
+  docker-registry-insecure:
+    type: boolean
+    default: false
+    description: |
+      Is it docker-registry insecure and should docker be configured for it
   docker-user:
     type: string
     description: |
@@ -29,10 +35,6 @@ options:
     type: string
     description: |
       Password to the docker registry.
-  image-name:
-    type: string
-    description: |
-      Full docker's image name.
   image-tag:
     type: string
     description: |

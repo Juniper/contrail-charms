@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import uuid
 import sys
 
 from charmhelpers.core.hookenv import (
@@ -13,10 +12,6 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     status_set,
     relation_set,
-    leader_set,
-    leader_get,
-    is_leader,
-    relation_id,
 )
 
 from charmhelpers.fetch import (
@@ -27,7 +22,6 @@ from charmhelpers.fetch import (
 
 from contrail_analyticsdb_utils import (
     update_charm_status,
-    CONTAINER_NAME,
 )
 from common_utils import (
     get_ip,
@@ -38,7 +32,6 @@ from docker_utils import (
     apply_docker_insecure,
     docker_login,
     DOCKER_PACKAGES,
-    is_container_launched,
 )
 
 
@@ -67,21 +60,6 @@ def install():
     update_charm_status()
 
 
-@hooks.hook("leader-elected")
-def leader_elected():
-    if not leader_get("db_user"):
-        user = "analytics"
-        password = uuid.uuid4().hex
-        leader_set(db_user=user, db_password=password)
-        _update_relation()
-    update_charm_status()
-
-
-@hooks.hook("leader-settings-changed")
-def leader_settings_changed():
-    update_charm_status()
-
-
 @hooks.hook("config-changed")
 def config_changed():
     if config.changed("control-network"):
@@ -99,31 +77,10 @@ def config_changed():
     update_charm_status()
 
 
-def _update_relation(rid=None):
-    db_user = leader_get("db_user")
-    db_password = leader_get("db_password")
-    if not db_user or not db_password:
-        return
-
-    settings = {
-        "db-user": db_user,
-        "db-password": db_password
-    }
-
-    if rid:
-        relation_set(relation_id=rid, relation_settings=settings)
-        return
-
-    for rid in relation_ids("contrail-analyticsdb"):
-        relation_set(relation_id=rid, relation_settings=settings)
-
-
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
     settings = {'private-address': get_ip()}
     relation_set(relation_settings=settings)
-    if is_leader():
-        _update_relation(rid=relation_id())
 
 
 def _value_changed(rel_data, rel_key, cfg_key):
@@ -161,12 +118,6 @@ def analyticsdb_departed():
     if not units:
         for key in ["auth_info", "orchestrator_info", "ssl_enabled"]:
             config.pop(key, None)
-        if is_container_launched(CONTAINER_NAME):
-            status_set(
-                "blocked",
-                "Container is present but cloud orchestrator was disappeared."
-                " Please kill container by yourself or restore"
-                " cloud orchestrator.")
     update_charm_status()
 
 
@@ -185,11 +136,6 @@ def update_status():
 def upgrade_charm():
     # NOTE: image can not be deleted if container is running.
     # TODO: so think about killing the container
-
-    # clear cached version of image
-    config.pop("version_with_build", None)
-    config.pop("version", None)
-    config.save()
 
     # NOTE: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config

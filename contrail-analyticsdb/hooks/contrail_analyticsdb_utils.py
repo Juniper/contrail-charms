@@ -9,16 +9,18 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     status_set,
-    leader_get,
     log,
 )
 
 from common_utils import (
     get_ip,
-    check_run_prerequisites,
-    run_container,
     json_loads,
     render_and_check,
+)
+
+from docker_utils import (
+    docker_pull,
+    docker_compose_run
 )
 
 
@@ -26,9 +28,14 @@ apt_pkg.init()
 config = config()
 
 
-CONTAINER_NAME = "contrail-analyticsdb"
-CONFIG_NAME = "analyticsdb"
-SERVICES_TO_CHECK = ["contrail-database"]
+CONFIGS_PATH = "/etc/contrail/analytics_database"
+IMAGES = [
+    "contrail-node-init",
+    "contrail-nodemgr",
+    "contrail-external-kafka",
+    "contrail-external-cassandra",
+    "contrail-external-zookeeper",
+]
 
 
 def servers_ctx():
@@ -67,13 +74,13 @@ def analyticsdb_ctx():
 def get_context():
     ctx = {}
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
-    ctx["version"] = config.get("version", "4.0.0")
     ctx.update(json_loads(config.get("orchestrator_info"), dict()))
 
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
-    ctx["db_user"] = leader_get("db_user")
-    ctx["db_password"] = leader_get("db_password")
     ctx["analyticsdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
+
+    ctx["contrail_registry"] = config.get("docker-registry")
+    ctx["contrail_version_tag"] = config.get("image-tag")
 
     ctx.update(servers_ctx())
     ctx.update(analyticsdb_ctx())
@@ -82,20 +89,23 @@ def get_context():
     return ctx
 
 
-def render_config(ctx=None, do_check=True):
-    if not ctx:
-        ctx = get_context()
-
-    return render_and_check(ctx, "analyticsdb.conf",
-                            "/etc/contrailctl/analyticsdb.conf", do_check)
+def render_config(ctx):
+    render_and_check(ctx, "docker-compose.yaml",
+        CONFIGS_PATH + "/docker-compose.yaml", False)
+    render_and_check(ctx, "analytics-database.env",
+        CONFIGS_PATH + "/analytics-database.env", False)
 
 
 def update_charm_status(update_config=True):
-    update_config_func = render_config if update_config else None
-    result = check_run_prerequisites(CONTAINER_NAME, CONFIG_NAME,
-                                     update_config_func, SERVICES_TO_CHECK)
-    if not result:
-        return
+    tag = config.get('image-tag')
+    for image in IMAGES:
+        try:
+            docker_pull(image, tag)
+        except Exception as e:
+            log("Can't load image {}".format(e))
+            status_set('blocked',
+                       'Image could not be pulled: {}:{}'.format(image, tag))
+            return
 
     ctx = get_context()
     missing_relations = []
@@ -121,5 +131,5 @@ def update_charm_status(update_config=True):
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx, do_check=False)
-    run_container(CONTAINER_NAME)
+    render_config(ctx)
+    docker_compose_run(CONFIGS_PATH)
