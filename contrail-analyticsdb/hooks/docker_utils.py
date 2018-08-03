@@ -120,6 +120,7 @@ def docker_login():
                     password, docker_registry])
 
 
+# TODO: fix it
 def get_contrail_version(pkg="python-contrail"):
     image_name = config.get("image-name")
     image_tag = config.get("image-tag")
@@ -146,8 +147,8 @@ def docker_exec(name, cmd, shell=False):
     return output.decode('UTF-8')
 
 
-def docker_pull(name, tag):
-    check_call([DOCKER_CLI, "pull", "{}:{}".format(name, tag)])
+def docker_pull(registry, name, tag):
+    check_call([DOCKER_CLI, "pull", "{}/{}:{}".format(registry, name, tag)])
 
 
 def docker_compose_run(path):

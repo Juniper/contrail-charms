@@ -97,10 +97,11 @@ def render_config(ctx):
 
 
 def update_charm_status(update_config=True):
+    registry = config.get('docker-registry')
     tag = config.get('image-tag')
     for image in IMAGES:
         try:
-            docker_pull(image, tag)
+            docker_pull(registry, image, tag)
         except Exception as e:
             log("Can't load image {}".format(e))
             status_set('blocked',
