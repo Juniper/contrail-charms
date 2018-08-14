@@ -74,6 +74,8 @@ config = config()
 def install():
     status_set("maintenance", "Installing...")
 
+    return
+
     configure_crashes()
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
@@ -125,78 +127,6 @@ def install():
     status_set("maintenance", "Configuring...")
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
-
-    if config.get("dpdk"):
-        install_dpdk()
-    else:
-        # supervisord must be started after installation
-        if not init_is_systemd():
-            # supervisord
-            service_restart("supervisor-vrouter")
-        install_dkms()
-        if config.get("agilio-vrouter"):
-            install_agilio()
-
-def install_agilio():
-    configure_virtioforwarder()
-    service("enable","virtio-forwarder")
-    service("start","virtio-forwarder")
-    configure_apparmor()
-    iface = config.get("physical-interface")
-    check_call("ifdown " + iface, shell=True)
-    configure_initramfs()
-    check_call("ifup " + iface, shell=True)
-    check_call("ifup vhost0", shell=True)
-
-def install_dkms():
-    try:
-        log("Loading kernel module vrouter")
-        modprobe("vrouter")
-    except CalledProcessError:
-        log("vrouter kernel module failed to load,"
-            " clearing pagecache and retrying")
-        drop_caches()
-        modprobe("vrouter")
-    dkms_autoinstall()
-    configure_vrouter_interface()
-    config["vrouter-expected-provision-state"] = False
-    status_set("blocked", "Missing relation to contrail-controller")
-
-
-def install_dpdk():
-    modprobe(config["dpdk-driver"])
-    try:
-        modprobe("vfio-pci")
-    except:
-        pass
-    dkms_autoinstall()
-    pages = get_hugepages()
-    if pages:
-        hugepage_support("root", group="root", nr_hugepages=pages,
-                         mnt_point="/hugepages")
-        service_restart("libvirt-bin")
-
-    configure_vrouter_interface()
-    set_dpdk_options()
-    write_configs()
-
-    if not init_is_systemd():
-        os.remove("/etc/init/supervisor-vrouter.override")
-        service_start("supervisor-vrouter")
-        service_restart("contrail-vrouter-agent")
-    else:
-        # unmask them first
-        for srv in ("contrail-vrouter-agent", "contrail-vrouter-dpdk"):
-            try:
-                os.remove("/etc/systemd/system/{}.service".format(srv))
-            except OSError:
-                pass
-        service("enable", "contrail-vrouter-dpdk")
-        service_start("contrail-vrouter-dpdk")
-        service("enable", "contrail-vrouter-agent")
-        service_start("contrail-vrouter-agent")
-
-    fix_libvirt()
 
 
 @hooks.hook("config-changed")

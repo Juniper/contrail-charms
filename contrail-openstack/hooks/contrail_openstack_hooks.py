@@ -50,7 +50,6 @@ config = config()
 @hooks.hook("install.real")
 def install():
     status_set('maintenance', 'Installing...')
-    configure_sources(True, "install-sources", "install-keys")
     apt_update(fatal=True)
     apt_upgrade(fatal=True, dist=False)
     status_set("blocked", "Missing relation to contrail-controller")

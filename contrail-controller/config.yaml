@@ -31,14 +31,6 @@ options:
       Contrail API VIP to be used for configuring client-side software like neutron plugin.
       (to be set up also in KeepAlived charm configuration if it’s used for HA)
       Private IP of the first Contrail API unit will be used if not set.
-  use-external-rabbitmq:
-    type: boolean
-    default: false
-    description: |
-      Charm will wait for external AMQP relation if set.
-      Charm will use internal RabbitMQ server if not set.
-
-      NOTE: Changing this flag after deployment is dangerous!
   cassandra-minimum-diskgb:
     type: string
     default: "20"
@@ -59,8 +51,14 @@ options:
       to the Contrail Collector when a flow is created or deleted.
   docker-registry:
     type: string
+    default: opencontrailnightly
     description: |
-      URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
+      URL of docker-registry
+  docker-registry-insecure:
+    type: boolean
+    default: false
+    description: |
+      Is it docker-registry insecure and should docker be configured for it
   docker-user:
     type: string
     description: |
@@ -69,11 +67,8 @@ options:
     type: string
     description: |
       Password to the docker registry.
-  image-name:
-    type: string
-    description: |
-      Full docker's image name.
   image-tag:
     type: string
+    default: latest
     description: |
       Tag of docker image.

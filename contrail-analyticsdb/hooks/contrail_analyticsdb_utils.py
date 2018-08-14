@@ -11,24 +11,18 @@ from charmhelpers.core.hookenv import (
     status_set,
     log,
 )
-
-from common_utils import (
-    get_ip,
-    json_loads,
-    render_and_check,
-)
-
-from docker_utils import (
-    docker_pull,
-    docker_compose_run
-)
+from charmhelpers.core.templating import render
+import common_utils
+import docker_utils
 
 
 apt_pkg.init()
 config = config()
 
 
-CONFIGS_PATH = "/etc/contrail/analytics_database"
+BASE_CONFIGS_PATH = "/etc/contrail"
+
+CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics_database"
 IMAGES = [
     "contrail-node-init",
     "contrail-nodemgr",
@@ -65,7 +59,7 @@ def analyticsdb_ctx():
         for rid in relation_ids("analyticsdb-cluster")
         for unit in related_units(rid)]
     # add it's own ip address
-    analyticsdb_ip_list.append(get_ip())
+    analyticsdb_ip_list.append(common_utils.get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=sort_key)
     return {"analyticsdb_servers": analyticsdb_ip_list}
@@ -74,26 +68,26 @@ def analyticsdb_ctx():
 def get_context():
     ctx = {}
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
-    ctx.update(json_loads(config.get("orchestrator_info"), dict()))
-
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["analyticsdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
-
     ctx["contrail_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
+    ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
 
     ctx.update(servers_ctx())
     ctx.update(analyticsdb_ctx())
     log("CTX: {}".format(ctx))
-    ctx.update(json_loads(config.get("auth_info"), dict()))
+    ctx.update(common_utils.json_loads(config.get("auth_info"), dict()))
     return ctx
 
 
 def render_config(ctx):
-    render_and_check(ctx, "docker-compose.yaml",
-        CONFIGS_PATH + "/docker-compose.yaml", False)
-    render_and_check(ctx, "analytics-database.env",
-        CONFIGS_PATH + "/analytics-database.env", False)
+    render("analytics-database.env",
+           BASE_CONFIGS_PATH + "/common-analytics-database.env", ctx)
+
+    render("analytics-database.yaml",
+           CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    # apply_keystone_ca
 
 
 def update_charm_status(update_config=True):
@@ -101,7 +95,7 @@ def update_charm_status(update_config=True):
     tag = config.get('image-tag')
     for image in IMAGES:
         try:
-            docker_pull(registry, image, tag)
+            docker_utils.docker_pull(registry, image, tag)
         except Exception as e:
             log("Can't load image {}".format(e))
             status_set('blocked',
@@ -110,9 +104,6 @@ def update_charm_status(update_config=True):
 
     ctx = get_context()
     missing_relations = []
-    if not ctx.get("db_user"):
-        # NOTE: Charms don't allow to deploy cassandra in AllowAll mode
-        missing_relations.append("contrail-analyticsdb-cluster")
     if not ctx.get("controller_servers"):
         missing_relations.append("contrail-controller")
     if not ctx.get("analytics_servers"):
@@ -133,4 +124,4 @@ def update_charm_status(update_config=True):
     # TODO: what should happens if relation departed?
 
     render_config(ctx)
-    docker_compose_run(CONFIGS_PATH)
+    docker_utils.docker_compose_run(CONFIGS_PATH)

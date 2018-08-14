@@ -23,14 +23,6 @@ requires:
     interface: contrail-analytics
   contrail-analyticsdb:
     interface: contrail-analyticsdb
-  amqp:
-    interface: rabbitmq
-    optional: true
   tls-certificates:
     interface: tls-certificates
     optional: true
-resources:
-  contrail-controller:
-    type: file
-    filename: contrail-controller.tar.gz
-    description: "Contrail controller docker image"

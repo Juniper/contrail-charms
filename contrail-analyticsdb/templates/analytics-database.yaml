@@ -5,7 +5,7 @@ volumes:
 services:
   node-init:
     image: "{{ container_registry }}/contrail-node-init:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/analytics_database/analytics-database.env
+    env_file: /etc/contrail/common-analytics-database.env
     environment:
       - CONTRAIL_STATUS_IMAGE="{{ container_registry }}/contrail-status:{{ contrail_version_tag }}"
     privileged: true
@@ -16,7 +16,7 @@ services:
       - /etc/contrail/ssl:/etc/contrail/ssl
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/analytics_database/analytics-database.env
+    env_file: /etc/contrail/common-analytics-database.env
     environment:
       - NODE_TYPE=database
       - CASSANDRA_CQL_PORT=9042
@@ -37,7 +37,7 @@ services:
   kafka:
     image: "{{ container_registry }}/contrail-external-kafka:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/analytics_database/analytics-database.env
+    env_file: /etc/contrail/common-analytics-database.env
     environment:
       - KAFKA_NODES={{ analyticsdb_servers|join(',') }}
       - ZOOKEEPER_NODES={{ analyticsdb_servers|join(',') }}
@@ -48,7 +48,7 @@ services:
      - /etc/hosts:/etc/hosts
   cassandra:
     image: "{{ container_registry }}/contrail-external-cassandra:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/analytics_database/analytics-database.env
+    env_file: /etc/contrail/common-analytics-database.env
     environment:
       - CASSANDRA_SEEDS={{ analyticsdb_servers|join(',') }}
       - CASSANDRA_START_RPC=true
@@ -66,7 +66,7 @@ services:
     restart: always
   zookeeper:
     image: "{{ container_registry }}/contrail-external-zookeeper:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/analytics_database/analytics-database.env
+    env_file: /etc/contrail/common-analytics-database.env
     environment:
       - ZOOKEEPER_NODES={{ analyticsdb_servers|join(',') }}
       - ZOOKEEPER_PORTS=4888:5888

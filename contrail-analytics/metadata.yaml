@@ -17,9 +17,3 @@ provides:
 requires:
   contrail-analyticsdb:
     interface: contrail-analyticsdb
-resources:
-  contrail-analytics:
-    type: file
-    filename: contrail-analytics.tar.gz
-    description: "Contrail analytics docker image"
-

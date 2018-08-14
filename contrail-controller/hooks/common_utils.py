@@ -7,7 +7,6 @@ from subprocess import (
     check_output
 )
 import netifaces
-import platform
 import json
 
 from charmhelpers.contrib.network.ip import (
@@ -19,20 +18,10 @@ from charmhelpers.core.hookenv import (
     status_set,
     log,
     ERROR,
-    application_version_set,
 )
 from charmhelpers.core.host import file_hash, write_file
-from charmhelpers.core.templating import render
+import docker_utils
 
-from docker_utils import (
-    is_container_launched,
-    is_container_present,
-    apply_config_in_container,
-    load_docker_image,
-    launch_docker_image,
-    get_contrail_version,
-    docker_exec,
-)
 
 config = config()
 
@@ -98,7 +87,7 @@ def save_file(path, data, perms=0o400):
 
 def update_services_status(name, services):
     try:
-        output = docker_exec(name, "contrail-status")
+        output = docker_utils.docker_exec(name, "contrail-status")
     except CalledProcessError as e:
         log("Container is not ready to get contrail-status: " + str(e))
         status_set("waiting", "Waiting services to run in container")
@@ -127,113 +116,24 @@ def update_services_status(name, services):
     status_set("active", "Unit is ready")
 
 
-def check_run_prerequisites(name, config_name, update_config_func, services):
-    if is_container_launched(name):
-        # already launched. just sync config if needed.
-        check = True
-        if update_config_func and update_config_func():
-            check = apply_config_in_container(name, config_name)
-        if check:
-            update_services_status(name, services)
-        return False
-
-    if is_container_present(name):
-        status_set(
-            "blocked",
-            "Container is present but is not running. Run or remove it.")
-        return False
-
-    image_name = config.get("image-name")
-    image_tag = config.get("image-tag")
-    if not image_name or not image_tag:
-        image_name, image_tag = load_docker_image(name)
-        if not image_name or not image_tag:
-            status_set("blocked", "No image is available. Resourse is not "
-                       "attached and there are no image-name/image-tag "
-                       "defined in charm configuration.")
-            return False
-        config["image-name"] = image_name
-        config["image-tag"] = image_tag
-        config.save()
-
-    if "version" not in config:
-        # current jinja2 doesn't support version_compare filter.
-        # so build version variable as: a.b.c.d => a*1e4 + b*1e2 + c and then
-        # compare it with integers like: 40002, 40100
-        # 4.0.0 => 40000
-        # 4.0.1 => 40001
-        # 4.0.2 => 40002
-        # 4.1.0 => 40100
-        version = get_contrail_version()
-        application_version_set(version)
-        config["version_with_build"] = version
-        version = version.split('-')[0].split('.')
-        m = int(version[0])
-        r = int(version[1]) if len(version) > 1 else 0
-        a = int(version[2]) if len(version) > 2 else 0
-        config["version"] = (m * 1e4) + (r * 1e2) + a
-        config.save()
-
-    return True
-
-
-def run_container(name):
-    args = []
-    if platform.linux_distribution()[2].strip() == "trusty":
-        args.append("--pid=host")
-    launch_docker_image(name, args)
-    status_set("waiting", "Waiting services to run in container")
-
-
 def json_loads(data, default=None):
     return json.loads(data) if data else default
 
 
-def render_and_check(ctx, template, conf_file, do_check):
-    """Returns True if configuration has been changed."""
-
-    log("Render and store new configuration: " + conf_file)
-    if do_check:
-        try:
-            with open(conf_file) as f:
-                old_lines = set(f.readlines())
-        except Exception:
-            old_lines = set()
-
-    ks_ca_path = "/etc/contrailctl/keystone-ca-cert.pem"
-    ks_ca_hash = file_hash(ks_ca_path) if do_check else None
+def apply_keystone_ca(ctx):
+    ks_ca_path = "/etc/contrail/keystone-ca-cert.pem"
     ks_ca = ctx.get("keystone_ssl_ca")
     save_file(ks_ca_path, ks_ca, 0o444)
-    ks_ca_hash_new = file_hash(ks_ca_path)
     if ks_ca:
         ctx["keystone_ssl_ca_path"] = ks_ca_path
-    ca_changed = (ks_ca_hash != ks_ca_hash_new) if do_check else False
-    if ca_changed:
-        log("Keystone CA cert has been changed: {h1} != {h2}"
-            .format(h1=ks_ca_hash, h2=ks_ca_hash_new))
-
-    render(template, conf_file, ctx)
-    if not do_check:
-        return True
-    with open(conf_file) as f:
-        new_lines = set(f.readlines())
-    new_set = new_lines.difference(old_lines)
-    old_set = old_lines.difference(new_lines)
-    if new_set or old_set:
-        log("New lines:\n{new}".format(new="".join(new_set)))
-        log("Old lines:\n{old}".format(old="".join(old_set)))
-        log("Configuration file has been changed.")
-    else:
-        log("Configuration file has not been changed.")
-    return ca_changed or new_set or old_set
 
 
 def update_certificates(cert, key, ca):
     # NOTE: store files in default paths cause no way to pass this path to
     # some of components (sandesh)
-    files = {"/etc/contrailctl/ssl/server.pem": cert,
-             "/etc/contrailctl/ssl/server-privkey.pem": key,
-             "/etc/contrailctl/ssl/ca-cert.pem": ca}
+    files = {"/etc/contrail/ssl/server.pem": cert,
+             "/etc/contrail/ssl/server-privkey.pem": key,
+             "/etc/contrail/ssl/ca-cert.pem": ca}
     changed = False
     for cfile in files:
         data = files[cfile]

@@ -23,7 +23,6 @@ from charmhelpers.fetch import (
 
 from contrail_analytics_utils import (
     update_charm_status,
-    CONTAINER_NAME,
 )
 from common_utils import (
     get_ip,
@@ -34,7 +33,6 @@ from docker_utils import (
     apply_docker_insecure,
     docker_login,
     DOCKER_PACKAGES,
-    is_container_launched,
 )
 
 
@@ -109,12 +107,7 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "auth-info", "auth_info")
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
     changed |= _value_changed(data, "ssl-enabled", "ssl_enabled")
-    changed |= _value_changed(data, "rabbitmq_user", "rabbitmq_user")
-    changed |= _value_changed(data, "rabbitmq_password", "rabbitmq_password")
-    changed |= _value_changed(data, "rabbitmq_vhost", "rabbitmq_vhost")
     changed |= _value_changed(data, "rabbitmq_hosts", "rabbitmq_hosts")
-    changed |= _value_changed(data, "configdb_cassandra_user", "configdb_cassandra_user")
-    changed |= _value_changed(data, "configdb_cassandra_password", "configdb_cassandra_password")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:
@@ -127,15 +120,8 @@ def contrail_analytics_departed():
                   for unit in related_units(rid)]
     if not units:
         for key in ["auth_info", "auth_mode", "orchestrator_info",
-                    "ssl_enabled", "rabbitmq_vhost",
-                    "rabbitmq_user", "rabbitmq_password", "rabbitmq_hosts"]:
+                    "ssl_enabled", "rabbitmq_hosts"]:
             config.pop(key, None)
-        if is_container_launched(CONTAINER_NAME):
-            status_set(
-                "blocked",
-                "Container is present but cloud orchestrator was disappeared."
-                " Please kill container by yourself or "
-                "restore cloud orchestrator.")
     update_charm_status()
 
 
@@ -147,19 +133,11 @@ def contrail_analyticsdb_joined():
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
 def contrail_analyticsdb_changed():
-    data = relation_get()
-    _value_changed(data, "db-user", "db_user")
-    _value_changed(data, "db-password", "db_password")
     update_charm_status()
 
 
 @hooks.hook("contrail-analyticsdb-relation-departed")
 def contrail_analyticsdb_departed():
-    units = [unit for rid in relation_ids("contrail-analyticsdb")
-                  for unit in related_units(rid)]
-    if not units:
-        config.pop("db_user", None)
-        config.pop("db_password", None)
     update_charm_status()
 
 
@@ -180,11 +158,6 @@ def update_status():
 def upgrade_charm():
     # NOTE: image can not be deleted if container is running.
     # TODO: so think about killing the container
-
-    # clear cached version of image
-    config.pop("version_with_build", None)
-    config.pop("version", None)
-    config.save()
 
     # NOTE: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config

@@ -38,11 +38,8 @@ from charmhelpers.contrib.network.ip import (
 
 from contrail_controller_utils import (
     update_charm_status,
-    CONTAINER_NAME,
     get_analytics_list,
     get_controller_ips,
-    RABBITMQ_USER,
-    RABBITMQ_VHOST,
 )
 from common_utils import (
     get_ip,
@@ -55,7 +52,6 @@ from docker_utils import (
     apply_docker_insecure,
     docker_login,
     DOCKER_PACKAGES,
-    is_container_launched,
 )
 
 PACKAGES = []
@@ -84,16 +80,6 @@ def install():
 
 @hooks.hook("leader-elected")
 def leader_elected():
-    if not leader_get("db_user"):
-        user = "controller"
-        password = uuid.uuid4().hex
-        leader_set(db_user=user, db_password=password)
-
-    if not leader_get("rabbitmq_password_int"):
-        password = uuid.uuid4().hex
-        leader_set(rabbitmq_password_int=password)
-        update_northbound_relations()
-
     ip_list = leader_get("controller_ip_list")
     ips = get_controller_ips()
     if not ip_list:
@@ -221,17 +207,7 @@ def update_northbound_relations(rid=None):
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
         "ssl-enabled": config.get("ssl_enabled", False),
-        "rabbitmq_user": RABBITMQ_USER,
-        "rabbitmq_vhost": RABBITMQ_VHOST,
-        "configdb_cassandra_user": leader_get("db_user"),
-        "configdb_cassandra_password": leader_get("db_password"),
     }
-    if config.get("use-external-rabbitmq"):
-        settings["rabbitmq_password"] = config.get("rabbitmq_password")
-        settings["rabbitmq_hosts"] = config.get("rabbitmq_hosts")
-    else:
-        settings["rabbitmq_password"] = leader_get("rabbitmq_password_int")
-        settings["rabbitmq_hosts"] = None
 
     if rid:
         relation_set(relation_id=rid, relation_settings=settings)
@@ -297,11 +273,6 @@ def contrail_controller_departed():
     config.pop("orchestrator_info", None)
     if is_leader():
         update_northbound_relations()
-    if is_container_launched(CONTAINER_NAME):
-        status_set(
-            "blocked",
-            "Container is present but cloud orchestrator was disappeared. "
-            "Please kill container by yourself or restore cloud orchestrator.")
 
 
 @hooks.hook("contrail-analytics-relation-joined")
@@ -368,11 +339,6 @@ def upgrade_charm():
     # NOTE: old image can not be deleted if container is running.
     # TODO: so think about killing the container
 
-    # clear cached version of image
-    config.pop("version_with_build", None)
-    config.pop("version", None)
-    config.save()
-
     # NOTE: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config
     update_charm_status()
@@ -436,60 +402,6 @@ def _https_services():
 @hooks.hook("https-services-relation-joined")
 def https_services_joined():
     relation_set(services=yaml.dump(_https_services()))
-
-
-@hooks.hook('amqp-relation-joined')
-def amqp_joined():
-    relation_set(username=RABBITMQ_USER, vhost=RABBITMQ_VHOST)
-
-
-@hooks.hook('amqp-relation-changed')
-def amqp_changed():
-    # collect information about connected RabbitMQ server
-    password = relation_get("password")
-    clustered = relation_get('clustered')
-    if clustered:
-        vip = relation_get('vip')
-        vip = format_ipv6_addr(vip) or vip
-        rabbitmq_host = vip
-    else:
-        host = relation_get('private-address')
-        host = format_ipv6_addr(host) or host
-        rabbitmq_host = host
-
-    ssl_port = relation_get('ssl_port')
-    if ssl_port:
-        log("Underlayed software is not capable to use non-default port",
-            level=ERROR)
-        return 1
-    ssl_ca = relation_get('ssl_ca')
-    if ssl_ca:
-        log("Charm can't setup ssl support but ssl ca found", level=WARNING)
-    if relation_get('ha_queues') is not None:
-        log("Charm can't setup HA queues but flag is found", level=WARNING)
-
-    rabbitmq_hosts = []
-    ha_vip_only = relation_get('ha-vip-only',) is not None
-    # Used for active/active rabbitmq >= grizzly
-    if ((not clustered or ha_vip_only) and len(related_units()) > 1):
-        for unit in related_units():
-            host = relation_get('private-address', unit=unit)
-            host = format_ipv6_addr(host) or host
-            rabbitmq_hosts.append(host)
-
-    if not rabbitmq_hosts:
-        rabbitmq_hosts.append(rabbitmq_host)
-    rabbitmq_hosts = ','.join(sorted(rabbitmq_hosts))
-
-    # Here we have:
-    # password - password from RabbitMQ server for user passed in joined
-    # rabbitmq_hosts - list of hosts with RabbitMQ servers
-    config["rabbitmq_password"] = password
-    config["rabbitmq_hosts"] = rabbitmq_hosts
-    config.save()
-
-    update_northbound_relations()
-    update_charm_status()
 
 
 @hooks.hook('tls-certificates-relation-joined')

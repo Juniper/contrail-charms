@@ -20,11 +20,8 @@ from charmhelpers.core.hookenv import (
     ERROR,
 )
 from charmhelpers.core.host import file_hash, write_file
-from charmhelpers.core.templating import render
+import docker_utils
 
-from docker_utils import (
-    docker_exec,
-)
 
 config = config()
 
@@ -90,7 +87,7 @@ def save_file(path, data, perms=0o400):
 
 def update_services_status(name, services):
     try:
-        output = docker_exec(name, "contrail-status")
+        output = docker_utils.docker_exec(name, "contrail-status")
     except CalledProcessError as e:
         log("Container is not ready to get contrail-status: " + str(e))
         status_set("waiting", "Waiting services to run in container")
@@ -123,43 +120,12 @@ def json_loads(data, default=None):
     return json.loads(data) if data else default
 
 
-def render_and_check(ctx, template, conf_file, do_check):
-    """Returns True if configuration has been changed."""
-
-    log("Render and store new configuration: " + conf_file)
-    if do_check:
-        try:
-            with open(conf_file) as f:
-                old_lines = set(f.readlines())
-        except Exception:
-            old_lines = set()
-
+def apply_keystone_ca(ctx):
     ks_ca_path = "/etc/contrail/keystone-ca-cert.pem"
-    ks_ca_hash = file_hash(ks_ca_path) if do_check else None
     ks_ca = ctx.get("keystone_ssl_ca")
     save_file(ks_ca_path, ks_ca, 0o444)
-    ks_ca_hash_new = file_hash(ks_ca_path)
     if ks_ca:
         ctx["keystone_ssl_ca_path"] = ks_ca_path
-    ca_changed = (ks_ca_hash != ks_ca_hash_new) if do_check else False
-    if ca_changed:
-        log("Keystone CA cert has been changed: {h1} != {h2}"
-            .format(h1=ks_ca_hash, h2=ks_ca_hash_new))
-
-    render(template, conf_file, ctx)
-    if not do_check:
-        return True
-    with open(conf_file) as f:
-        new_lines = set(f.readlines())
-    new_set = new_lines.difference(old_lines)
-    old_set = old_lines.difference(new_lines)
-    if new_set or old_set:
-        log("New lines:\n{new}".format(new="".join(new_set)))
-        log("Old lines:\n{old}".format(old="".join(old_set)))
-        log("Configuration file has been changed.")
-    else:
-        log("Configuration file has not been changed.")
-    return ca_changed or new_set or old_set
 
 
 def update_certificates(cert, key, ca):
