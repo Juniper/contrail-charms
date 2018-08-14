@@ -126,7 +126,7 @@ def docker_remove_container_by_image(image):
 
 def docker_run(registry, image, tag, volumes):
     image_id = "{}/{}:{}".format(registry, image, tag)
-    args = [DOCKER_CLI, "run", "--rm", "-it", "--network", "host"]
+    args = [DOCKER_CLI, "run", "--rm", "-i", "--network", "host"]
     for volume in volumes:
         args.extend(["-v", volume])
     args.extend([image_id])
