@@ -144,7 +144,7 @@ def config_changed():
             set_dpdk_options()
         configure_hugepages()
 
-    write_configs()
+    #write_configs()
 
 
 @hooks.hook("contrail-controller-relation-joined")
@@ -170,9 +170,9 @@ def contrail_controller_changed():
     config["vrouter-expected-provision-state"] = True
     config.save()
 
-    write_configs()
-    update_vrouter_provision_status()
-    update_unit_status()
+    #write_configs()
+    #update_vrouter_provision_status()
+    #update_unit_status()
 
 
 @hooks.hook("contrail-controller-relation-departed")
@@ -183,7 +183,7 @@ def contrail_controller_node_departed():
         return
 
     config["vrouter-expected-provision-state"] = False
-    update_vrouter_provision_status()
+    #update_vrouter_provision_status()
     status_set("blocked", "Missing relation to contrail-controller")
 
 
@@ -237,8 +237,9 @@ def tls_certificates_relation_departed():
 
 @hooks.hook("update-status")
 def update_status():
-    update_vrouter_provision_status()
-    update_unit_status()
+    #update_vrouter_provision_status()
+    #update_unit_status()
+    pass
 
 
 def main():

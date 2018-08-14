@@ -148,9 +148,6 @@ def update_charm_status(update_config=True, force=False):
 
     ctx = get_context()
     missing_relations = []
-    if not ctx.get("db_user"):
-        # NOTE: Charms don't allow to deploy cassandra in AllowAll mode
-        missing_relations.append("contrail-controller-cluster")
     if not ctx.get("analytics_servers"):
         missing_relations.append("contrail-analytics")
     if common_utils.get_ip() not in ctx.get("controller_servers"):
