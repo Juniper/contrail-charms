@@ -4,6 +4,7 @@ import os
 import requests
 from six.moves.urllib.parse import urlparse
 from socket import gethostbyname
+import sys
 
 from charmhelpers.core.hookenv import (
     config,
@@ -20,6 +21,8 @@ from charmhelpers.core.host import (
     write_file,
 )
 from charmhelpers.core.templating import render
+
+import docker_utils
 
 apt_pkg.init()
 config = config()
@@ -155,7 +158,6 @@ def _is_related_to(rel_name):
 
 def _get_context():
     ctx = {}
-    ctx["version"] = config.get("version", "4.0.0")
 
     # this is still needed for version < 4.1.1
     ip = config.get("api_vip")
@@ -184,3 +186,17 @@ def _save_file(path, data):
         write_file(path, data, perms=0o444)
     elif os.path.exists(path):
         os.remove(path)
+
+
+def deploy_openstack_code(image):
+    registry = config.get('docker-registry')
+    tag = config.get('image-tag')
+    docker_utils.docker_pull(registry, image, tag)
+
+    # remove previous attempt
+    docker_utils.docker_remove_container_by_image(image)
+
+    paths = [path for path in sys.path if 'packages' in path]
+    path = paths[-1]
+    volumes = ["{}:/opt/plugin/site-packages".format(path)]
+    docker_utils.docker_run(registry, image, tag, volumes)

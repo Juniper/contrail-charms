@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-import shutil
 from subprocess import CalledProcessError, check_output
 import sys
 import uuid
@@ -24,21 +23,15 @@ from charmhelpers.core.hookenv import (
     application_version_set,
 )
 
-from charmhelpers.core.host import (
-    service_restart,
-)
-
 from charmhelpers.fetch import (
     apt_install,
     apt_update,
     apt_upgrade,
-    configure_sources
 )
 
-from contrail_openstack_utils import (
-    write_configs,
-    update_service_ips,
-)
+import contrail_openstack_utils as utils
+import docker_utils
+
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
 
@@ -50,17 +43,25 @@ config = config()
 @hooks.hook("install.real")
 def install():
     status_set('maintenance', 'Installing...')
-    apt_update(fatal=True)
-    apt_upgrade(fatal=True, dist=False)
+    apt_upgrade(fatal=True, dist=True)
+    docker_utils.add_docker_repo()
+    apt_update(fatal=False)
+    apt_install(docker_utils.DOCKER_PACKAGES, fatal=True)
+    docker_utils.apply_docker_insecure()
+    docker_utils.docker_login()
     status_set("blocked", "Missing relation to contrail-controller")
 
 
 @hooks.hook("config-changed")
 def config_changed():
-    if config.changed("install-sources") or config.changed("install-keys"):
-        configure_sources(True, "install-sources", "install-keys")
-        apt_update(fatal=True)
-        apt_upgrade(fatal=True, dist=False)
+    changed = False
+    if config.changed("docker-registry"):
+        docker_utils.apply_docker_insecure()
+        changed = True
+    if config.changed("docker-user") or config.changed("docker-password"):
+        docker_utils.docker_login()
+        changed = True
+    if changed:
         _notify_neutron()
 
     if is_leader():
@@ -122,7 +123,7 @@ def contrail_controller_changed():
         log("DPDK for host {ip} is {dpdk}".format(ip=ip, dpdk=value))
 
     config.save()
-    write_configs()
+    utils.write_configs()
 
     # apply information to base charms
     _notify_nova()
@@ -132,7 +133,7 @@ def contrail_controller_changed():
 
     # auth_info can affect endpoints
     if is_leader():
-        changed = update_service_ips()
+        changed = utils.update_service_ips()
         if changed:
             _notify_controller()
 
@@ -148,7 +149,7 @@ def contrail_cotroller_departed():
     for key in keys:
         config.pop(key, None)
     config.save()
-    write_configs()
+    utils.write_configs()
     status_set("blocked", "Missing relation to contrail-controller")
 
 
@@ -203,7 +204,9 @@ def _get_orchestrator_info():
 
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
-    apt_install(NEUTRON_API_PACKAGES, fatal=True)
+    if not utils.deploy_openstack_code("contrail-openstack-neutron-init"):
+        return
+
     try:
         cmd = ["dpkg-query", "-f", "${Version}\\n",
                "-W", "neutron-plugin-contrail"]
@@ -260,19 +263,13 @@ def neutron_api_joined(rel_id=None):
 
     # if this hook raised after contrail-controller we need
     # to overwrite default config file after installation
-    write_configs()
+    utils.write_configs()
 
 
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
-    if config.get("dpdk", False):
-        # contrail nova packages contain vrouter vhostuser vif
-        shutil.copy("files/40contrail", "/etc/apt/preferences.d")
-        apt_install(["nova-compute", "libvirt-bin", "contrail-nova-vif"],
-                    options=["--reinstall", "--force-yes", "-fy",
-                             "-o", "Dpkg::Options::=--force-confnew"],
-                    fatal=True)
-        service_restart("nova-api-metadata")
+    if not utils.deploy_openstack_code("contrail-openstack-compute-init"):
+        return
 
     # create plugin config
     sections = {
@@ -298,9 +295,11 @@ def nova_compute_joined(rel_id=None):
 
 @hooks.hook("update-status")
 def update_status():
+    # TODO: try to deploy openstack code again if it was not done
+
     if not is_leader():
         return
-    changed = update_service_ips()
+    changed = utils.update_service_ips()
     if changed:
         _notify_controller()
 

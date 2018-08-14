@@ -21,19 +21,9 @@ from charmhelpers.fetch import (
     apt_update
 )
 
-from contrail_analytics_utils import (
-    update_charm_status,
-)
-from common_utils import (
-    get_ip,
-    fix_hostname,
-)
-from docker_utils import (
-    add_docker_repo,
-    apply_docker_insecure,
-    docker_login,
-    DOCKER_PACKAGES,
-)
+import contrail_analytics_utils as utils
+import common_utils
+import docker_utils
 
 
 PACKAGES = []
@@ -47,23 +37,23 @@ def install():
     status_set("maintenance", "Installing...")
 
     # TODO: try to remove this call
-    fix_hostname()
+    common_utils.fix_hostname()
 
     apt_upgrade(fatal=True, dist=True)
-    add_docker_repo()
+    docker_utils.add_docker_repo()
     apt_update(fatal=False)
-    apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
+    apt_install(PACKAGES + docker_utils.DOCKER_PACKAGES, fatal=True)
 
-    apply_docker_insecure()
-    docker_login()
+    docker_utils.apply_docker_insecure()
+    docker_utils.docker_login()
 
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("config-changed")
 def config_changed():
     if config.changed("control-network"):
-        settings = {'private-address': get_ip()}
+        settings = {'private-address': common_utils.get_ip()}
         rnames = ("contrail-analytics", "contrail-analyticsdb",
                   "analytics-cluster", "http-services")
         for rname in rnames:
@@ -71,11 +61,11 @@ def config_changed():
                 relation_set(relation_id=rid, relation_settings=settings)
 
     if config.changed("docker-registry"):
-        apply_docker_insecure()
+        docker_utils.apply_docker_insecure()
     if config.changed("docker-user") or config.changed("docker-password"):
-        docker_login()
+        docker_utils.docker_login()
 
-    update_charm_status()
+    utils.update_charm_status()
 
 
 def _value_changed(rel_data, rel_key, cfg_key):
@@ -95,7 +85,7 @@ def _value_changed(rel_data, rel_key, cfg_key):
 
 @hooks.hook("contrail-analytics-relation-joined")
 def contrail_analytics_joined():
-    settings = {"private-address": get_ip()}
+    settings = {"private-address": common_utils.get_ip()}
     relation_set(relation_settings=settings)
 
 
@@ -111,7 +101,7 @@ def contrail_analytics_changed():
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:
-        update_charm_status()
+        utils.update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
@@ -122,36 +112,37 @@ def contrail_analytics_departed():
         for key in ["auth_info", "auth_mode", "orchestrator_info",
                     "ssl_enabled", "rabbitmq_hosts"]:
             config.pop(key, None)
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def contrail_analyticsdb_joined():
-    settings = {"private-address": get_ip(), 'unit-type': 'analytics'}
+    settings = {"private-address": common_utils.get_ip(),
+                'unit-type': 'analytics'}
     relation_set(relation_settings=settings)
 
 
 @hooks.hook("contrail-analyticsdb-relation-changed")
 def contrail_analyticsdb_changed():
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-analyticsdb-relation-departed")
 def contrail_analyticsdb_departed():
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("analytics-cluster-relation-joined")
 def analytics_cluster_joined():
-    settings = {"private-address": get_ip()}
+    settings = {"private-address": common_utils.get_ip()}
     relation_set(relation_settings=settings)
 
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("update-status")
 def update_status():
-    update_charm_status(update_config=False)
+    utils.update_charm_status(update_config=False)
 
 
 @hooks.hook("upgrade-charm")
@@ -161,12 +152,12 @@ def upgrade_charm():
 
     # NOTE: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config
-    update_charm_status()
+    utils.update_charm_status()
 
 
 def _http_services():
     name = local_unit().replace("/", "-")
-    addr = get_ip()
+    addr = common_utils.get_ip()
     return [{"service_name": "contrail-analytics-api",
              "service_host": "*",
              "service_port": 8081,

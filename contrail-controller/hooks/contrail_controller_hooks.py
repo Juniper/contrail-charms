@@ -2,7 +2,6 @@
 
 import json
 import sys
-import uuid
 import yaml
 from socket import gethostbyname, gethostname
 
@@ -24,7 +23,6 @@ from charmhelpers.core.hookenv import (
     remote_unit,
     local_unit,
     ERROR,
-    WARNING,
 )
 
 from charmhelpers.fetch import (
@@ -32,27 +30,10 @@ from charmhelpers.fetch import (
     apt_upgrade,
     apt_update
 )
-from charmhelpers.contrib.network.ip import (
-    format_ipv6_addr,
-)
 
-from contrail_controller_utils import (
-    update_charm_status,
-    get_analytics_list,
-    get_controller_ips,
-)
-from common_utils import (
-    get_ip,
-    fix_hostname,
-    json_loads,
-    update_certificates,
-)
-from docker_utils import (
-    add_docker_repo,
-    apply_docker_insecure,
-    docker_login,
-    DOCKER_PACKAGES,
-)
+import contrail_controller_utils as utils
+import common_utils
+import docker_utils
 
 PACKAGES = []
 
@@ -65,23 +46,23 @@ def install():
     status_set("maintenance", "Installing...")
 
     # TODO: try to remove this call
-    fix_hostname()
+    common_utils.fix_hostname()
 
     apt_upgrade(fatal=True, dist=True)
-    add_docker_repo()
+    docker_utils.add_docker_repo()
     apt_update(fatal=False)
-    apt_install(PACKAGES + DOCKER_PACKAGES, fatal=True)
+    apt_install(PACKAGES + docker_utils.DOCKER_PACKAGES, fatal=True)
 
-    apply_docker_insecure()
-    docker_login()
+    docker_utils.apply_docker_insecure()
+    docker_utils.docker_login()
 
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("leader-elected")
 def leader_elected():
     ip_list = leader_get("controller_ip_list")
-    ips = get_controller_ips()
+    ips = utils.get_controller_ips()
     if not ip_list:
         ip_list = ips.values()
         log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
@@ -99,19 +80,19 @@ def leader_elected():
             log("There are a dead controllers that are in the list: "
                 + str(dead_ips), level=ERROR)
 
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("leader-settings-changed")
 def leader_settings_changed():
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
-    settings = {"unit-address": get_ip()}
+    settings = {"unit-address": common_utils.get_ip()}
     relation_set(relation_settings=settings)
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("controller-cluster-relation-changed")
@@ -125,12 +106,12 @@ def cluster_changed():
         return
     unit = remote_unit()
     _address_changed(unit, ip)
-    update_charm_status()
+    utils.update_charm_status()
 
 
 def _address_changed(unit, ip):
-    ip_list = json_loads(leader_get("controller_ip_list"), list())
-    ips = json_loads(leader_get("controller_ips"), dict())
+    ip_list = common_utils.json_loads(leader_get("controller_ip_list"), list())
+    ips = common_utils.json_loads(leader_get("controller_ips"), dict())
     if ip in ip_list:
         return
     old_ip = ips.get(unit)
@@ -152,17 +133,17 @@ def cluster_departed():
     if not is_leader():
         return
     unit = remote_unit()
-    ips = json_loads(leader_get("controller_ips"), dict())
+    ips = common_utils.json_loads(leader_get("controller_ips"), dict())
     if unit not in ips:
         return
     old_ip = ips.pop(unit)
-    ip_list = json_loads(leader_get("controller_ip_list"), list())
+    ip_list = common_utils.json_loads(leader_get("controller_ip_list"), list())
     ip_list.remove(old_ip)
 
     log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
     leader_set(controller_ip_list=json.dumps(ip_list),
                controller_ips=json.dumps(ips))
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("config-changed")
@@ -173,7 +154,7 @@ def config_changed():
                         "rbac, cloud-admin, no-auth.")
 
     if config.changed("control-network"):
-        ip = get_ip()
+        ip = common_utils.get_ip()
         settings = {"private-address": ip}
         rnames = ("contrail-controller",
                   "contrail-analytics", "contrail-analyticsdb",
@@ -188,11 +169,11 @@ def config_changed():
             _address_changed(local_unit(), ip)
 
     if config.changed("docker-registry"):
-        apply_docker_insecure()
+        docker_utils.apply_docker_insecure()
     if config.changed("docker-user") or config.changed("docker-password"):
-        docker_login()
+        docker_utils.docker_login()
 
-    update_charm_status()
+    utils.update_charm_status()
 
     if not is_leader():
         return
@@ -222,7 +203,7 @@ def update_northbound_relations(rid=None):
 def update_southbound_relations(rid=None):
     settings = {
         "api-vip": config.get("vip"),
-        "analytics-server": json.dumps(get_analytics_list()),
+        "analytics-server": json.dumps(utils.get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
@@ -234,7 +215,7 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    settings = {"private-address": get_ip(), "port": 8082}
+    settings = {"private-address": common_utils.get_ip(), "port": 8082}
     relation_set(relation_settings=settings)
     if is_leader():
         update_southbound_relations(rid=relation_id())
@@ -251,13 +232,13 @@ def contrail_controller_changed():
         if "dpdk" in data:
             # remote unit is an agent
             address = data["private-address"]
-            flags = json_loads(config.get("agents-info"), dict())
+            flags = common_utils.json_loads(config.get("agents-info"), dict())
             flags[address] = data["dpdk"]
             config["agents-info"] = json.dumps(flags)
             config.save()
         update_southbound_relations()
         update_northbound_relations()
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-departed")
@@ -277,25 +258,27 @@ def contrail_controller_departed():
 
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
-    settings = {"private-address": get_ip(), 'unit-type': 'controller'}
+    settings = {"private-address": common_utils.get_ip(),
+                'unit-type': 'controller'}
     relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
         update_southbound_relations()
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-analytics-relation-changed")
 @hooks.hook("contrail-analytics-relation-departed")
 def analytics_changed_departed():
-    update_charm_status()
+    utils.update_charm_status()
     if is_leader():
         update_southbound_relations()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
-    settings = {"private-address": get_ip(), 'unit-type': 'controller'}
+    settings = {"private-address": common_utils.get_ip(),
+                'unit-type': 'controller'}
     relation_set(relation_settings=settings)
     if is_leader():
         update_northbound_relations(rid=relation_id())
@@ -312,7 +295,7 @@ def contrail_auth_changed():
     if is_leader():
         update_northbound_relations()
         update_southbound_relations()
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-auth-relation-departed")
@@ -326,12 +309,12 @@ def contrail_auth_departed():
     if is_leader():
         update_northbound_relations()
         update_southbound_relations()
-    update_charm_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("update-status")
 def update_status():
-    update_charm_status(update_config=False)
+    utils.update_charm_status(update_config=False)
 
 
 @hooks.hook("upgrade-charm")
@@ -341,12 +324,12 @@ def upgrade_charm():
 
     # NOTE: this hook can be fired when either resource changed or charm code
     # changed. so if code was changed then we may need to update config
-    update_charm_status()
+    utils.update_charm_status()
 
 
 def _http_services():
     name = local_unit().replace("/", "-")
-    addr = get_ip()
+    addr = common_utils.get_ip()
     return [
         {"service_name": "contrail-webui-http",
          "service_host": "*",
@@ -381,7 +364,7 @@ def http_services_joined():
 
 def _https_services():
     name = local_unit().replace("/", "-")
-    addr = get_ip()
+    addr = common_utils.get_ip()
     return [
         {"service_name": "contrail-webui-https",
          "service_host": "*",
@@ -413,7 +396,7 @@ def tls_certificates_relation_joined():
         sans_ips.append(gethostbyname(cn))
     except:
         pass
-    control_ip = get_ip()
+    control_ip = common_utils.get_ip()
     if control_ip not in sans_ips:
         sans_ips.append(control_ip)
     res = check_output(['getent', 'hosts', control_ip])
@@ -453,7 +436,7 @@ def tls_certificates_relation_departed():
 
 
 def _tls_changed(cert, key, ca):
-    changed = update_certificates(cert, key, ca)
+    changed = common_utils.update_certificates(cert, key, ca)
     if not changed:
         return
 
@@ -462,7 +445,7 @@ def _tls_changed(cert, key, ca):
     config.save()
     update_northbound_relations()
 
-    update_charm_status(force=True)
+    utils.update_charm_status(force=True)
 
 
 def main():

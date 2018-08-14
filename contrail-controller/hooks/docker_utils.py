@@ -1,7 +1,5 @@
 import json
-import functools
 import platform
-from time import sleep, time
 
 from subprocess import (
     CalledProcessError,
@@ -21,52 +19,8 @@ config = config()
 
 DOCKER_PACKAGES = ["docker.engine", "docker-compose"]
 DOCKER_CLI = "/usr/bin/docker"
-DOCKER_COMPOSE_CLI = "docker-sompse"
+DOCKER_COMPOSE_CLI = "docker-compose"
 
-
-def retry(f=None, timeout=10, delay=2):
-    """Retry decorator.
-
-    Provides a decorator that can be used to retry a function if it raises
-    an exception.
-
-    :param timeout: timeout in seconds (default 10)
-    :param delay: retry delay in seconds (default 2)
-
-    Examples::
-
-        # retry fetch_url function
-        @retry
-        def fetch_url():
-            # fetch url
-
-        # retry fetch_url function for 60 secs
-        @retry(timeout=60)
-        def fetch_url():
-            # fetch url
-    """
-    if not f:
-        return functools.partial(retry, timeout=timeout, delay=delay)
-
-    @functools.wraps(f)
-    def func(*args, **kwargs):
-        start = time()
-        error = None
-        while True:
-            try:
-                return f(*args, **kwargs)
-            except Exception as e:
-                error = e
-            elapsed = time() - start
-            if elapsed >= timeout:
-                raise error
-            remaining = timeout - elapsed
-            sleep(delay if delay <= remaining else remaining)
-    return func
-
-
-# NOTE: this code assumes that name of container is the part of the
-# name of docker image
 
 def add_docker_repo():
     try:
@@ -153,3 +107,27 @@ def docker_pull(registry, name, tag):
 
 def docker_compose_run(path):
     check_call([DOCKER_COMPOSE_CLI, "up", "-d", "--project-directory", path])
+
+
+def docker_remove_container_by_image(image):
+    output = check_output([DOCKER_CLI, "ps", "-a"]).decode('UTF-8')
+    containers = [line.split() for line in output.splitlines()][1:]
+    for cnt in containers:
+        if len(cnt) < 2:
+            # bad string. normal output contains 6-7 fields.
+            continue
+        cnt_image = cnt[1]
+        index = cnt_image.find(image)
+        if index < 0 or (index > 0 and cnt_image[index - 1] != '/'):
+            # TODO: there is a case when image name just a prefix...
+            continue
+        check_call([DOCKER_CLI, "rm", cnt[0]])
+
+
+def docker_run(registry, image, tag, volumes):
+    image_id = "{}/{}:{}".format(registry, image, tag)
+    args = [DOCKER_CLI, "run", "--rm", "-it", "--network", "host"]
+    for volume in volumes:
+        args.extend(["-v", volume])
+    args.extend([image_id])
+    check_call(args)
