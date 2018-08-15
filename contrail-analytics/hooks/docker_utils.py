@@ -40,7 +40,7 @@ def install_docker():
            + dist + " stable\"")
     check_output(cmd, shell=True)
     apt_update()
-    apt_install([DOCKER_PACKAGES])
+    apt_install(DOCKER_PACKAGES)
 
 
 def apply_docker_insecure():
