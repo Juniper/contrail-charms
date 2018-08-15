@@ -107,7 +107,6 @@ def get_context():
 
     ips = common_utils.json_loads(leader_get("controller_ip_list"), list())
     ctx["controller_servers"] = ips
-    ctx["config_seeds"] = ips
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
     ctx.update(common_utils.json_loads(config.get("auth_info"), dict()))
