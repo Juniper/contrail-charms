@@ -11,6 +11,10 @@ from charmhelpers.core.hookenv import (
     log,
     WARNING,
 )
+from charmhelpers.fetch import (
+    apt_install,
+    apt_update,
+)
 from charmhelpers.core.host import service_restart
 
 
@@ -22,21 +26,21 @@ DOCKER_CLI = "/usr/bin/docker"
 DOCKER_COMPOSE_CLI = "docker-compose"
 
 
-def add_docker_repo():
-    try:
-        cmd = ["/bin/bash", "-c",
-               "set -o pipefail ; curl -fsSL --connect-timeout 10 "
-               "https://apt.dockerproject.org/gpg | sudo apt-key add -"]
-        check_output(cmd)
-        dist = platform.linux_distribution()[2].strip()
-        cmd = "add-apt-repository " + \
-              "\"deb https://apt.dockerproject.org/repo/ " + \
-              "ubuntu-%s " % (dist) + \
-              "main\""
-        check_output(cmd, shell=True)
-    except CalledProcessError as e:
-        log("Official docker repo is not available: {}".format(e),
-            level=WARNING)
+def install_docker():
+    apt_install(["apt-transport-https", "ca-certificates", "curl",
+                 "software-properties-common"])
+    cmd = ["/bin/bash", "-c",
+           "set -o pipefail ; curl -fsSL --connect-timeout 10 "
+           "https://download.docker.com/linux/ubuntu/gpg "
+           "| sudo apt-key add -"]
+    check_output(cmd)
+    dist = platform.linux_distribution()[2].strip()
+    cmd = ("add-apt-repository "
+           "\"deb [arch=amd64] https://download.docker.com/linux/ubuntu "
+           + dist + " stable\"")
+    check_output(cmd, shell=True)
+    apt_update()
+    apt_install(["docker-ce"])
 
 
 def apply_docker_insecure():

@@ -24,16 +24,12 @@ from charmhelpers.core.hookenv import (
 )
 
 from charmhelpers.fetch import (
-    apt_install,
     apt_update,
     apt_upgrade,
 )
 
 import contrail_openstack_utils as utils
 import docker_utils
-
-
-NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
 
 
 hooks = Hooks()
@@ -43,10 +39,11 @@ config = config()
 @hooks.hook("install.real")
 def install():
     status_set('maintenance', 'Installing...')
-    apt_upgrade(fatal=True, dist=True)
-    docker_utils.add_docker_repo()
+
     apt_update(fatal=False)
-    apt_install(docker_utils.DOCKER_PACKAGES, fatal=True)
+    apt_upgrade(fatal=True, dist=True)
+
+    docker_utils.install_docker()
     docker_utils.apply_docker_insecure()
     docker_utils.docker_login()
     status_set("blocked", "Missing relation to contrail-controller")
