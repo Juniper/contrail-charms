@@ -70,7 +70,7 @@ def get_context():
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["analyticsdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
-    ctx["contrail_registry"] = config.get("docker-registry")
+    ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
 
@@ -124,4 +124,4 @@ def update_charm_status(update_config=True):
     # TODO: what should happens if relation departed?
 
     render_config(ctx)
-    docker_utils.docker_compose_run(CONFIGS_PATH)
+    docker_utils.docker_compose_run(CONFIGS_PATH + "/docker-compose.yaml")

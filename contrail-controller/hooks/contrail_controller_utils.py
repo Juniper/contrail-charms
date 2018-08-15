@@ -99,6 +99,8 @@ def get_context():
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
     ctx["global_read_only_role"] = config.get("global-read-only-role")
     ctx["configdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
+    ctx["container_registry"] = config.get("docker-registry")
+    ctx["contrail_version_tag"] = config.get("image-tag")
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
 
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
@@ -170,8 +172,8 @@ def update_charm_status(update_config=True, force=False):
     for port in ("8082", "8080", "8143"):
         open_port(port, "TCP")
 
-    docker_utils.docker_compose_run(CONFIG_API_CONFIGS_PATH)
-    docker_utils.docker_compose_run(CONFIG_DATABASE_CONFIGS_PATH)
-    docker_utils.docker_compose_run(CONTROL_CONFIGS_PATH)
-    docker_utils.docker_compose_run(WEBUI_CONFIGS_PATH)
-    docker_utils.docker_compose_run(REDIS_CONFIGS_PATH)
+    docker_utils.docker_compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.docker_compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.docker_compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.docker_compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")

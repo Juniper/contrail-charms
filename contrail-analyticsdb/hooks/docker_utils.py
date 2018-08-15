@@ -106,7 +106,7 @@ def docker_pull(registry, name, tag):
 
 
 def docker_compose_run(path):
-    check_call([DOCKER_COMPOSE_CLI, "up", "-d", "--project-directory", path])
+    check_call([DOCKER_COMPOSE_CLI, "-f", path, "up", "-d"])
 
 
 def docker_remove_container_by_image(image):

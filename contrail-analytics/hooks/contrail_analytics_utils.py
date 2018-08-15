@@ -94,7 +94,7 @@ def get_context():
     ctx = {}
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
-    ctx["contrail_registry"] = config.get("docker-registry")
+    ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
 
@@ -158,5 +158,5 @@ def update_charm_status(update_config=True):
     render_config(ctx)
     open_port(8081, "TCP")
 
-    docker_utils.docker_compose_run(ANALYTICS_CONFIGS_PATH)
-    docker_utils.docker_compose_run(REDIS_CONFIGS_PATH)
+    docker_utils.docker_compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
