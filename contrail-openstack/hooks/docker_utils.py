@@ -21,7 +21,7 @@ from charmhelpers.core.host import service_restart
 config = config()
 
 
-DOCKER_PACKAGES = ["docker.engine", "docker-compose"]
+DOCKER_PACKAGES = ["docker.ce", "docker-compose"]
 DOCKER_CLI = "/usr/bin/docker"
 DOCKER_COMPOSE_CLI = "docker-compose"
 
@@ -40,7 +40,7 @@ def install_docker():
            + dist + " stable\"")
     check_output(cmd, shell=True)
     apt_update()
-    apt_install(["docker-ce"])
+    apt_install([DOCKER_PACKAGES])
 
 
 def apply_docker_insecure():

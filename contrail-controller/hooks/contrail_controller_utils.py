@@ -136,7 +136,7 @@ def render_config(ctx):
     # apply_keystone_ca
 
 
-def update_charm_status(update_config=True, force=False):
+def update_charm_status():
     registry = config.get('docker-registry')
     tag = config.get('image-tag')
     for image in ALL_IMAGES:
@@ -177,3 +177,4 @@ def update_charm_status(update_config=True, force=False):
     docker_utils.docker_compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.docker_compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    status_set("active", "Unit is ready")

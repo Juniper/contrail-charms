@@ -114,7 +114,7 @@ def analyticsdb_cluster_joined():
 
 @hooks.hook("update-status")
 def update_status():
-    utils.update_charm_status(update_config=False)
+    utils.update_charm_status()
 
 
 @hooks.hook("upgrade-charm")

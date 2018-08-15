@@ -122,7 +122,7 @@ def render_config(ctx):
     # apply_keystone_ca
 
 
-def update_charm_status(update_config=True):
+def update_charm_status():
     registry = config.get('docker-registry')
     tag = config.get('image-tag')
     for image in ANALYTICS_IMAGES + REDIS_IMAGES:
@@ -160,3 +160,4 @@ def update_charm_status(update_config=True):
 
     docker_utils.docker_compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    status_set("active", "Unit is ready")

@@ -310,7 +310,7 @@ def contrail_auth_departed():
 
 @hooks.hook("update-status")
 def update_status():
-    utils.update_charm_status(update_config=False)
+    utils.update_charm_status()
 
 
 @hooks.hook("upgrade-charm")
@@ -441,7 +441,7 @@ def _tls_changed(cert, key, ca):
     config.save()
     update_northbound_relations()
 
-    utils.update_charm_status(force=True)
+    utils.update_charm_status()
 
 
 def main():
