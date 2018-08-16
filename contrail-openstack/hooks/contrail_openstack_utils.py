@@ -5,6 +5,7 @@ import requests
 from six.moves.urllib.parse import urlparse
 from socket import gethostbyname
 import sys
+from subprocess import CalledProcessError, check_output
 
 from charmhelpers.core.hookenv import (
     config,
@@ -15,6 +16,7 @@ from charmhelpers.core.hookenv import (
     related_units,
     leader_get,
     leader_set,
+    application_version_set,
 )
 from charmhelpers.core.host import (
     restart_on_change,
@@ -198,5 +200,28 @@ def deploy_openstack_code(image):
 
     paths = [path for path in sys.path if 'packages' in path]
     path = paths[-1]
-    volumes = ["{}:/opt/plugin/site-packages".format(path)]
+    volumes = [
+        # container will copy libraries to /opt/plugin/site-packages
+        # that is PYTHONPATH in the system
+        "{}:/opt/plugin/site-packages".format(path),
+        # container will copy tools to /opt/plugin/bin
+        # that is /usr/bin in the system
+        "/usr/bin:/opt/plugin/bin",
+    ]
     docker_utils.docker_run(registry, image, tag, volumes)
+
+    try:
+        # TODO: rework
+        cmd = ["dpkg-query", "-f", "${Version}\\n",
+               "-W", "neutron-plugin-contrail"]
+        version = check_output(cmd).decode("UTF-8").rstrip()
+        application_version_set(version)
+        # save version for future using
+        version = version.split('-')[0].split('.')
+        m = int(version[0])
+        r = int(version[1]) if len(version) > 1 else 0
+        a = int(version[2]) if len(version) > 2 else 0
+        config["version"] = (m * 1e4) + (r * 1e2) + a
+        config.save()
+    except CalledProcessError as e:
+        log("Couldn't detect installed application version: " + str(e))
