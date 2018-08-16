@@ -30,6 +30,14 @@ IMAGES = [
     "contrail-external-cassandra",
     "contrail-external-zookeeper",
 ]
+SERVICES = {
+    "database": [
+        "kafka",
+        "nodemgr",
+        "zookeeper",
+        "cassandra"
+    ]
+}
 
 
 def servers_ctx():
@@ -125,4 +133,4 @@ def update_charm_status():
 
     render_config(ctx)
     docker_utils.docker_compose_run(CONFIGS_PATH + "/docker-compose.yaml")
-    status_set("active", "Unit is ready")
+    common_utils.update_services_status(SERVICES)

@@ -68,6 +68,32 @@ ALL_IMAGES = (
     + REDIS_IMAGES
 )
 
+SERVICES = {
+    "control": [
+        "control",
+        "nodemgr",
+        "named",
+        "dns",
+    ],
+    "config-database": [
+        "nodemgr",
+        "zookeeper",
+        "rabbitmq",
+        "cassandra",
+    ],
+    "webui": [
+        "web",
+        "job",
+    ],
+    "config": [
+        "svc-monitor",
+        "nodemgr",
+        "device-manager",
+        "api",
+        "schema",
+    ],
+}
+
 
 def get_controller_ips():
     controller_ips = dict()
@@ -176,4 +202,4 @@ def update_charm_status():
     docker_utils.docker_compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.docker_compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
-    status_set("active", "Unit is ready")
+    common_utils.update_services_status(SERVICES)

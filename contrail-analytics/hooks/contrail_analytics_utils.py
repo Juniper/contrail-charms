@@ -39,6 +39,17 @@ REDIS_CONFIGS_PATH = BASE_CONFIGS_PATH + "/redis"
 REDIS_IMAGES = [
     "contrail-external-redis",
 ]
+SERVICES = {
+    "analytics": [
+        "snmp-collector",
+        "query-engine",
+        "api",
+        "alarm-gen",
+        "nodemgr",
+        "collector",
+        "topology",
+    ]
+}
 
 
 def controller_ctx():
@@ -160,4 +171,4 @@ def update_charm_status():
 
     docker_utils.docker_compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
-    status_set("active", "Unit is ready")
+    common_utils.update_services_status(SERVICES)

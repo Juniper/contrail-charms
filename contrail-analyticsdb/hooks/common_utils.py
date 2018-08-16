@@ -85,33 +85,45 @@ def save_file(path, data, perms=0o400):
         os.remove(path)
 
 
-def update_services_status(name, services):
+def update_services_status(services):
     try:
-        output = docker_utils.docker_exec(name, "contrail-status")
+        output = check_output("contrail-status")
     except CalledProcessError as e:
         log("Container is not ready to get contrail-status: " + str(e))
         status_set("waiting", "Waiting services to run in container")
         return
 
     statuses = dict()
+    group = None
     for line in output.splitlines()[1:]:
-        if len(line) == 0 or line.startswith("=="):
+        words = line.split()
+        if len(words) == 4 and words[0] == "==" and words[3] == "==":
+            group = words[2]
             continue
-        lst = line.split()
-        if len(lst) < 2:
+        if len(words) == 0:
+            group = None
             continue
-        srv = lst[0].split(":")[0]
-        statuses[srv] = (lst[1], " ".join(lst[2:]))
-    for srv in services:
-        if srv not in statuses:
-            status_set("waiting", srv + " is absent in the contrail-status")
+        if group and len(words) >= 2 and group in services:
+            srv = words[0].split(":")[0]
+            statuses.setdefault(group, dict())[srv] = (
+                words[1], " ".join(words[2:]))
+
+    for group in services:
+        if group not in statuses:
+            status_set("waiting",
+                       "POD " + group + " is absent in the contrail-status")
             return
-        status, desc = statuses.get(srv)
-        if status != "active":
-            workload = "waiting" if status == "initializing" else "blocked"
-            status_set(workload, "{} is not ready. Reason: {}"
-                       .format(srv, desc))
-            return
+        for srv in services[group]:
+            if srv not in statuses[group]:
+                status_set("waiting",
+                           srv + " is absent in the contrail-status")
+                return
+            status, desc = statuses[group].get(srv)
+            if status != "active":
+                workload = "waiting" if status == "initializing" else "blocked"
+                status_set(workload, "{} is not ready. Reason: {}"
+                           .format(srv, desc))
+                return
 
     status_set("active", "Unit is ready")
 
