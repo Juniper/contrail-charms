@@ -2,7 +2,7 @@ version: '2'
 services:
   node-init:
     image: "{{ container_registry }}/contrail-node-init:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     environment:
       - CONTRAIL_STATUS_IMAGE="{{ container_registry }}/contrail-status:{{ contrail_version_tag }}"
     privileged: true
@@ -13,7 +13,7 @@ services:
       - /etc/contrail/ssl:/etc/contrail/ssl
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     environment:
       - NODE_TYPE=analytics
     network_mode: "host"
@@ -32,7 +32,7 @@ services:
   api:
     image: "{{ container_registry }}/contrail-analytics-api:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/hosts:/etc/hosts
@@ -47,7 +47,7 @@ services:
   collector:
     image: "{{ container_registry }}/contrail-analytics-collector:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/hosts:/etc/hosts
@@ -62,7 +62,7 @@ services:
   query-engine:
     image: "{{ container_registry }}/contrail-analytics-query-engine:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/hosts:/etc/hosts
@@ -77,7 +77,7 @@ services:
   alarm-gen:
     image: "{{ container_registry }}/contrail-analytics-alarm-gen:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/hosts:/etc/hosts
@@ -92,7 +92,7 @@ services:
   snmp-collector:
     image: "{{ container_registry }}/contrail-analytics-snmp-collector:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/hosts:/etc/hosts
@@ -107,7 +107,7 @@ services:
   topology:
     image: "{{ container_registry }}/contrail-analytics-topology:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-analytics.env
+    env_file: /etc/contrail/common_analytics.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/hosts:/etc/hosts

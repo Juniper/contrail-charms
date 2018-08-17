@@ -4,7 +4,7 @@ volumes:
 services:
   node-init:
     image: "{{ container_registry }}/contrail-node-init:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
       - CONTRAIL_STATUS_IMAGE="{{ container_registry }}/contrail-status:{{ contrail_version_tag }}"
     privileged: true
@@ -15,7 +15,7 @@ services:
       - /etc/contrail/ssl:/etc/contrail/ssl
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
       - NODE_TYPE=control
     network_mode: "host"
@@ -34,7 +34,7 @@ services:
   control:
     image: "{{ container_registry }}/contrail-controller-control-control:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     volumes:
       - /etc/hosts:/etc/hosts
       - /etc/timezone:/etc/timezone
@@ -49,7 +49,7 @@ services:
   named:
     image: "{{ container_registry }}/contrail-controller-control-named:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     privileged: true
     pid: host
     volumes_from:
@@ -62,7 +62,7 @@ services:
   dns:
     image: "{{ container_registry }}/contrail-controller-control-dns:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     pid: host
     volumes:
       - /etc/hosts:/etc/hosts

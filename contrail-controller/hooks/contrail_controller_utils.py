@@ -141,7 +141,7 @@ def get_context():
 
 def render_config(ctx):
     render("config.env",
-        BASE_CONFIGS_PATH + "/common-config.env", ctx)
+        BASE_CONFIGS_PATH + "/common_config.env", ctx)
 
     render("config-api.yaml",
         CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml", ctx)

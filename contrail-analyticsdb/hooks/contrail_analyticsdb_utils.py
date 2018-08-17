@@ -91,7 +91,7 @@ def get_context():
 
 def render_config(ctx):
     render("analytics-database.env",
-           BASE_CONFIGS_PATH + "/common-analytics-database.env", ctx)
+           BASE_CONFIGS_PATH + "/common_analyticsdb.env", ctx)
 
     render("analytics-database.yaml",
            CONFIGS_PATH + "/docker-compose.yaml", ctx)

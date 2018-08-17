@@ -10,13 +10,6 @@ options:
     description: |
       Specify the gateway for vhost0, either an IPv4 address or keyword 'auto'.
       'auto' will set gateway automatically based on host's existing routes.
-  remove-juju-bridge:
-    type: boolean
-    default: true
-    description: |
-      Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads.
-      Enable this to remove such a bridge if you want to install vhost0 directly
-      on the underlying interface.
   dpdk:
     type: boolean
     default: false
@@ -57,13 +50,32 @@ options:
     type: string
     description: |
       DPDK PMD Rx Descriptor size.
-  vhost-mtu:
-    type: string
-    description: |
-      MTU for vhost0 interface
   log-level:
     type: string
     default: SYS_NOTICE
     description: |
       Log level for contrail services. Valid values are:
       SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
+  docker-registry:
+    type: string
+    default: opencontrailnightly
+    description: |
+      URL of docker-registry
+  docker-registry-insecure:
+    type: boolean
+    default: false
+    description: |
+      Is it docker-registry insecure and should docker be configured for it
+  docker-user:
+    type: string
+    description: |
+      Login to the docker registry.
+  docker-password:
+    type: string
+    description: |
+      Password to the docker registry.
+  image-tag:
+    type: string
+    default: latest
+    description: |
+      Tag of docker image.

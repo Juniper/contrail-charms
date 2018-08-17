@@ -3,7 +3,7 @@ services:
   web:
     image: "{{ container_registry }}/contrail-controller-webui-web:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/timezone:/etc/timezone
@@ -13,7 +13,7 @@ services:
   job:
     image: "{{ container_registry }}/contrail-controller-webui-job:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     volumes:
       - /var/log/contrail:/var/log/contrail
       - /etc/timezone:/etc/timezone

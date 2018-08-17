@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-import os
 from socket import gethostname, gethostbyname
 import sys
 
@@ -10,61 +9,25 @@ from charmhelpers.core.hookenv import (
     UnregisteredHookError,
     config,
     log,
-    ERROR,
-    action_fail,
     relation_get,
     relation_set,
     relation_ids,
     related_units,
     status_set,
-    application_version_set,
     local_unit,
 )
 
 from charmhelpers.fetch import (
-    apt_install,
+    apt_update,
     apt_upgrade,
-    configure_sources
 )
-from charmhelpers.core.host import (
-    service_start,
-    service_restart,
-    init_is_systemd,
-    lsb_release,
-    service
-)
-from charmhelpers.core.kernel import modprobe
-from charmhelpers.core.hugepage import hugepage_support
 from subprocess import (
-    CalledProcessError,
     check_output,
-    check_call,
-)
-from contrail_agent_utils import (
-    configure_crashes,
-    configure_vrouter_interface,
-    configure_virtioforwarder,
-    configure_initramfs,
-    configure_apparmor,
-    drop_caches,
-    dkms_autoinstall,
-    update_vrouter_provision_status,
-    write_configs,
-    update_unit_status,
-    set_dpdk_options,
-    configure_hugepages,
-    get_hugepages,
-    fix_libvirt,
-    tls_changed,
-    get_control_network_ip,
 )
 
-PACKAGES = ["dkms", "contrail-vrouter-agent", "contrail-utils",
-            "contrail-vrouter-common", "contrail-setup"]
-
-PACKAGES_DKMS_INIT = ["contrail-vrouter-dkms", "contrail-vrouter-init"]
-PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk", "contrail-vrouter-dpdk-init"]
-PACKAGES_AGILIO_INIT = ["ns-agilio-vrouter", "virtio-forwarder"]
+import contrail_agent_utils as utils
+import common_utils
+import docker_utils
 
 hooks = Hooks()
 config = config()
@@ -72,79 +35,31 @@ config = config()
 
 @hooks.hook("install.real")
 def install():
-    status_set("maintenance", "Installing...")
+    status_set('maintenance', 'Installing...')
 
-    return
+    # TODO: try to remove this call
+    common_utils.fix_hostname()
 
-    configure_crashes()
-    configure_sources(True, "install-sources", "install-keys")
+    apt_update(fatal=False)
     apt_upgrade(fatal=True, dist=True)
-    packages = list()
-    packages.extend(PACKAGES)
-    if not config.get("dpdk"):
-        packages.extend(PACKAGES_DKMS_INIT)
-        if config.get("agilio-vrouter"):
-            output = check_output(["cat", "/proc/cmdline"]).rstrip()
-            if not "intel_iommu=on" in output or not "iommu=pt" in output:
-                log("intel_iommu=on missing in cmdline", ERROR)
-                status_set("blocked", "Missing iommu in cmdline")
-                raise Exception("iommu not in kernel cmdline parameters ")
-            if lsb_release()['DISTRIB_CODENAME'] != 'xenial':
-                log("Only xenial is supported by agilio-vrouter", ERROR)
-                status_set("blocked", 
-                    "Only xenial is supported by agilio-vrouter")
-                raise Exception("Only xenial is supported by agilio-vrouter")
-            else:
-                packages.extend(PACKAGES_AGILIO_INIT)
-    else:
-        # services must not be started before config files creation
-        if not init_is_systemd():
-            with open("/etc/init/supervisor-vrouter.override", "w") as conf:
-                conf.write("manual\n")
-        else:
-            # and another way with systemd
-            for srv in ("contrail-vrouter-agent", "contrail-vrouter-dpdk"):
-                try:
-                    os.remove("/etc/systemd/system/{}.service".format(srv))
-                except OSError:
-                    pass
-                os.symlink("/dev/null", "/etc/systemd/system/{}.service"
-                           .format(srv))
-        packages.extend(PACKAGES_DPDK_INIT)
-        # apt-get upgrade can install new kernel so we need to re-install
-        # packages with dpdk drivers
-        kver = check_output(["uname", "-r"]).rstrip()
-        packages.append("linux-image-extra-" + kver)
-    apt_install(packages, fatal=True)
-    try:
-        output = check_output(["dpkg-query", "-f", "${Version}\\n",
-                               "-W", "contrail-vrouter-agent"])
-        version = output.decode('UTF-8').rstrip()
-        application_version_set(version)
-    except CalledProcessError:
-        return None
 
-    status_set("maintenance", "Configuring...")
-    os.chmod("/etc/contrail", 0o755)
-    os.chown("/etc/contrail", 0, 0)
+    docker_utils.install()
+    docker_utils.apply_insecure()
+    docker_utils.login()
+
+    if config["dpdk"]:
+        utils.fix_libvirt()
+
+    utils.update_charm_status()
 
 
 @hooks.hook("config-changed")
 def config_changed():
-    # Charm doesn't support changing of some parameters that are used only in
-    # install hook.
-    for key in ("remove-juju-bridge", "physical-interface", "dpdk"):
-        if config.changed(key):
-            raise Exception("Configuration parameter {} couldn't be changed"
-                            .format(key))
+    # Charm doesn't support changing of some parameters.
+    if config.changed("dpdk"):
+        raise Exception("Configuration parameter dpdk couldn't be changed")
 
-    if config["dpdk"]:
-        if (config.changed("dpdk-main-mempool-size") or config.changed("dpdk-pmd-txd-size")
-                or config.changed("dpdk-pmd-rxd-size") or config.changed("dpdk-coremask")):
-            set_dpdk_options()
-        configure_hugepages()
-
-    #write_configs()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-joined")
@@ -167,12 +82,9 @@ def contrail_controller_changed():
     _update_config("api_port", "port")
     _update_config("auth_info", "auth-info")
     _update_config("orchestrator_info", "orchestrator-info")
-    config["vrouter-expected-provision-state"] = True
     config.save()
 
-    #write_configs()
-    #update_vrouter_provision_status()
-    #update_unit_status()
+    utils.update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-departed")
@@ -182,8 +94,7 @@ def contrail_controller_node_departed():
     if units:
         return
 
-    config["vrouter-expected-provision-state"] = False
-    #update_vrouter_provision_status()
+    utils.update_charm_status()
     status_set("blocked", "Missing relation to contrail-controller")
 
 
@@ -196,7 +107,7 @@ def tls_certificates_relation_joined():
         sans_ips.append(gethostbyname(cn))
     except:
         pass
-    control_ip = get_control_network_ip()
+    control_ip = utils.get_vhost_ip()
     if control_ip not in sans_ips:
         sans_ips.append(control_ip)
     res = check_output(['getent', 'hosts', control_ip])
@@ -227,19 +138,17 @@ def tls_certificates_relation_changed():
         log("tls-certificates client's relation data is not fully available")
         cert = key = None
 
-    tls_changed(cert, key, ca)
+    utils.tls_changed(cert, key, ca)
 
 
 @hooks.hook('tls-certificates-relation-departed')
 def tls_certificates_relation_departed():
-    tls_changed(None, None, None)
+    utils.tls_changed(None, None, None)
 
 
 @hooks.hook("update-status")
 def update_status():
-    #update_vrouter_provision_status()
-    #update_unit_status()
-    pass
+    utils.update_charm_status()
 
 
 def main():

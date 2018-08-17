@@ -5,7 +5,7 @@ volumes:
 services:
   node-init:
     image: "{{ container_registry }}/contrail-node-init:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
       - CONTRAIL_STATUS_IMAGE="{{ container_registry }}/contrail-status:{{ contrail_version_tag }}"
     privileged: true
@@ -16,7 +16,7 @@ services:
       - /etc/contrail/ssl:/etc/contrail/ssl
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
       - NODE_TYPE=config-database
       - CASSANDRA_CQL_PORT=9041
@@ -36,7 +36,7 @@ services:
       - node-init
   cassandra:
     image: "{{ container_registry }}/contrail-external-cassandra:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
      - CASSANDRA_SEEDS={{ controller_servers|join(',') }}
      - CASSANDRA_START_RPC=true
@@ -54,7 +54,7 @@ services:
     restart: always
   zookeeper:
     image: "{{ container_registry }}/contrail-external-zookeeper:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
      - ZOOKEEPER_NODES={{ controller_servers|join(',') }}
      - ZOOKEEPER_PORTS=2888:3888
@@ -68,7 +68,7 @@ services:
     restart: always
   rabbitmq:
     image: "{{ container_registry }}/contrail-external-rabbitmq:{{ contrail_version_tag }}"
-    env_file: /etc/contrail/common-config.env
+    env_file: /etc/contrail/common_config.env
     environment:
      - RABBITMQ_NODES={{ controller_servers|join(',') }}
      - RABBITMQ_ERLANG_COOKIE=abcdefg

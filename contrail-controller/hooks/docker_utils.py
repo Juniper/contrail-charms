@@ -137,4 +137,4 @@ def get_contrail_version(image, tag, pkg="python-contrail"):
     image_id = get_image_id(image, tag)
     return check_output([DOCKER_CLI,
         "run", "--rm", "--entrypoint", "rpm", image_id,
-        "-q", "--qf", "'%{VERSION}-%{RELEASE}'", pkg]).decode("UTF-8").rstrip()
+        "-q", "--qf", "%{VERSION}-%{RELEASE}", pkg]).decode("UTF-8").rstrip()
