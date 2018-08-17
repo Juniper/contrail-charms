@@ -29,11 +29,11 @@ services:
     depends_on:
       - node-init
   vrouter-kernel-init:
-{% if agent_mode == 'dpdk' %}
+{%- if agent_mode == 'dpdk' %}
     image: "{{ container_registry }}/contrail-vrouter-kernel-init-dpdk:{{ contrail_version_tag }}"
-{% else %}
+{%- else %}
     image: "{{ container_registry }}/contrail-vrouter-kernel-build-init:{{ contrail_version_tag }}"
-{% endif %}
+{%- endif %}
     network_mode: host
     privileged: true
     env_file: /etc/contrail/common_vrouter.env
@@ -41,20 +41,20 @@ services:
     volumes:
       - /lib/modules:/lib/modules
       - /var/log/contrail:/var/log/contrail
-{% if agent_mode != 'dpdk' %}
+{%- if agent_mode != 'dpdk' %}
       - /usr/src:/usr/src
       - /bin:/host/bin
-{% else %}
+{%- else %}
       - /var/run:/var/run
       - /etc/os-release:/etc/os-release
       - /etc/lsb-release:/etc/lsb-release
       - /dev:/dev
-{% endif %}
+{%- endif %}
     volumes_from:
       - node-init
     depends_on:
       - node-init
-{% if agent_mode == 'dpdk' %}
+{%- if agent_mode == 'dpdk' %}
   vrouter-agent-dpdk:
     image: "{{ container_registry }}/contrail-vrouter-agent-dpdk:{{ contrail_version_tag }}"
     network_mode: host
@@ -77,7 +77,7 @@ services:
     depends_on:
       - vrouter-kernel-init
       - node-init
-{% endif %}
+{%- endif %}
   vrouter-agent:
     image: "{{ container_registry }}/contrail-vrouter-agent:{{ contrail_version_tag }}"
     network_mode: host
@@ -85,9 +85,9 @@ services:
     pid: host
     env_file: /etc/contrail/common_vrouter.env
     volumes:
-{% if agent_mode != 'dpdk' %}
+{%- if agent_mode != 'dpdk' %}
       - /usr/src:/usr/src
-{% endif %}
+{%- endif %}
       - /lib/modules:/lib/modules
       - /bin:/host/bin
       - /var/log/contrail:/var/log/contrail
@@ -101,9 +101,9 @@ services:
       - node-init
     restart: always
     depends_on:
-{% if agent_mode == 'dpdk' %}
+{%- if agent_mode == 'dpdk' %}
       - vrouter-agent-dpdk
-{% endif %}
+{%- else %}
       - vrouter-kernel-init
-{% endif %}
+{%- endif %}
       - node-init
