@@ -99,11 +99,10 @@ def render_config(ctx):
 
 
 def update_charm_status():
-    registry = config.get('docker-registry')
     tag = config.get('image-tag')
     for image in IMAGES:
         try:
-            docker_utils.docker_pull(registry, image, tag)
+            docker_utils.pull(image, tag)
         except Exception as e:
             log("Can't load image {}".format(e))
             status_set('blocked',
@@ -132,5 +131,5 @@ def update_charm_status():
     # TODO: what should happens if relation departed?
 
     render_config(ctx)
-    docker_utils.docker_compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
     common_utils.update_services_status(SERVICES)

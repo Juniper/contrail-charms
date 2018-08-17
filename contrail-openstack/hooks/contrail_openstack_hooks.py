@@ -41,9 +41,9 @@ def install():
     apt_update(fatal=False)
     apt_upgrade(fatal=True, dist=True)
 
-    docker_utils.install_docker()
-    docker_utils.apply_docker_insecure()
-    docker_utils.docker_login()
+    docker_utils.install()
+    docker_utils.apply_insecure()
+    docker_utils.login()
     status_set("blocked", "Missing relation to contrail-controller")
 
 
@@ -51,12 +51,13 @@ def install():
 def config_changed():
     changed = False
     if config.changed("docker-registry"):
-        docker_utils.apply_docker_insecure()
+        docker_utils.apply_insecure()
         changed = True
     if config.changed("docker-user") or config.changed("docker-password"):
-        docker_utils.docker_login()
+        docker_utils.login()
         changed = True
     if changed:
+        _notify_nova()
         _notify_neutron()
 
     if is_leader():

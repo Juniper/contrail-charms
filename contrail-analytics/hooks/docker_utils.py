@@ -2,14 +2,12 @@ import json
 import platform
 
 from subprocess import (
-    CalledProcessError,
     check_call,
     check_output
 )
 from charmhelpers.core.hookenv import (
     config,
     log,
-    WARNING,
 )
 from charmhelpers.fetch import (
     apt_install,
@@ -26,7 +24,7 @@ DOCKER_CLI = "/usr/bin/docker"
 DOCKER_COMPOSE_CLI = "docker-compose"
 
 
-def install_docker():
+def install():
     apt_install(["apt-transport-https", "ca-certificates", "curl",
                  "software-properties-common"])
     cmd = ["/bin/bash", "-c",
@@ -43,7 +41,7 @@ def install_docker():
     apt_install(DOCKER_PACKAGES)
 
 
-def apply_docker_insecure():
+def apply_insecure():
     if not config.get("docker-registry-insecure"):
         return
     docker_registry = config.get("docker-registry")
@@ -69,7 +67,7 @@ def apply_docker_insecure():
     service_restart('docker')
 
 
-def docker_login():
+def login():
     login = config.get("docker-user")
     password = config.get("docker-password")
     docker_registry = config.get("docker-registry")
@@ -78,21 +76,11 @@ def docker_login():
                     password, docker_registry])
 
 
-# TODO: fix it
-def get_contrail_version(pkg="python-contrail"):
-    image_name = config.get("image-name")
-    image_tag = config.get("image-tag")
-    image_id = "{}:{}".format(image_name, image_tag)
-    return check_output([DOCKER_CLI,
-        "run", "--rm", "--entrypoint", "dpkg-query",
-        image_id, "-f", "${Version}", "-W", pkg]).rstrip()
-
-
-def docker_cp(name, src, dst):
+def cp(name, src, dst):
     check_call([DOCKER_CLI, "cp", name + ":" + src, dst])
 
 
-def docker_exec(name, cmd, shell=False):
+def execute(name, cmd, shell=False):
     cli = [DOCKER_CLI, "exec", name]
     if isinstance(cmd, list):
         cli.extend(cmd)
@@ -105,15 +93,16 @@ def docker_exec(name, cmd, shell=False):
     return output.decode('UTF-8')
 
 
-def docker_pull(registry, name, tag):
-    check_call([DOCKER_CLI, "pull", "{}/{}:{}".format(registry, name, tag)])
+def pull(image, tag):
+    registry = config.get("docker-registry")
+    check_call([DOCKER_CLI, "pull", "{}/{}:{}".format(registry, image, tag)])
 
 
-def docker_compose_run(path):
+def compose_run(path):
     check_call([DOCKER_COMPOSE_CLI, "-f", path, "up", "-d"])
 
 
-def docker_remove_container_by_image(image):
+def remove_container_by_image(image):
     output = check_output([DOCKER_CLI, "ps", "-a"]).decode('UTF-8')
     containers = [line.split() for line in output.splitlines()][1:]
     for cnt in containers:
@@ -128,10 +117,21 @@ def docker_remove_container_by_image(image):
         check_call([DOCKER_CLI, "rm", cnt[0]])
 
 
-def docker_run(registry, image, tag, volumes):
+def run(image, tag, volumes, remove=False):
+    registry = config.get("docker-registry")
     image_id = "{}/{}:{}".format(registry, image, tag)
-    args = [DOCKER_CLI, "run", "--rm", "-i", "--network", "host"]
+    args = [DOCKER_CLI, "run"]
+    if remove:
+        args.append("--rm")
+    args.extend(["-i", "--network", "host"])
     for volume in volumes:
         args.extend(["-v", volume])
     args.extend([image_id])
     check_call(args)
+
+
+def get_contrail_version(image, tag, pkg="python-contrail"):
+    image_id = "{}:{}".format(image, tag)
+    return check_output([DOCKER_CLI,
+        "run", "--rm", "--entrypoint", "rpm", image_id,
+        "-q", "--qf", "'%{VERSION}-%{RELEASE}'", pkg]).decode("UTF-8").rstrip()

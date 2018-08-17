@@ -39,9 +39,9 @@ def install():
     apt_update(fatal=False)
     apt_upgrade(fatal=True, dist=True)
 
-    docker_utils.install_docker()
-    docker_utils.apply_docker_insecure()
-    docker_utils.docker_login()
+    docker_utils.install()
+    docker_utils.apply_insecure()
+    docker_utils.login()
 
     utils.update_charm_status()
 
@@ -57,9 +57,9 @@ def config_changed():
                 relation_set(relation_id=rid, relation_settings=settings)
 
     if config.changed("docker-registry"):
-        docker_utils.apply_docker_insecure()
+        docker_utils.apply_insecure()
     if config.changed("docker-user") or config.changed("docker-password"):
-        docker_utils.docker_login()
+        docker_utils.login()
 
     utils.update_charm_status()
 
@@ -143,11 +143,6 @@ def update_status():
 
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
-    # NOTE: image can not be deleted if container is running.
-    # TODO: so think about killing the container
-
-    # NOTE: this hook can be fired when either resource changed or charm code
-    # changed. so if code was changed then we may need to update config
     utils.update_charm_status()
 
 

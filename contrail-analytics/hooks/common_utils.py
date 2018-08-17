@@ -18,6 +18,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     log,
     ERROR,
+    application_version_set,
 )
 from charmhelpers.core.host import file_hash, write_file
 import docker_utils
@@ -126,6 +127,12 @@ def update_services_status(services):
                 return
 
     status_set("active", "Unit is ready")
+    try:
+        tag = config.get('image-tag')
+        version = docker_utils.get_contrail_version("contrail-base", tag)
+        application_version_set(version)
+    except CalledProcessError as e:
+        log("Couldn't detect installed application version: " + str(e))
 
 
 def json_loads(data, default=None):

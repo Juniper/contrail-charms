@@ -162,11 +162,10 @@ def render_config(ctx):
 
 
 def update_charm_status():
-    registry = config.get('docker-registry')
     tag = config.get('image-tag')
     for image in ALL_IMAGES:
         try:
-            docker_utils.docker_pull(registry, image, tag)
+            docker_utils.pull(image, tag)
         except Exception as e:
             log("Can't load image {}".format(e))
             status_set('blocked',
@@ -197,9 +196,9 @@ def update_charm_status():
     for port in ("8082", "8080", "8143"):
         open_port(port, "TCP")
 
-    docker_utils.docker_compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.docker_compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.docker_compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.docker_compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.docker_compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
     common_utils.update_services_status(SERVICES)
