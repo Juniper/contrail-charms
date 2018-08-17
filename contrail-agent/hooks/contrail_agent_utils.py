@@ -120,7 +120,7 @@ def get_context():
         ctx["dpdk_hugepages"] = _get_hugepages()
 
     info = common_utils.json_loads(config.get("orchestrator_info"), dict())
-    ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
+    ctx.update(info)
 
     ips = [relation_get("private-address", unit, rid)
            for rid in relation_ids("contrail-controller")

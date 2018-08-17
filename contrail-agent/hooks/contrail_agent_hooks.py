@@ -151,6 +151,11 @@ def update_status():
     utils.update_charm_status()
 
 
+@hooks.hook("upgrade-charm")
+def upgrade_charm():
+    utils.update_charm_status()
+
+
 def main():
     try:
         hooks.execute(sys.argv)
