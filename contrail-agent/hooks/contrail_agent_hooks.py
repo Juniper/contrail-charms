@@ -19,6 +19,7 @@ from charmhelpers.core.hookenv import (
     status_set,
     application_version_set,
     local_unit,
+    unit_get,
 )
 
 from charmhelpers.fetch import (
@@ -43,9 +44,6 @@ from subprocess import (
 from contrail_agent_utils import (
     configure_crashes,
     configure_vrouter_interface,
-    configure_virtioforwarder,
-    configure_initramfs,
-    configure_apparmor,
     drop_caches,
     dkms_autoinstall,
     update_vrouter_provision_status,
@@ -64,7 +62,6 @@ PACKAGES = ["dkms", "contrail-vrouter-agent", "contrail-utils",
 
 PACKAGES_DKMS_INIT = ["contrail-vrouter-dkms", "contrail-vrouter-init"]
 PACKAGES_DPDK_INIT = ["contrail-vrouter-dpdk", "contrail-vrouter-dpdk-init"]
-PACKAGES_AGILIO_INIT = ["ns-agilio-vrouter", "virtio-forwarder"]
 
 hooks = Hooks()
 config = config()
@@ -73,7 +70,6 @@ config = config()
 @hooks.hook("install.real")
 def install():
     status_set("maintenance", "Installing...")
-
     configure_crashes()
     configure_sources(True, "install-sources", "install-keys")
     apt_upgrade(fatal=True, dist=True)
@@ -81,19 +77,6 @@ def install():
     packages.extend(PACKAGES)
     if not config.get("dpdk"):
         packages.extend(PACKAGES_DKMS_INIT)
-        if config.get("agilio-vrouter"):
-            output = check_output(["cat", "/proc/cmdline"]).rstrip()
-            if not "intel_iommu=on" in output or not "iommu=pt" in output:
-                log("intel_iommu=on missing in cmdline", ERROR)
-                status_set("blocked", "Missing iommu in cmdline")
-                raise Exception("iommu not in kernel cmdline parameters ")
-            if lsb_release()['DISTRIB_CODENAME'] != 'xenial':
-                log("Only xenial is supported by agilio-vrouter", ERROR)
-                status_set("blocked", 
-                    "Only xenial is supported by agilio-vrouter")
-                raise Exception("Only xenial is supported by agilio-vrouter")
-            else:
-                packages.extend(PACKAGES_AGILIO_INIT)
     else:
         # services must not be started before config files creation
         if not init_is_systemd():
@@ -126,27 +109,16 @@ def install():
     os.chmod("/etc/contrail", 0o755)
     os.chown("/etc/contrail", 0, 0)
 
-    if config.get("dpdk"):
-        install_dpdk()
-    else:
+    if not config.get("dpdk") and not init_is_systemd():
         # supervisord must be started after installation
-        if not init_is_systemd():
-            # supervisord
-            service_restart("supervisor-vrouter")
-        install_dkms()
-        if config.get("agilio-vrouter"):
-            install_agilio()
+        service_restart("supervisor-vrouter")
 
-def install_agilio():
-    configure_virtioforwarder()
-    service("enable","virtio-forwarder")
-    service("start","virtio-forwarder")
-    configure_apparmor()
-    iface = config.get("physical-interface")
-    check_call("ifdown " + iface, shell=True)
-    configure_initramfs()
-    check_call("ifup " + iface, shell=True)
-    check_call("ifup vhost0", shell=True)
+    config["vrouter-expected-provision-state"] = False
+    config["vhost-ready"] = False
+    config.save()
+    lazy_install()
+    status_set("blocked", "Missing relation to contrail-controller")
+
 
 def install_dkms():
     try:
@@ -159,8 +131,6 @@ def install_dkms():
         modprobe("vrouter")
     dkms_autoinstall()
     configure_vrouter_interface()
-    config["vrouter-expected-provision-state"] = False
-    status_set("blocked", "Missing relation to contrail-controller")
 
 
 def install_dpdk():
@@ -178,7 +148,6 @@ def install_dpdk():
 
     configure_vrouter_interface()
     set_dpdk_options()
-    write_configs()
 
     if not init_is_systemd():
         os.remove("/etc/init/supervisor-vrouter.override")
@@ -199,6 +168,23 @@ def install_dpdk():
     fix_libvirt()
 
 
+def lazy_install():
+    if config.get("vhost-ready"):
+        return
+
+    plugin_ips = json.loads(config.get("plugin-ips", "{}"))
+    my_ip = unit_get("private-address")
+    if config.get("wait-for-external-plugin", False) and my_ip not in plugin_ips:
+        return
+
+    if config.get("dpdk"):
+        install_dpdk()
+    else:
+        install_dkms()
+    config["vhost-ready"] = True
+    config.save()
+
+
 @hooks.hook("config-changed")
 def config_changed():
     # Charm doesn't support changing of some parameters that are used only in
@@ -215,6 +201,22 @@ def config_changed():
         configure_hugepages()
 
     write_configs()
+
+
+@hooks.hook("vrouter-plugin-relation-changed")
+def vrouter_plugin_changed():
+    # accepts 'ready' value in realation (True/False)
+    # accepts 'settings' value as a serialized dict to json for contrail-vrouter-agent.conf:
+    # {"DEFAULT": {"key1": "value1"}, "SECTION_2": {"key1": "value1"}}
+    data = relation_get()
+    plugin_ip = data.get("private-address")
+    plugin_ready = data.get("ready", False)
+    if plugin_ready:
+        plugin_ips = json.loads(config.get("plugin-ips", "{}"))
+        plugin_ips[plugin_ip] = json.loads(data.get("settings", "{}"))
+        config["plugin-ips"] = json.dumps(plugin_ips)
+        config.save()
+    lazy_install()
 
 
 @hooks.hook("contrail-controller-relation-joined")

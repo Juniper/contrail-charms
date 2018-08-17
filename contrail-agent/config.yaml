@@ -73,12 +73,9 @@ options:
     description: |
       Log level for contrail services. Valid values are:
       SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
-  agilio-vrouter:
+  wait-for-external-plugin:
     type: boolean
     default: false
-    description: Enable vrouter hardware acceleration with agilio SmartNics 
-  virtioforwarder-coremask:
-    type: string
-    default: "1,2"
-    description: |
-      CPU affinity mask for virtio-forwarder, comma seperated range or hex bitmask
+    descripton: |
+      Enable external vRouter datapath plugin. This can be used with the agilio-vrouter 
+      charm to enable a hardware offloaded vRouter datapath. 

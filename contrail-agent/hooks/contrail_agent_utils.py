@@ -23,6 +23,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     status_set,
     WARNING,
+    unit_get,
 )
 
 from charmhelpers.core.host import (
@@ -160,21 +161,11 @@ def configure_vrouter_interface():
         render("agent_param", "/etc/contrail/agent_param",
                {"interface": iface})
 
-def configure_virtioforwarder():
-    ctx = {}
-    ctx["virtioforwarder_coremask"] = config.get("virtioforwarder-coremask")
-    render("virtioforwarder", "/etc/default/virtioforwarder", ctx)
+    config["vhost-ready"] = True
+    config.save()
 
-def configure_initramfs():
-    check_call("/opt/netronome/bin/ns-vrouter-ctl start", shell=True)
-    check_call("update-initramfs -u", shell=True)
+    write_configs()
 
-def configure_apparmor():
-    check_call('grep -qF "/{var/,}run/vrouter/** rwmix," ' \
-        '/etc/apparmor.d/abstractions/libvirt-qemu || ' \
-        'echo "/{var/,}run/vrouter/** rwmix," >> ' \
-        '/etc/apparmor.d/abstractions/libvirt-qemu',
-        shell=True)
 
 def drop_caches():
     """Clears OS pagecache"""
@@ -299,8 +290,9 @@ def get_context():
         ctx["physical_interface_mac"] = config["dpdk-mac"]
         ctx["physical_uio_driver"] = config.get("dpdk-driver")
 
-    if config.get("agilio-vrouter"):
-        ctx["agilio_vrouter"] = True
+    plugin_ips = json.loads(config.get("plugin-ips", "[]"))
+    my_ip = unit_get("private-address")
+    ctx["plugin_settings"] = plugin_ips.get(my_ip, dict())
 
     log("CTX: " + str(ctx))
 
@@ -326,6 +318,9 @@ def _save_file(path, data):
     "/etc/contrail/contrail-vrouter-nodemgr.conf":
         ["contrail-vrouter-nodemgr"]})
 def write_configs():
+    if not config.get("vhost-ready"):
+        return
+
     ctx = get_context()
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
