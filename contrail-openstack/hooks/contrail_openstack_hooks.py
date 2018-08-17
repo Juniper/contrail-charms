@@ -200,8 +200,7 @@ def _get_orchestrator_info():
 
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
-    if not utils.deploy_openstack_code("contrail-openstack-neutron-init"):
-        return
+    utils.deploy_openstack_code("contrail-openstack-neutron-init")
 
     # create plugin config
     base = "neutron_plugin_contrail.plugins.opencontrail"
@@ -249,8 +248,7 @@ def neutron_api_joined(rel_id=None):
 
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
-    if not utils.deploy_openstack_code("contrail-openstack-compute-init"):
-        return
+    utils.deploy_openstack_code("contrail-openstack-compute-init")
 
     # create plugin config
     sections = {
