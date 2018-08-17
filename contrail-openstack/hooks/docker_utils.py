@@ -93,9 +93,13 @@ def execute(name, cmd, shell=False):
     return output.decode('UTF-8')
 
 
-def pull(image, tag):
+def get_image_id(image, tag):
     registry = config.get("docker-registry")
-    check_call([DOCKER_CLI, "pull", "{}/{}:{}".format(registry, image, tag)])
+    return "{}/{}:{}".format(registry, image, tag)
+
+
+def pull(image, tag):
+    check_call([DOCKER_CLI, "pull", get_image_id(image, tag)])
 
 
 def compose_run(path):
@@ -118,8 +122,7 @@ def remove_container_by_image(image):
 
 
 def run(image, tag, volumes, remove=False):
-    registry = config.get("docker-registry")
-    image_id = "{}/{}:{}".format(registry, image, tag)
+    image_id = get_image_id(image, tag)
     args = [DOCKER_CLI, "run"]
     if remove:
         args.append("--rm")
@@ -131,7 +134,7 @@ def run(image, tag, volumes, remove=False):
 
 
 def get_contrail_version(image, tag, pkg="python-contrail"):
-    image_id = "{}:{}".format(image, tag)
+    image_id = get_image_id(image, tag)
     return check_output([DOCKER_CLI,
         "run", "--rm", "--entrypoint", "rpm", image_id,
         "-q", "--qf", "'%{VERSION}-%{RELEASE}'", pkg]).decode("UTF-8").rstrip()
