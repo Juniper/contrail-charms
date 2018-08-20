@@ -1,23 +1,12 @@
 import json
 import platform
+from subprocess import check_call, check_output
 
-from subprocess import (
-    check_call,
-    check_output
-)
-from charmhelpers.core.hookenv import (
-    config,
-    log,
-)
-from charmhelpers.fetch import (
-    apt_install,
-    apt_update,
-)
+from charmhelpers.core.hookenv import config, log
 from charmhelpers.core.host import service_restart
-
+from charmhelpers.fetch import apt_install, apt_update
 
 config = config()
-
 
 DOCKER_PACKAGES = ["docker.ce", "docker-compose"]
 DOCKER_CLI = "/usr/bin/docker"

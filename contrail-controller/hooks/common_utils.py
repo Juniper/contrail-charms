@@ -1,28 +1,24 @@
-from base64 import b64decode
-import os
-from socket import gethostbyname, gethostname, gaierror
-from subprocess import (
-    CalledProcessError,
-    check_call,
-    check_output
-)
-import netifaces
 import json
+import os
+from base64 import b64decode
+from socket import gaierror, gethostbyname, gethostname
+from subprocess import CalledProcessError, check_call, check_output
 
+import netifaces
+
+import docker_utils
 from charmhelpers.contrib.network.ip import (
     get_address_in_network,
-    get_iface_addr,
+    get_iface_addr
 )
 from charmhelpers.core.hookenv import (
-    config,
-    status_set,
-    log,
     ERROR,
     application_version_set,
+    config,
+    log,
+    status_set
 )
 from charmhelpers.core.host import file_hash, write_file
-import docker_utils
-
 
 config = config()
 
