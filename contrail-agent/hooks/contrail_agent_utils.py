@@ -1,7 +1,6 @@
 from subprocess import (
     check_output,
 )
-import apt_pkg
 import netifaces
 from charmhelpers.core.hookenv import (
     config,
@@ -53,7 +52,6 @@ DPDK_ARGS = {
     "dpdk-pmd-rxd-size": "--dpdk_rxd_sz"
 }
 
-apt_pkg.init()
 config = config()
 
 

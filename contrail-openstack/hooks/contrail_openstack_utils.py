@@ -1,4 +1,3 @@
-import apt_pkg
 import json
 import os
 import requests
@@ -26,7 +25,6 @@ from charmhelpers.core.templating import render
 
 import docker_utils
 
-apt_pkg.init()
 config = config()
 
 

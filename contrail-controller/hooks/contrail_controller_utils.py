@@ -1,8 +1,6 @@
 from socket import inet_aton
 import struct
 
-import apt_pkg
-
 from charmhelpers.core.hookenv import (
     config,
     related_units,
@@ -18,8 +16,6 @@ from charmhelpers.core.templating import render
 import common_utils
 import docker_utils
 
-
-apt_pkg.init()
 config = config()
 
 BASE_CONFIGS_PATH = "/etc/contrail"
