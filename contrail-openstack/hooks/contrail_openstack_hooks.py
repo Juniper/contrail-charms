@@ -250,6 +250,8 @@ def neutron_api_joined(rel_id=None):
 def nova_compute_joined(rel_id=None):
     utils.deploy_openstack_code("contrail-openstack-compute-init")
 
+    utils.nova_patch()
+
     # create plugin config
     sections = {
         "DEFAULT": [

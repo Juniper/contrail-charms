@@ -1,0 +1,32 @@
+diff --git a/nova/network/model.py b/nova/network/model.py
+index f400f2c..ca3050d 100644
+--- a/nova/network/model.py
++++ b/nova/network/model.py
+@@ -83,6 +83,10 @@ VIF_DETAILS_VHOSTUSER_OVS_PLUG = 'vhostuser_ovs_plug'
+ # Specifies whether vhost-user socket should be used to
+ # create a fp netdevice interface.
+ VIF_DETAILS_VHOSTUSER_FP_PLUG = 'vhostuser_fp_plug'
++# Specifies whether vhost-user socket should be used to
++# create a vrouter netdevice interface
++# TODO(mhenkel): Consider renaming this to be contrail-specific.
++VIF_DETAILS_VHOSTUSER_VROUTER_PLUG = 'vhostuser_vrouter_plug'
+ # ovs vhost user interface type name
+ OVS_VHOSTUSER_INTERFACE_TYPE = 'dpdkvhostuser'
+ 
+diff --git a/nova/network/os_vif_util.py b/nova/network/os_vif_util.py
+index bc75fbe..cf142c1 100644
+--- a/nova/network/os_vif_util.py
++++ b/nova/network/os_vif_util.py
+@@ -333,6 +333,12 @@ def _nova_to_osvif_vif_vhostuser(vif):
+             obj.bridge_name = vif["network"]["bridge"]
+         _set_vhostuser_settings(vif, obj)
+         return obj
++    elif vif['details'].get(model.VIF_DETAILS_VHOSTUSER_VROUTER_PLUG, False):
++        obj = _get_vif_instance(vif, objects.vif.VIFVHostUser,
++                                plugin="contrail_vrouter",
++                                vif_name=_get_vif_name(vif))
++        _set_vhostuser_settings(vif, obj)
++        return obj
+     else:
+         raise NotImplementedError()
+ 

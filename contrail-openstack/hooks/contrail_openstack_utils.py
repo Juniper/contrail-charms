@@ -1,11 +1,14 @@
 import json
 import os
+import sys
+from socket import gethostbyname
+from subprocess import CalledProcessError, check_call
+
+import pkg_resources
 import requests
 from six.moves.urllib.parse import urlparse
-from socket import gethostbyname
-import sys
-from subprocess import CalledProcessError
 
+import docker_utils
 from charmhelpers.core.hookenv import (
     config,
     log,
@@ -22,8 +25,6 @@ from charmhelpers.core.host import (
     write_file,
 )
 from charmhelpers.core.templating import render
-
-import docker_utils
 
 config = config()
 
@@ -211,3 +212,32 @@ def deploy_openstack_code(image):
         application_version_set(version)
     except CalledProcessError as e:
         log("Couldn't detect installed application version: " + str(e))
+
+
+def nova_patch():
+    # patch nova for DPDK
+    try:
+        import nova
+    except Exception:
+        # nova is not installed
+        return
+
+    nova_version = pkg_resources.get_distribution("nova").version
+    if nova_version.split('.')[0] != 15:
+        # patch is required only for Ocata.
+        # lower versions are not supported.
+        # next versions do not requires the patch
+        return
+
+    nova_path = os.path.dirname(nova.__file__)
+    try:
+        check_call("patch -p 2 -i files/nova.diff -d {} -b -f --dry-run".format(nova_path))
+    except Exception:
+        # already patched
+        return
+
+    check_call("patch -p 2 -i files/nova.diff -d {} -b".format(nova_path))
+
+    # TODO: un-patch
+    # patch -p 2 -i files/nova.diff -d ${::nova_path} -b -R -f --dry-run
+    # patch -p 2 -i files/nova.diff -d ${::nova_path} -b -R
