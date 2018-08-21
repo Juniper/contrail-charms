@@ -13,6 +13,7 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     WARNING,
+    INFO,
     relation_ids,
     relation_get,
     related_units,
@@ -218,8 +219,9 @@ def nova_patch():
     # patch nova for DPDK
     try:
         import nova
-    except Exception:
+    except Exception as e:
         # nova is not installed
+        log("nova couldn't be imported: {exc}".format(exc=e), level=WARNING)
         return
 
     nova_version = pkg_resources.get_distribution("nova").version
@@ -227,13 +229,15 @@ def nova_patch():
         # patch is required only for Ocata.
         # lower versions are not supported.
         # next versions do not requires the patch
+        log("nova version is: {}".format(nova_version), level=iNFO)
         return
 
     nova_path = os.path.dirname(nova.__file__)
     try:
         check_call("patch -p 2 -i files/nova.diff -d {} -b -f --dry-run".format(nova_path))
-    except Exception:
+    except Exception as e:
         # already patched
+        log("nova is already patched: {exc}".format(exc=e), level=INFO)
         return
 
     check_call("patch -p 2 -i files/nova.diff -d {} -b".format(nova_path))
