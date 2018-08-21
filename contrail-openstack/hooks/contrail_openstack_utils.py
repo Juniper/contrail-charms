@@ -229,7 +229,7 @@ def nova_patch():
         # patch is required only for Ocata.
         # lower versions are not supported.
         # next versions do not requires the patch
-        log("nova version is: {}".format(nova_version), level=iNFO)
+        log("nova version is: {}".format(nova_version), level=INFO)
         return
 
     nova_path = os.path.dirname(nova.__file__)
