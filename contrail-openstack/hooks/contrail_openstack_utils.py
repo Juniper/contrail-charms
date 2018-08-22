@@ -23,6 +23,7 @@ from charmhelpers.core.hookenv import (
 )
 from charmhelpers.core.host import (
     restart_on_change,
+    service_restart,
     write_file,
 )
 from charmhelpers.core.templating import render
@@ -243,6 +244,7 @@ def nova_patch():
         return
 
     check_call(base_cmd)
+    service_restart('nova-compute')
 
     # TODO: un-patch
     # patch -p 2 -i files/nova.diff -d ${::nova_path} -b -R -f --dry-run
