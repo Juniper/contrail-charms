@@ -2,7 +2,7 @@ import json
 import os
 import sys
 from socket import gethostbyname
-from subprocess import CalledProcessError, check_call
+from subprocess import CalledProcessError, check_call, check_output
 
 import pkg_resources
 import requests
@@ -233,14 +233,16 @@ def nova_patch():
         return
 
     nova_path = os.path.dirname(nova.__file__)
+    pwd = os.getcwd()
+    base_cmd = ["/usr/bin/patch", "-p", "2", "-i", pwd + "/files/nova.diff", "-d", nova_path, "-b"]
     try:
-        check_call("patch -p 2 -i files/nova.diff -d {} -b -f --dry-run".format(nova_path))
+        check_call(base_cmd + ["-f", "--dry-run"])
     except Exception as e:
         # already patched
         log("nova is already patched: {exc}".format(exc=e), level=INFO)
         return
 
-    check_call("patch -p 2 -i files/nova.diff -d {} -b".format(nova_path))
+    check_call(base_cmd)
 
     # TODO: un-patch
     # patch -p 2 -i files/nova.diff -d ${::nova_path} -b -R -f --dry-run
