@@ -285,6 +285,13 @@ def update_status():
         _notify_controller()
 
 
+@hooks.hook("upgrade-charm")
+def upgrade_charm():
+    # apply information to base charms
+    _notify_nova()
+    _notify_neutron()
+
+
 def main():
     try:
         hooks.execute(sys.argv)

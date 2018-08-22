@@ -225,11 +225,11 @@ def nova_patch():
         return
 
     nova_version = pkg_resources.get_distribution("nova").version
-    if nova_version.split('.')[0] != 15:
+    if nova_version.split('.')[0] != '15':
         # patch is required only for Ocata.
         # lower versions are not supported.
         # next versions do not requires the patch
-        log("nova version is: {}".format(nova_version), level=INFO)
+        log("this nova version is unsupported: {}".format(nova_version), level=INFO)
         return
 
     nova_path = os.path.dirname(nova.__file__)
