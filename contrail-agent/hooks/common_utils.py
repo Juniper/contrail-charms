@@ -116,7 +116,7 @@ def update_services_status(services):
                            srv + " is absent in the contrail-status")
                 return
             status, desc = statuses[group].get(srv)
-            if status != "active":
+            if status not in ["active", "backup"]:
                 workload = "waiting" if status == "initializing" else "blocked"
                 status_set(workload, "{} is not ready. Reason: {}"
                            .format(srv, desc))
