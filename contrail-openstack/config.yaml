@@ -11,6 +11,11 @@ options:
     description: |
       Configures metadata shared secret and tells nova to run a local instance
       of nova-api-metadata for serving metadata to VMs.
+  heat-plugin-dirs:
+    type: string
+    default: "/usr/lib64/heat,/usr/lib/heat,/usr/lib/python2.7/dist-packages/vnc_api/gen/heat/resources"
+    description: |
+      Set directories where heat will search for new resources.
   use-internal-endpoints:
     type: boolean
     default: False

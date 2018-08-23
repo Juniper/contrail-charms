@@ -38,6 +38,7 @@ from charmhelpers.fetch import (
 from contrail_openstack_utils import (
     write_configs,
     update_service_ips,
+    get_context
 )
 
 NEUTRON_API_PACKAGES = ["neutron-plugin-contrail"]
@@ -128,6 +129,7 @@ def contrail_controller_changed():
     # apply information to base charms
     _notify_nova()
     _notify_neutron()
+    _notify_heat()
 
     status_set("active", "Unit is ready")
 
@@ -184,6 +186,11 @@ def _notify_neutron():
         if related_units(rid):
             neutron_api_joined(rid)
 
+def _notify_heat():
+    for rid in relation_ids("heat-plugin"):
+        if related_units(rid):
+            heat_plugin_joined(rid)
+
 
 def _get_orchestrator_info():
     info = {"cloud_orchestrator": "openstack", "unit-type": "openstack"}
@@ -201,6 +208,43 @@ def _get_orchestrator_info():
     _add_to_info("network_service_ip")
     return {"orchestrator-info": json.dumps(info)}
 
+@hooks.hook("heat-plugin-relation-joined")
+def heat_plugin_joined(rel_id=None):
+    configure_sources(True, "install-sources", "install-keys")
+    apt_upgrade(fatal=True, dist=True)
+    apt_install(["contrail-heat"], fatal=True)
+
+    try:
+        output = check_output(["dpkg-query", "-f", "${Version}\\n",
+                               "-W", "contrail-heat"])
+        version = output.decode('UTF-8').rstrip()
+        application_version_set(version)
+    except CalledProcessError:
+        return None
+    plugin_dirs = config.get("heat-plugin-dirs")
+    ctx = get_context()
+    sections = {
+        "clients_contrail": [
+            ("user", ctx.get("keystone_admin_user")),
+            ("password", ctx.get("keystone_admin_password")),
+            ("tenant", ctx.get("keystone_admin_tenant")),
+            ("api_server", ctx.get("api_server")),
+            ("auth_host_ip", ctx.get("keystone_ip"))
+        ]
+    }
+
+    conf = {
+        "heat": {
+            "/etc/heat/heat.conf": {
+              "sections": sections
+            }
+         }
+    }
+    settings = {
+        "plugin-dirs": plugin_dirs,
+        "subordinate_configuration": json.dumps(conf)
+    }
+    relation_set(relation_id=rel_id, relation_settings=settings)
 
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):

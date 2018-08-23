@@ -132,7 +132,7 @@ def write_configs():
     if not _is_related_to("neutron-api"):
         return
 
-    ctx = _get_context()
+    ctx = get_context()
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
     path = "/etc/contrail/keystone/ssl/ca-cert.pem"
@@ -153,7 +153,7 @@ def _is_related_to(rel_name):
     return True if units else False
 
 
-def _get_context():
+def get_context():
     ctx = {}
     ctx["version"] = config.get("version", "4.0.0")
 
