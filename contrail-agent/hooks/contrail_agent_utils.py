@@ -222,9 +222,12 @@ def tls_changed(cert, key, ca):
 
 
 def get_vhost_ip():
-    addr = netifaces.ifaddresses("vhost0")
-    if netifaces.AF_INET in addr and len([netifaces.AF_INET]) > 0:
-        return [netifaces.AF_INET][0]["addr"]
+    try:
+        addr = netifaces.ifaddresses("vhost0")
+        if netifaces.AF_INET in addr and len([netifaces.AF_INET]) > 0:
+            return [netifaces.AF_INET][0]["addr"]
+    except ValueError:
+        pass
 
     iface = config.get("physical-interface")
     if not iface:
