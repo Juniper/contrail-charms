@@ -224,8 +224,8 @@ def tls_changed(cert, key, ca):
 def get_vhost_ip():
     try:
         addr = netifaces.ifaddresses("vhost0")
-        if netifaces.AF_INET in addr and len([netifaces.AF_INET]) > 0:
-            return [netifaces.AF_INET][0]["addr"]
+        if netifaces.AF_INET in addr and len(addr[netifaces.AF_INET]) > 0:
+            return addr[netifaces.AF_INET][0]["addr"]
     except ValueError:
         pass
 
@@ -233,7 +233,7 @@ def get_vhost_ip():
     if not iface:
         iface = _get_default_gateway_iface()
     addr = netifaces.ifaddresses(iface)
-    if netifaces.AF_INET in addr and len([netifaces.AF_INET]) > 0:
-        return [netifaces.AF_INET][0]["addr"]
+    if netifaces.AF_INET in addr and len(addr[netifaces.AF_INET]) > 0:
+        return addr[netifaces.AF_INET][0]["addr"]
 
     return None
