@@ -290,7 +290,7 @@ def get_context():
         ctx["physical_interface_mac"] = config["dpdk-mac"]
         ctx["physical_uio_driver"] = config.get("dpdk-driver")
 
-    plugin_ips = json.loads(config.get("plugin-ips", "[]"))
+    plugin_ips = json.loads(config.get("plugin-ips", "{}"))
     my_ip = unit_get("private-address")
     ctx["plugin_settings"] = plugin_ips.get(my_ip, dict())
 
