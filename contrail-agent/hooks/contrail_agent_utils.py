@@ -201,9 +201,9 @@ def fix_libvirt():
 
 
 def tls_changed(cert, key, ca):
-    files = {"/etc/contrail/ssl/certs/server.pem": cert,
-             "/etc/contrail/ssl/private/server-privkey.pem": key,
-             "/etc/contrail/ssl/certs/ca-cert.pem": ca}
+    files = {"/etc/contrail/ssl/server.pem": cert,
+             "/etc/contrail/ssl/server-privkey.pem": key,
+             "/etc/contrail/ssl/ca-cert.pem": ca}
     changed = False
     for cfile in files:
         data = files[cfile]
