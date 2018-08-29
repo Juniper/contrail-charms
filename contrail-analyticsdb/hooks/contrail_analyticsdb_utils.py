@@ -75,6 +75,7 @@ def get_context():
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["analyticsdb_minimum_diskgb"] = config.get("cassandra-minimum-diskgb")
+    ctx["jvm_extra_opts"] = config.get("cassandra-jvm-extra-opts")
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))

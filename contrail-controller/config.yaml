@@ -37,6 +37,10 @@ options:
     description: |
       Contrail has this as parameter and checks it at startup.
       If disk is smaller then status of DB is not good.
+  cassandra-jvm-extra-opts:
+    type: string
+    description: |
+      Memory limits for Java process of Cassandra.
   log-level:
     type: string
     default: SYS_NOTICE
