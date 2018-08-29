@@ -109,56 +109,12 @@ services:
     charm: ./contrail-openstack
     series: xenial
     num_units: 0
-    options:
-      install-keys: |
-        - |
-          -----BEGIN PGP PUBLIC KEY BLOCK-----
-          Version: GnuPG v1
-
-          mQENBFZDkpsBCAC+T+UOOLUky331HZk8RbfF7mQ35nwH1PGl2vHM6RWdqayLK4aV
-          1uUNGzI3UJw0YVCMmqJSlNfU58GhxEZ/cRbVjnZ6ebAIWRGepsMYWDlA960ornnL
-          VCRbr6yvHU06MSS8yl0X43QL2yGdBRiC5EAPEAawDOTMk0RxJ1AvMDHmnKommoQG
-          MWJ5zKL+fYSiNEPxQ2/nYd2jVXK4a1jP8c4LcvMdo8uxrEHklr/81wX+UKZYzuZP
-          bWQmiXiZzhQD2qz7IgZDaBKVEH4b2xMjilaPc2JOH0hHdP0M33PUOvCbpXQAYOok
-          kzqFpglZq1mZmM1ba6x37E07YpOvNWN0kE9DABEBAAG0CENvbnRyYWlsiQE4BBMB
-          AgAiBQJWQ5KbAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAKCRBmWWjLMSv5
-          wDrYB/4nMGcDVFRGU4tvIykhu/l6J6uNunpACL5HrdxC93PrThB2EgJXgnPpE/O+
-          KtjN2JKkSs4ehQy0wRMHc1eM/pQ1GRw4QV6vxO1FPT+y8BMdYkuwqd3uM22wg9mZ
-          yKvLtWBhMEu9nAPsTSVaT7Yw1z319Nr7JP+0mRCmlkLjuQUF2RcMwH59XH+8Lpev
-          MJEGdDcwWifPiO83ycBTQ760miz4B4inUWLYZ11lW/tXRSNG+o4QjemF5mWbPO+H
-          knwC/9eukDath9q7itLbJsDbam0/2KCTPxly1sk6E9hCNSIxlNT6ZnnnorLUoSqH
-          cTfEFYBDWmyhtqzHcfqocnBaPZT8
-          =rMS6
-          -----END PGP PUBLIC KEY BLOCK-----
-      install-sources: |
-        - "deb http://192.168.1.1:8080/newton/3065 /"
   contrail-agent:
     charm: ./contrail-agent
     num_units: 0
     series: xenial
     options:
-      install-keys: |
-        - |
-          -----BEGIN PGP PUBLIC KEY BLOCK-----
-          Version: GnuPG v1
-
-          mQENBFZDkpsBCAC+T+UOOLUky331HZk8RbfF7mQ35nwH1PGl2vHM6RWdqayLK4aV
-          1uUNGzI3UJw0YVCMmqJSlNfU58GhxEZ/cRbVjnZ6ebAIWRGepsMYWDlA960ornnL
-          VCRbr6yvHU06MSS8yl0X43QL2yGdBRiC5EAPEAawDOTMk0RxJ1AvMDHmnKommoQG
-          MWJ5zKL+fYSiNEPxQ2/nYd2jVXK4a1jP8c4LcvMdo8uxrEHklr/81wX+UKZYzuZP
-          bWQmiXiZzhQD2qz7IgZDaBKVEH4b2xMjilaPc2JOH0hHdP0M33PUOvCbpXQAYOok
-          kzqFpglZq1mZmM1ba6x37E07YpOvNWN0kE9DABEBAAG0CENvbnRyYWlsiQE4BBMB
-          AgAiBQJWQ5KbAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAKCRBmWWjLMSv5
-          wDrYB/4nMGcDVFRGU4tvIykhu/l6J6uNunpACL5HrdxC93PrThB2EgJXgnPpE/O+
-          KtjN2JKkSs4ehQy0wRMHc1eM/pQ1GRw4QV6vxO1FPT+y8BMdYkuwqd3uM22wg9mZ
-          yKvLtWBhMEu9nAPsTSVaT7Yw1z319Nr7JP+0mRCmlkLjuQUF2RcMwH59XH+8Lpev
-          MJEGdDcwWifPiO83ycBTQ760miz4B4inUWLYZ11lW/tXRSNG+o4QjemF5mWbPO+H
-          knwC/9eukDath9q7itLbJsDbam0/2KCTPxly1sk6E9hCNSIxlNT6ZnnnorLUoSqH
-          cTfEFYBDWmyhtqzHcfqocnBaPZT8
-          =rMS6
-          -----END PGP PUBLIC KEY BLOCK-----
-      install-sources: |
-        - "deb http://192.168.1.1:8080/newton/3065 /"
+      log-level: "SYS_DEBUG"
   contrail-analytics:
     charm: ./contrail-analytics
     num_units: 3
@@ -168,11 +124,19 @@ services:
     charm: ./contrail-analyticsdb
     num_units: 3
     series: xenial
+    options:
+      log-level: "SYS_DEBUG"
+      cassandra-minimum-diskgb: 4
+      cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
     to: [ "1", "2", "3" ]
   contrail-controller:
     charm: ./contrail-controller
     series: xenial
     num_units: 3
+    options:
+      log-level: "SYS_DEBUG"
+      cassandra-minimum-diskgb: 4
+      cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
     to: [ "1", "2", "3" ]
   contrail-keystone-auth:
     charm: ./contrail-keystone-auth
