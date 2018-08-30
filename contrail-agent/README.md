@@ -65,3 +65,22 @@ it at install stage and raises an error if kernel module can't be loaded.
 
 Repository for this charm and for contrail-openstack charm must additionaly
 contain Contrail's version for packages: nova-*, python-nova, libvirt*
+
+List of options
+---------------
+
+Option   | Type| default | Description
+---------|-----|---------|-------------
+install-sources | string | | Package sources for install
+install-keys | string |  | Apt keys for package install sources
+physical-interface | string | | Specify the interface to install vhost0 on. If left empty, vhost0 will be installed on the default gateway interface.
+vhost-gateway | string | auto | Specify the gateway for vhost0, either an IPv4 address or keyword 'auto'. 'auto' will set gateway automatically based on host's existing routes.
+remove-juju-bridge | boolean | true | Juju on MAAS creates bridges for deploying LXD/LXC and KVM workloads. Enable this to remove such a bridge if you want to install vhost0 directly on the underlying interface.
+dpdk | boolean | false | Use user space DPDK vRouter
+dpdk-driver | string | uio_pci_generic | DPDK driver to use for physical interface. Interface can be specified using vhost-interface.
+dpdk-hugepages | string | 70% | Number of huge pages to reserve for use with DPDK vRouter and OpenStack instances. Value can be specified as percentage of system memory e.g. 70% or as number of huge pages e.g. 1434.
+dpdk-coremask | string | 1 | vRouter CPU affinity mask. Determines on which CPUs DPDK vRouter will run. Value can be specified as either a hexidecimal bitmask e.g. 0xF or as a numbered list separated by commas e.g. 0,1 (ranges are also supported using '-' e.g. 0-2). It must specify only real cores cause contrail-vrouter-dpdk service will  | string | | Main packet pool size.
+dpdk-pmd-txd-size | string | | DPDK PMD Tx Descriptor size.
+dpdk-pmd-rxd-size | string | | DPDK PMD Rx Descriptor size.
+vhost-mtu | string | | MTU for vhost0 interface
+log-level | string | SYS_NOTICE | Log level for contrail services. Valid values are: SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG

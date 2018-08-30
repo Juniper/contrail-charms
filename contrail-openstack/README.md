@@ -50,3 +50,13 @@ Option 'enable-metadata-server' controls if a local nova-api-metadata service is
 started (per Compute Node) and registered to serve metadata requests. It is
 the recommended approach for serving metadata to instances and is enabled by
 default.
+
+List of options
+---------------
+
+Option   | Type| default | Description
+---------|-----|---------|-------------
+install-sources | string | | Package sources for install
+install-keys | string |  | Apt keys for package install sources
+enable-metadata-server | boolean | true | Configures metadata shared secret and tells nova to run a local instance of nova-api-metadata for serving metadata to VMs.
+use-internal-endpoints | boolean | False | Openstack mostly defaults to using public endpoints for internal communication between services. If set to True this option will configure services to use internal endpoints where possible.

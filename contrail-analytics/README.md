@@ -51,3 +51,16 @@ Relating to haproxy charm (http-services relation) allows multiple units to be
 load balanced:
 
     juju add-relation contrail-analytics haproxy
+
+List of options
+---------------
+
+Option   | Type| default | Description
+---------|-----|---------|-------------
+control-network | string | | The IP address and netmask of the control network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
+docker-registry | string | | URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
+docker-user | string | | Login to the docker registry.
+docker-password | string | | Password to the docker registry.
+image-name | string | | Full docker's image name.
+image-tag | string | | Tag of docker image.
+log-level | string | SYS_NOTICE | Log level for contrail services. Valid values are: SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
