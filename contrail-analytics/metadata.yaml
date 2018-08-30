@@ -5,7 +5,7 @@ description: |
   Contral analytics component within docker container.
 series:
   - xenial
-  - trusty
+  - bionic
 peers:
   analytics-cluster:
     interface: contrail-analytics-cluster

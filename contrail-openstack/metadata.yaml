@@ -7,7 +7,7 @@ categories:
   - openstack
 series:
   - xenial
-  - trusty
+  - bionic
 subordinate: true
 peers:
   cluster:

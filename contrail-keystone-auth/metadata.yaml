@@ -5,7 +5,7 @@ description: |
   Charm connects Contrail cluster to keystone to obtain auth info.
 series:
   - xenial
-  - trusty
+  - bionic
 provides:
   contrail-auth:
     interface: contrail-auth
