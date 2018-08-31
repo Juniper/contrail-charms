@@ -135,7 +135,9 @@ def _get_endpoints():
 })
 def write_configs():
     # don't need to write any configs for nova. only for neutron.
-    if not _is_related_to("neutron-api"):
+    neutron = _is_related_to("neutron-api")
+    heat = _is_related_to("heat")
+    if not neutron and not heat:
         return
 
     ctx = _get_context()
@@ -146,10 +148,11 @@ def write_configs():
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
 
-    render("ContrailPlugin.ini",
-           "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
-           ctx, "root", "neutron", 0o440)
-    # some code inside neutron-plugin uses auth info from next file
+    if neutron:
+        render("ContrailPlugin.ini",
+               "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
+               ctx, "root", "neutron", 0o440)
+    # some code inside neutron-plugin/heat uses auth info from next file
     render("vnc_api_lib.ini", "/etc/contrail/vnc_api_lib.ini", ctx)
 
 

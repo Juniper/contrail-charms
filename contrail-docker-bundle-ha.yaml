@@ -24,6 +24,13 @@ services:
     charm: cs:xenial/rabbitmq-server
     num_units: 3
     to: [ "lxd:1", "lxd:2", "lxd:3" ]
+  heat:
+    charm: cs:xenial/heat
+    num_units: 3
+    options:
+      vip: 192.168.1.246
+      vip_cidr: 24
+    to: [ "lxd:1", "lxd:2", "lxd:3" ]
   keystone:
     charm: cs:xenial/keystone
     options:
@@ -105,6 +112,11 @@ services:
     options:
       cluster_count: 3
     num_units: 0
+  heat-hacluster:
+    charm: cs:xenial/hacluster
+    options:
+      cluster_count: 3
+    num_units: 0
   contrail-openstack:
     charm: ./contrail-openstack
     series: xenial
@@ -170,6 +182,10 @@ relations:
   - [ "nova-compute", "ntp" ]
   - [ "openstack-dashboard:identity-service", "keystone" ]
   - [ openstack-dashboard, dashboard-hacluster ]
+  - [ "heat", "mysql" ]
+  - [ "heat", "rabbitmq-server" ]
+  - [ "heat", "keystone" ]
+  - [ "heat", "heat-hacluster" ]
 
   #contrail
   - [ "contrail-keystone-auth", "keystone" ]
@@ -179,6 +195,7 @@ relations:
   - [ "contrail-controller", "contrail-analyticsdb" ]
   - [ "contrail-openstack", "nova-compute" ]
   - [ "contrail-openstack", "neutron-api" ]
+  - [ "contrail-openstack", "heat" ]
   - [ "contrail-openstack", "contrail-controller" ]
   - [ "contrail-agent:juju-info", "nova-compute:juju-info" ]
   - [ "contrail-agent", "contrail-controller"]

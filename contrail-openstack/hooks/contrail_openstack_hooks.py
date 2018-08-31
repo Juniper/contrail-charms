@@ -124,6 +124,7 @@ def contrail_controller_changed():
     # apply information to base charms
     _notify_nova()
     _notify_neutron()
+    _notify_heat()
 
     status_set("active", "Unit is ready")
 
@@ -180,6 +181,11 @@ def _notify_neutron():
         if related_units(rid):
             neutron_api_joined(rid)
 
+def _notify_heat():
+    for rid in relation_ids("heat-plugin"):
+        if related_units(rid):
+            heat_plugin_joined(rid)
+
 
 def _get_orchestrator_info():
     info = {"cloud_orchestrator": "openstack", "unit-type": "openstack"}
@@ -197,6 +203,14 @@ def _get_orchestrator_info():
     _add_to_info("network_service_ip")
     return {"orchestrator-info": json.dumps(info)}
 
+@hooks.hook("heat-plugin-relation-joined")
+def heat_plugin_joined(rel_id=None):
+    utils.deploy_openstack_code("contrail-openstack-heat-init")
+
+    settings = {
+        "plugin-dirs": config.get("heat-plugin-dirs"),
+    }
+    relation_set(relation_id=rel_id, relation_settings=settings)
 
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
@@ -290,6 +304,7 @@ def upgrade_charm():
     # apply information to base charms
     _notify_nova()
     _notify_neutron()
+    _notify_heat()
 
 
 def main():

@@ -19,6 +19,9 @@ provides:
   nova-compute:
     interface: neutron-plugin
     scope: container
+  heat-plugin:
+    interface: heat-plugin-subordinate
+    scope: container
 requires:
   contrail-controller:
     interface: contrail-controller
