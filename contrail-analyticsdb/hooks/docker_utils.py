@@ -1,4 +1,6 @@
+import base64
 import json
+import os
 import platform
 from subprocess import check_call, check_output
 
@@ -30,18 +32,27 @@ def install():
     apt_install(DOCKER_PACKAGES)
 
 
+def _load_json_file(filepath):
+    try:
+        with open() as f:
+            return json.load(f)
+    except Exception as e:
+        pass
+    return dict()
+
+
+def _save_json_file(filepath, data):
+    with open(file, "w") as f:
+        json.dump(data, f)
+
+
 def apply_insecure():
     if not config.get("docker-registry-insecure"):
         return
     docker_registry = config.get("docker-registry")
 
     log("Re-configure docker daemon")
-    dc = {}
-    try:
-        with open("/etc/docker/daemon.json") as f:
-            dc = json.load(f)
-    except Exception as e:
-        log("There is no docker config. Creating... (Err = {})".format(e))
+    dc = _load_json_file("/etc/docker/daemon.json")
 
     cv = dc.get("insecure-registries", list())
     if docker_registry in cv:
@@ -49,20 +60,25 @@ def apply_insecure():
     cv.append(docker_registry)
     dc["insecure-registries"] = cv
 
-    with open("/etc/docker/daemon.json", "w") as f:
-        json.dump(dc, f)
+    _save_json_file("/etc/docker/daemon.json", dc)
 
     log("Restarting docker service")
     service_restart('docker')
 
 
 def login():
+    # 'docker login' doesn't work simply on Ubuntu 18.04. let's hack.
     login = config.get("docker-user")
     password = config.get("docker-password")
+    if not login or not password:
+        return
+
+    auth = base64.b64encode("{}:{}".format(login, password))
     docker_registry = config.get("docker-registry")
-    if login and password:
-        check_call([DOCKER_CLI, "login", "-u", login, "-p",
-                    password, docker_registry])
+    config = os.path.join(os.path.expanduser("~"), ".docker/config.json")
+    data = _load_json_file(config)
+    data.setdefault("auths", dict())[docker_registry] = {"auth": auth}
+    _save_json_file(config, data)
 
 
 def cp(name, src, dst):
