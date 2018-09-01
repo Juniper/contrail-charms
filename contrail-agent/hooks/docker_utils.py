@@ -75,10 +75,10 @@ def login():
 
     auth = base64.b64encode("{}:{}".format(login, password))
     docker_registry = config.get("docker-registry")
-    config = os.path.join(os.path.expanduser("~"), ".docker/config.json")
-    data = _load_json_file(config)
+    config_path = os.path.join(os.path.expanduser("~"), ".docker/config.json")
+    data = _load_json_file(config_path)
     data.setdefault("auths", dict())[docker_registry] = {"auth": auth}
-    _save_json_file(config, data)
+    _save_json_file(config_path, data)
 
 
 def cp(name, src, dst):
