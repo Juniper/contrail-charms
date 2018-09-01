@@ -42,6 +42,10 @@ def _load_json_file(filepath):
 
 
 def _save_json_file(filepath, data):
+    try:
+        os.mkdir(os.path.dirname(filepath))
+    except OSError:
+        pass
     with open(filepath, "w") as f:
         json.dump(data, f)
 
