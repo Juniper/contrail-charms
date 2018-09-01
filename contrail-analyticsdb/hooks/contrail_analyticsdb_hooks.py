@@ -14,11 +14,6 @@ from charmhelpers.core.hookenv import (
     relation_set,
 )
 
-from charmhelpers.fetch import (
-    apt_upgrade,
-    apt_update
-)
-
 import contrail_analyticsdb_utils as utils
 import common_utils
 import docker_utils
@@ -34,9 +29,6 @@ def install():
 
     # TODO: try to remove this call
     common_utils.fix_hostname()
-
-    apt_update(fatal=False)
-    apt_upgrade(fatal=True, dist=True)
 
     docker_utils.install()
     docker_utils.apply_insecure()

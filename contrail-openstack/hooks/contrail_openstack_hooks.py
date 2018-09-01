@@ -21,11 +21,6 @@ from charmhelpers.core.hookenv import (
     unit_private_ip,
 )
 
-from charmhelpers.fetch import (
-    apt_update,
-    apt_upgrade,
-)
-
 import contrail_openstack_utils as utils
 import docker_utils
 
@@ -37,9 +32,6 @@ config = config()
 @hooks.hook("install.real")
 def install():
     status_set('maintenance', 'Installing...')
-
-    apt_update(fatal=False)
-    apt_upgrade(fatal=True, dist=True)
 
     docker_utils.install()
     docker_utils.apply_insecure()
