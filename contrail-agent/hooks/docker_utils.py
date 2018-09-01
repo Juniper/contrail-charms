@@ -34,7 +34,7 @@ def install():
 
 def _load_json_file(filepath):
     try:
-        with open() as f:
+        with open(filepath) as f:
             return json.load(f)
     except Exception as e:
         pass
@@ -42,7 +42,7 @@ def _load_json_file(filepath):
 
 
 def _save_json_file(filepath, data):
-    with open(file, "w") as f:
+    with open(filepath, "w") as f:
         json.dump(data, f)
 
 
