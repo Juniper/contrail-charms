@@ -41,9 +41,9 @@ services:
     volumes:
       - /lib/modules:/lib/modules
       - /var/log/contrail:/var/log/contrail
+      - /bin:/host/bin
 {%- if agent_mode != 'dpdk' %}
       - /usr/src:/usr/src
-      - /bin:/host/bin
 {%- else %}
       - /var/run:/var/run
       - /etc/os-release:/etc/os-release
