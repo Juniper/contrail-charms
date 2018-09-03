@@ -1,4 +1,5 @@
 from subprocess import (
+    check_call,
     check_output,
 )
 import netifaces
@@ -196,8 +197,19 @@ def fix_libvirt():
         render("TEMPLATE.qemu",
                "/etc/apparmor.d/libvirt/TEMPLATE.qemu",
                dict())
+        libvirt_file = '/etc/apparmor.d/abstractions/libvirt-qemu'
+        with open(libvirt_file) as f:
+            data = f.readlines()
+        new_line = "/run/vrouter/* rw,"
+        for line in data:
+            if new_line in line:
+                break
+        else:
+            with open(libvirt_file, "a") as f:
+                f.write("\n  " + new_line + "\n")
 
     service_restart("apparmor")
+    check_call(["/etc/init.d/apparmor",  "reload"])
 
 
 def tls_changed(cert, key, ca):
