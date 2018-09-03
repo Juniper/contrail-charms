@@ -140,6 +140,9 @@ def render_config(ctx):
 
     render("vrouter.yaml",
            CONFIGS_PATH + "/docker-compose.yaml", ctx)
+
+    render("contrail-vrouter-agent.conf",
+           "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
     # apply_keystone_ca
 
 
