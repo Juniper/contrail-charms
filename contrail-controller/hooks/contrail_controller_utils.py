@@ -155,7 +155,7 @@ def render_config(ctx):
     render("redis.yaml",
         REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
 
-    # apply_keystone_ca
+    apply_keystone_ca(ctx)
 
 
 def update_charm_status():

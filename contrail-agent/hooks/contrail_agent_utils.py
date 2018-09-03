@@ -143,7 +143,7 @@ def render_config(ctx):
 
     render("contrail-vrouter-agent.conf",
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
-    # apply_keystone_ca
+    apply_keystone_ca(ctx)
 
 
 def update_charm_status():

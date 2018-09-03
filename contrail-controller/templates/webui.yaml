@@ -9,6 +9,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+      - /etc/contrail/ssl:/etc/contrail/ssl
     restart: always
   job:
     image: "{{ container_registry }}/contrail-controller-webui-job:{{ contrail_version_tag }}"
@@ -19,4 +20,5 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+      - /etc/contrail/ssl:/etc/contrail/ssl
     restart: always

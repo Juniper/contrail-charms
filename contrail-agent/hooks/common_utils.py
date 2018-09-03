@@ -136,7 +136,7 @@ def json_loads(data, default=None):
 
 
 def apply_keystone_ca(ctx):
-    ks_ca_path = "/etc/contrail/keystone-ca-cert.pem"
+    ks_ca_path = "/etc/contrail/ssl/keystone-ca-cert.pem"
     ks_ca = ctx.get("keystone_ssl_ca")
     save_file(ks_ca_path, ks_ca, 0o444)
     if ks_ca:
