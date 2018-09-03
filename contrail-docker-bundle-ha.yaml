@@ -253,7 +253,7 @@ relations:
   - [ "contrail-openstack", "contrail-controller" ]
   - [ "contrail-agent:juju-info", "nova-compute:juju-info" ]
   - [ "contrail-agent", "contrail-controller"]
-  - [ "haproxy", "keepalived" ]
+  - [ "haproxy:juju-info", "keepalived:juju-info" ]
   - [ "haproxy", "contrail-controller:http-services" ]
   - [ "haproxy", "contrail-controller:https-services" ]
 
