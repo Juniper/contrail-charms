@@ -135,6 +135,7 @@ def get_context():
 
 
 def render_config(ctx):
+    common_utils.apply_keystone_ca(ctx)
     render("vrouter.env",
            BASE_CONFIGS_PATH + "/common_vrouter.env", ctx)
 
@@ -143,7 +144,6 @@ def render_config(ctx):
 
     render("contrail-vrouter-agent.conf",
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
-    common_utils.apply_keystone_ca(ctx)
 
 
 def update_charm_status():

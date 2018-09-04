@@ -137,6 +137,7 @@ def get_context():
 
 
 def render_config(ctx):
+    common_utils.apply_keystone_ca(ctx)
     render("config.env",
         BASE_CONFIGS_PATH + "/common_config.env", ctx)
 
@@ -154,8 +155,6 @@ def render_config(ctx):
         BASE_CONFIGS_PATH + "/redis.env", ctx)
     render("redis.yaml",
         REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-    common_utils.apply_keystone_ca(ctx)
 
 
 def update_charm_status():

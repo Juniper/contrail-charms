@@ -88,12 +88,12 @@ def get_context():
 
 
 def render_config(ctx):
+    common_utils.apply_keystone_ca(ctx)
     render("analytics-database.env",
            BASE_CONFIGS_PATH + "/common_analyticsdb.env", ctx)
 
     render("analytics-database.yaml",
            CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    common_utils.apply_keystone_ca(ctx)
 
 
 def update_charm_status():
