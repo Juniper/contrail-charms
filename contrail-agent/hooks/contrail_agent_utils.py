@@ -216,21 +216,12 @@ def fix_libvirt():
 
 
 def tls_changed(cert, key, ca):
-    files = {"/etc/contrail/ssl/server.pem": cert,
-             "/etc/contrail/ssl/server-privkey.pem": key,
-             "/etc/contrail/ssl/ca-cert.pem": ca}
-    changed = False
-    for cfile in files:
-        data = files[cfile]
-        old_hash = file_hash(cfile)
-        common_utils.save_file(cfile, data)
-        changed |= (old_hash != file_hash(cfile))
-
+    changed = common_utils.update_certificates(cert, key, ca)
     if not changed:
-        log("Certificates was not changed.")
+        log("Certificates were not changed.")
         return
 
-    log("Certificates was changed. Rewrite configs and rerun services.")
+    log("Certificates have changed. Rewrite configs and rerun services.")
     config["ssl_enabled"] = (cert is not None and len(cert) > 0)
     config.save()
     update_charm_status()

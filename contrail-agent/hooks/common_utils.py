@@ -146,9 +146,9 @@ def apply_keystone_ca(ctx):
 def update_certificates(cert, key, ca):
     # NOTE: store files in default paths cause no way to pass this path to
     # some of components (sandesh)
-    files = {"/etc/contrail/ssl/server.pem": cert,
-             "/etc/contrail/ssl/server-privkey.pem": key,
-             "/etc/contrail/ssl/ca-cert.pem": ca}
+    files = {"/etc/contrail/ssl/certs/server.pem": cert,
+             "/etc/contrail/ssl/private/server-privkey.pem": key,
+             "/etc/contrail/ssl/certs/ca-cert.pem": ca}
     changed = False
     for cfile in files:
         data = files[cfile]
