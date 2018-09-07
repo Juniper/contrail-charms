@@ -175,7 +175,6 @@ relations:
   - [ "neutron-api", "nova-cloud-controller" ]
   - [ "neutron-api", "keystone" ]
   - [ neutron-api, neutron-hacluster ]
-  - [ "nova-compute:shared-db", "mysql:shared-db" ]
   - [ "nova-compute:amqp", "rabbitmq-server:amqp" ]
   - [ "nova-compute", "glance" ]
   - [ "nova-compute", "nova-cloud-controller" ]
