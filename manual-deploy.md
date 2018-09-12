@@ -99,7 +99,32 @@ Manual installation
     juju add-relation easyrsa contrail-agent
     ```
 
-7. Add necessary relations.
+7. HA configuration (optional).
+
+    If you are using several controllers, we suggest the following HA solution using haproxy and keepalived.
+
+    Deploy haproxy and keepalived services. Haproxy is deployed on the machines with contrail-controllers.
+    (**Note:** Due to bug https://bugs.launchpad.net/charm-haproxy/+bug/1787702 it is impossible to use haproxy for contrail-analytics at the moment.)
+    ```
+    juju deploy cs:xenial/haproxy --to <contrail-controller machines>
+    juju deploy cs:~boucherv29/keepalived-19 --config virtual_ip=<vip>
+    ```
+    Expose haproxy to be available.
+    ```
+    juju expose haproxy
+    ```
+    Add necessary relations.
+    ```
+    juju add-relation haproxy keepalived
+    juju add-relation contrail-controller:http-services haproxy
+    juju add-relation contrail-controller:https-services haproxy
+    ```
+    Configure contrail-controller with vip.
+    ```
+    juju set contrail-controller vip=<vip>
+    ```
+
+8. Add necessary relations.
 
     ```
     juju add-relation keystone:shared-db mysql:shared-db
