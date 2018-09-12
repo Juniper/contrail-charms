@@ -18,7 +18,7 @@ Deploying Contrail charms
     sudo apt-get upgrade
     sudo apt-get install juju
 ```
-[Installing juju. Juju documentation.](https://docs.jujucharms.com/2.4/en/getting-started)
+[Installing juju](https://docs.jujucharms.com/2.4/en/getting-started)
 
 2. Configure juju:
 ```
@@ -73,7 +73,7 @@ juju add-credential aws   #add credentials
 ```
 juju bootstrap --bootstrap-series=xenial <cloud name> <controller name>
 ```
-[Creating controller. Juju documentation.](https://docs.jujucharms.com/2.4/en/controllers-creating)
+[Bootstrapping controller](https://docs.jujucharms.com/2.4/en/controllers-creating)
 
 4. Download charms:
 ```
@@ -84,7 +84,7 @@ git clone https://github.com/Juniper/contrail-charms -b R5
 
   You can deploy charms in bundle or manually.
 
-  [Charm bundles. Juju documentation](https://docs.jujucharms.com/2.4/en/charms-bundles)
+  [Charm bundles](https://docs.jujucharms.com/2.4/en/charms-bundles)
 
 - With bundle:
     - Create or modify the Juju deployment bundle yaml file to point to machines in which the contrail-charms should be deployed and to include options you need.
