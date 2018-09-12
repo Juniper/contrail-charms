@@ -127,20 +127,25 @@ Manual installation
 
     Deploy haproxy and keepalived services. Haproxy is deployed on the machines with contrail-controllers.
     (**Note:** Due to bug https://bugs.launchpad.net/charm-haproxy/+bug/1787702 it is impossible to use haproxy for contrail-analytics at the moment.)
+    Keepalived is a subordinate charm to haproxy and does not require `to` option.
     ```
-    juju deploy cs:xenial/haproxy --to <contrail-controller machines>
+    juju deploy cs:xenial/haproxy --to <first contrail-controller machine>
+    juju add-unit haproxy --to <another contrail-controller machine>
     juju deploy cs:~boucherv29/keepalived-19 --config virtual_ip=<vip>
     ```
+
     Expose haproxy to be available.
     ```
     juju expose haproxy
     ```
+
     Add necessary relations.
     ```
     juju add-relation haproxy keepalived
     juju add-relation contrail-controller:http-services haproxy
     juju add-relation contrail-controller:https-services haproxy
     ```
+
     Configure contrail-controller with vip.
     ```
     juju set contrail-controller vip=<vip>
