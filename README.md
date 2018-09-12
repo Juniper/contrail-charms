@@ -93,7 +93,8 @@ git clone https://github.com/Juniper/contrail-charms
 
 - Manually
 
-    [Manual deploy](./manual-deploy.md)
+    [How to deploy Contail with OpenStack](./manual-deploy.md)
+
     [Using the Manual cloud with Juju](https://docs.jujucharms.com/2.4/en/clouds-manual)
 
 6. You can check the status of your deployment using `juju status` command.
