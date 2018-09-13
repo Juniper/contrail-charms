@@ -311,10 +311,9 @@ def upgrade_charm():
     utils.update_charm_status()
 
 
-def _http_services():
+def _http_services(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    vip = config.get("vip")
     return [
         {"service_name": "contrail-webui-http",
          "service_host": vip,
@@ -344,13 +343,15 @@ def _http_services():
 
 @hooks.hook("http-services-relation-joined")
 def http_services_joined():
-    relation_set(services=yaml.dump(_http_services()))
+    vip = config.get("vip")
+    if not vip:
+        raise Exception("VIP must be set for allow relation to haproxy")
+    relation_set(services=yaml.dump(_http_services(str(vip))))
 
 
-def _https_services():
+def _https_services(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    vip = config.get("vip")
     return [
         {"service_name": "contrail-webui-https",
          "service_host": vip,
@@ -370,7 +371,10 @@ def _https_services():
 
 @hooks.hook("https-services-relation-joined")
 def https_services_joined():
-    relation_set(services=yaml.dump(_https_services()))
+    vip = config.get("vip")
+    if not vip:
+        raise Exception("VIP must be set for allow relation to haproxy")
+    relation_set(services=yaml.dump(_https_services(str(vip))))
 
 
 @hooks.hook('tls-certificates-relation-joined')

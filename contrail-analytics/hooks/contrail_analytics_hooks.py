@@ -139,10 +139,9 @@ def upgrade_charm():
     utils.update_charm_status()
 
 
-def _http_services():
+def _http_services(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    vip = relation_get("api-vip")
     return [{"service_name": "contrail-analytics-api",
              "service_host": vip,
              "service_port": 8081,
@@ -153,7 +152,10 @@ def _http_services():
 
 @hooks.hook("http-services-relation-joined")
 def http_services_joined():
-    relation_set(services=yaml.dump(_http_services()))
+    vip = config.get("vip")
+    if not vip:
+        raise Exception("VIP must be set for allow relation to haproxy")
+    relation_set(services=yaml.dump(_http_services(str(vip))))
 
 
 def main():
