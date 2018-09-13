@@ -172,6 +172,7 @@ def config_changed():
 
 def update_northbound_relations(rid=None):
     settings = {
+        "api-vip": config.get("vip"),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
@@ -313,9 +314,10 @@ def upgrade_charm():
 def _http_services():
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
+    vip = config.get("vip")
     return [
         {"service_name": "contrail-webui-http",
-         "service_host": "*",
+         "service_host": vip,
          "service_port": 8080,
          "service_options": [
             "timeout client 86400000",
@@ -328,7 +330,7 @@ def _http_services():
          "servers": [[name, addr, 8080,
             "cookie " + addr + " weight 1 maxconn 1024 check port 8082"]]},
         {"service_name": "contrail-api",
-         "service_host": "*",
+         "service_host": vip,
          "service_port": 8082,
          "service_options": [
             "timeout client 3m",
@@ -348,9 +350,10 @@ def http_services_joined():
 def _https_services():
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
+    vip = config.get("vip")
     return [
         {"service_name": "contrail-webui-https",
-         "service_host": "*",
+         "service_host": vip,
          "service_port": 8143,
          "service_options": [
             "timeout client 86400000",

@@ -81,6 +81,7 @@ def contrail_analytics_joined():
 def contrail_analytics_changed():
     data = relation_get()
     changed = False
+    changed |= _value_changed(data, "api-vip", "api_vip")
     changed |= _value_changed(data, "auth-mode", "auth_mode")
     changed |= _value_changed(data, "auth-info", "auth_info")
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
@@ -97,7 +98,7 @@ def contrail_analytics_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "auth_mode", "orchestrator_info",
+        for key in ["api_vip", "auth_info", "auth_mode", "orchestrator_info",
                     "ssl_enabled", "rabbitmq_hosts"]:
             config.pop(key, None)
     utils.update_charm_status()
@@ -141,8 +142,9 @@ def upgrade_charm():
 def _http_services():
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
+    vip = relation_get("api-vip")
     return [{"service_name": "contrail-analytics-api",
-             "service_host": "*",
+             "service_host": vip,
              "service_port": 8081,
              "service_options": ["option nolinger", "balance roundrobin"],
              "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
