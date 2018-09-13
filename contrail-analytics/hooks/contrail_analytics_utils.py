@@ -162,7 +162,12 @@ def update_charm_status():
     # TODO: what should happens if relation departed?
 
     render_config(ctx)
-    open_port(8081, "TCP")
+    try:
+        # TODO: do not open port if haproxy relation is present - and close after it's added
+        open_port(8081, "TCP")
+    except Exception:
+        # do not fail if port is already open by haproxy
+        pass
 
     docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")

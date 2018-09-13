@@ -190,7 +190,12 @@ def update_charm_status():
 
     render_config(ctx)
     for port in ("8082", "8080", "8143"):
-        open_port(port, "TCP")
+        try:
+            # TODO: do not open port if haproxy relation is present - and close after it's added
+            open_port(port, "TCP")
+        except Exception:
+            # do not fail if port is already open by haproxy
+            pass
 
     docker_utils.compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
