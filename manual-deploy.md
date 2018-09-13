@@ -117,7 +117,7 @@ Manual installation
     ```
     Add necessary relations.
     ```
-    juju add-relation haproxy keepalived
+    juju add-relation haproxy:juju-info keepalived:juju-info
     juju add-relation contrail-controller:http-services haproxy
     juju add-relation contrail-controller:https-services haproxy
     ```
