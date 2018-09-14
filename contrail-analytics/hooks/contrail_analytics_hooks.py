@@ -142,7 +142,7 @@ def upgrade_charm():
 
 
 def _notify_http_services():
-    for rid in relation_ids("http_services"):
+    for rid in relation_ids("http-services"):
         if related_units(rid):
             http_services_joined(rid)
 
