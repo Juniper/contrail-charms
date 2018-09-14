@@ -217,6 +217,7 @@ def config_changed():
 
 def update_northbound_relations(rid=None):
     settings = {
+        "api-vip": config.get("vip"),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
@@ -378,12 +379,12 @@ def upgrade_charm():
     update_charm_status()
 
 
-def _http_services():
+def _http_services(vip):
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [
         {"service_name": "contrail-webui-http",
-         "service_host": "*",
+         "service_host": vip,
          "service_port": 8080,
          "service_options": [
             "timeout client 86400000",
@@ -396,7 +397,7 @@ def _http_services():
          "servers": [[name, addr, 8080,
             "cookie " + addr + " weight 1 maxconn 1024 check port 8082"]]},
         {"service_name": "contrail-api",
-         "service_host": "*",
+         "service_host": vip,
          "service_port": 8082,
          "service_options": [
             "timeout client 3m",
@@ -410,15 +411,18 @@ def _http_services():
 
 @hooks.hook("http-services-relation-joined")
 def http_services_joined():
-    relation_set(services=yaml.dump(_http_services()))
+    vip = config.get("vip")
+    if not vip:
+        raise Exception("VIP must be set for allow relation to haproxy")
+    relation_set(services=yaml.dump(_http_services(str(vip))))
 
 
-def _https_services():
+def _https_services(vip):
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [
         {"service_name": "contrail-webui-https",
-         "service_host": "*",
+         "service_host": vip,
          "service_port": 8143,
          "service_options": [
             "timeout client 86400000",
@@ -435,7 +439,10 @@ def _https_services():
 
 @hooks.hook("https-services-relation-joined")
 def https_services_joined():
-    relation_set(services=yaml.dump(_https_services()))
+    vip = config.get("vip")
+    if not vip:
+        raise Exception("VIP must be set for allow relation to haproxy")
+    relation_set(services=yaml.dump(_https_services(str(vip))))
 
 
 @hooks.hook('amqp-relation-joined')

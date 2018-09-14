@@ -152,6 +152,11 @@ def update_charm_status(update_config=True):
     # TODO: what should happens if relation departed?
 
     render_config(ctx, do_check=False)
-    open_port(8081, "TCP")
+    try:
+        # TODO: do not open port if haproxy relation is present - and close after it's added
+        open_port(8081, "TCP")
+    except Exception:
+        # do not fail if port is already open by haproxy
+        pass
 
     run_container(CONTAINER_NAME)

@@ -105,6 +105,7 @@ def contrail_analytics_joined():
 def contrail_analytics_changed():
     data = relation_get()
     changed = False
+    changed |= _value_changed(data, "api-vip", "api_vip")
     changed |= _value_changed(data, "auth-mode", "auth_mode")
     changed |= _value_changed(data, "auth-info", "auth_info")
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
@@ -119,6 +120,7 @@ def contrail_analytics_changed():
     # TODO: set error if orchestrator is changing and container was started
     if changed:
         update_charm_status()
+        _notify_http_services()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
@@ -126,7 +128,7 @@ def contrail_analytics_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "auth_mode", "orchestrator_info",
+        for key in ["api_vip", "auth_info", "auth_mode", "orchestrator_info",
                     "ssl_enabled", "rabbitmq_vhost",
                     "rabbitmq_user", "rabbitmq_password", "rabbitmq_hosts"]:
             config.pop(key, None)
@@ -137,6 +139,7 @@ def contrail_analytics_departed():
                 " Please kill container by yourself or "
                 "restore cloud orchestrator.")
     update_charm_status()
+    _notify_http_services()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
@@ -191,11 +194,20 @@ def upgrade_charm():
     update_charm_status()
 
 
+def _notify_http_services():
+    for rid in relation_ids("http-services"):
+        if related_units(rid):
+            http_services_joined(rid)
+
+
 def _http_services():
+    vip = config.get("api_vip")
+    if not vip:
+        return list()
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [{"service_name": "contrail-analytics-api",
-             "service_host": "*",
+             "service_host": str(vip),
              "service_port": 8081,
              "service_options": ["option nolinger", "balance roundrobin"],
              "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
@@ -203,8 +215,9 @@ def _http_services():
 
 
 @hooks.hook("http-services-relation-joined")
-def http_services_joined():
-    relation_set(services=yaml.dump(_http_services()))
+def http_services_joined(rel_id=None):
+    relation_set(relation_id=rel_id,
+                 services=yaml.dump(_http_services()))
 
 
 def main():
