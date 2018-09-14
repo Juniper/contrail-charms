@@ -85,6 +85,10 @@ Manual installation
     juju expose neutron-api
     juju expose glance
     juju expose keystone
+    ```
+
+    Expose contrail-controller and contrail-analytics if you DO NOT use haproxy.
+    ```
     juju expose contrail-controller
     juju expose contrail-analytics
     ```
@@ -112,7 +116,7 @@ Manual installation
     juju deploy cs:~boucherv29/keepalived-19 --config virtual_ip=<vip>
     ```
 
-    Expose haproxy to be available.
+    Expose haproxy to be available. Do not expose contrail-controller and contrail-analytics in this case.
     ```
     juju expose haproxy
     ```
@@ -120,6 +124,7 @@ Manual installation
     Add necessary relations.
     ```
     juju add-relation haproxy:juju-info keepalived:juju-info
+    juju add-relation contrail-analytics:http-services haproxy
     juju add-relation contrail-controller:http-services haproxy
     juju add-relation contrail-controller:https-services haproxy
     ```
