@@ -91,6 +91,7 @@ def contrail_analytics_changed():
     # TODO: set error if orchestrator is changing and container was started
     if changed:
         utils.update_charm_status()
+        _notify_http_services()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
@@ -102,6 +103,7 @@ def contrail_analytics_departed():
                     "ssl_enabled", "rabbitmq_hosts"]:
             config.pop(key, None)
     utils.update_charm_status()
+    _notify_http_services()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
@@ -139,11 +141,20 @@ def upgrade_charm():
     utils.update_charm_status()
 
 
-def _http_services(vip):
+def _notify_http_services():
+    for rid in relation_ids("http_services"):
+        if related_units(rid):
+            http_services_joined(rid)
+
+
+def _http_services():
+    vip = config.get("api_vip")
+    if not vip:
+        return list()
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
     return [{"service_name": "contrail-analytics-api",
-             "service_host": vip,
+             "service_host": str(vip),
              "service_port": 8081,
              "service_options": ["option nolinger", "balance roundrobin"],
              "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
@@ -151,11 +162,9 @@ def _http_services(vip):
 
 
 @hooks.hook("http-services-relation-joined")
-def http_services_joined():
-    vip = config.get("vip")
-    if not vip:
-        raise Exception("VIP must be set for allow relation to haproxy")
-    relation_set(services=yaml.dump(_http_services(str(vip))))
+def http_services_joined(rel_id=None):
+    relation_set(relation_id=rel_id,
+                 services=yaml.dump(_http_services()))
 
 
 def main():

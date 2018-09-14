@@ -104,23 +104,26 @@ Manual installation
     If you are using several controllers, we suggest the following HA solution using haproxy and keepalived.
 
     Deploy haproxy and keepalived services. Haproxy is deployed on the machines with contrail-controllers.
-    (**Note:** Due to bug https://bugs.launchpad.net/charm-haproxy/+bug/1787702 it is impossible to use haproxy for contrail-analytics at the moment.)
     Keepalived is a subordinate charm to haproxy and does not require `to` option.
+    Haproxy charm must have peering_mode set to active-active. In active-passive mode it creates additional listeners on the same ports as other Contrail services and system doesn't work due to port conflicts.
     ```
-    juju deploy cs:xenial/haproxy --to <first contrail-controller machine>
+    juju deploy cs:xenial/haproxy --to <first contrail-controller machine> --config peering_mode=active-active
     juju add-unit haproxy --to <another contrail-controller machine>
     juju deploy cs:~boucherv29/keepalived-19 --config virtual_ip=<vip>
     ```
+
     Expose haproxy to be available.
     ```
     juju expose haproxy
     ```
+
     Add necessary relations.
     ```
     juju add-relation haproxy:juju-info keepalived:juju-info
     juju add-relation contrail-controller:http-services haproxy
     juju add-relation contrail-controller:https-services haproxy
     ```
+
     Configure contrail-controller with vip.
     ```
     juju set contrail-controller vip=<vip>
