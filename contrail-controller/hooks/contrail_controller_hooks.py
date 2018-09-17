@@ -466,6 +466,7 @@ def https_services_joined():
 
 @hooks.hook("https-services-relation-departed")
 def https_services_departed():
+    _update_ports(open_port, ["8143"])
 
 
 @hooks.hook('amqp-relation-joined')
