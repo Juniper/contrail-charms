@@ -144,8 +144,8 @@ services:
   contrail-controller:
     charm: ./contrail-controller
     series: xenial
-    num_units: 3
     options:
+      vip: 192.168.1.254
       log-level: "SYS_DEBUG"
       cassandra-minimum-diskgb: 4
       cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
@@ -155,6 +155,19 @@ services:
     series: xenial
     num_units: 1
     to: [ "lxd:1" ]
+
+  contrail-keepalived:
+    charm: cs:~boucherv29/keepalived-19
+    series: xenial
+    options:
+      virtual_ip: 192.168.1.254
+  contrail-haproxy:
+    charm: haproxy
+    series: xenial
+    expose: true
+    options:
+      peering_mode: "active-active"
+    to: [ "1", "2", "3" ]
 
 relations:
   # openstack
@@ -198,6 +211,12 @@ relations:
   - [ "contrail-openstack", "contrail-controller" ]
   - [ "contrail-agent:juju-info", "nova-compute:juju-info" ]
   - [ "contrail-agent", "contrail-controller"]
+
+  #haproxy
+  - [ "haproxy:juju-info", "keepalived:juju-info" ]
+  - [ "contrail-analytics", "haproxy" ]
+  - [ "contrail-controller:http-services", "haproxy" ]
+  - [ "contrail-controller:https-services", "haproxy" ]
 
 machines:
   "1":
