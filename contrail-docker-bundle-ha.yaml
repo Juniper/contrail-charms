@@ -190,7 +190,7 @@ services:
     charm: ./contrail-controller
     series: xenial
     options:
-      vip: 10.0.0.254
+      vip: 192.168.10.254
       control-network: "192.168.10.0/24"
     num_units: 3
     to: [ "1", "2", "3" ]
@@ -204,10 +204,13 @@ services:
     charm: cs:~boucherv29/keepalived-19
     series: xenial
     options:
-      virtual_ip: 10.0.0.254
+      virtual_ip: 192.168.10.254
   contrail-haproxy:
     charm: haproxy
     series: xenial
+    expose: true
+    options:
+      peering_mode: "active-active"
     to: [ "1", "2", "3" ]
 
 relations:
@@ -252,9 +255,12 @@ relations:
   - [ "contrail-openstack", "contrail-controller" ]
   - [ "contrail-agent:juju-info", "nova-compute:juju-info" ]
   - [ "contrail-agent", "contrail-controller"]
+
+  #haproxy
   - [ "haproxy:juju-info", "keepalived:juju-info" ]
-  - [ "haproxy", "contrail-controller:http-services" ]
-  - [ "haproxy", "contrail-controller:https-services" ]
+  - [ "contrail-analytics", "haproxy" ]
+  - [ "contrail-controller:http-services", "haproxy" ]
+  - [ "contrail-controller:https-services", "haproxy" ]
 
 machines:
   "1":
