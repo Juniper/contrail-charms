@@ -13,7 +13,6 @@ from charmhelpers.core.hookenv import (
     status_get,
     leader_get,
     log,
-    open_port,
     local_unit,
     ERROR,
 )
@@ -184,12 +183,4 @@ def update_charm_status(update_config=True, force=False):
     # TODO: what should happens if relation departed?
 
     _render_config(ctx, do_check=False)
-    for port in ("8082", "8080", "8143"):
-        try:
-            # TODO: do not open port if haproxy relation is present - and close after it's added
-            open_port(port, "TCP")
-        except Exception:
-            # do not fail if port is already open by haproxy
-            pass
-
     run_container(CONTAINER_NAME)

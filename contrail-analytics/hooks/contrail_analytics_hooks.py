@@ -13,6 +13,8 @@ from charmhelpers.core.hookenv import (
     status_set,
     relation_set,
     local_unit,
+    open_port,
+    close_port,
 )
 
 from charmhelpers.fetch import (
@@ -60,6 +62,7 @@ def install():
     docker_login()
 
     update_charm_status()
+    open_port(8081, "TCP")
 
 
 @hooks.hook("config-changed")
@@ -200,8 +203,15 @@ def _notify_http_services():
             http_services_joined(rid)
 
 
-def _http_services():
-    vip = config.get("api_vip")
+def _update_ports(func, ports):
+    for port in ports:
+        try:
+            func(port, "TCP")
+        except Exception:
+            pass
+
+
+def _http_services(vip):
     if not vip:
         return list()
     name = local_unit().replace("/", "-")
@@ -216,8 +226,15 @@ def _http_services():
 
 @hooks.hook("http-services-relation-joined")
 def http_services_joined(rel_id=None):
+    _update_ports(close_port, ["8081"])
+    vip = config.get("api_vip")
     relation_set(relation_id=rel_id,
-                 services=yaml.dump(_http_services()))
+                 services=yaml.dump(_http_services(str(vip))))
+
+
+@hooks.hook("http-services-relation-departed")
+def http_services_departed():
+    _update_ports(open_port, ["8081"])
 
 
 def main():
