@@ -430,7 +430,7 @@ def _https_services(vip):
          "service_port": 8143,
          "service_options": [
             "timeout client 86400000",
-            "mode http",
+            "mode tcp",
             "balance roundrobin",
             "cookie SERVERID insert indirect nocache",
             "timeout server 30000",
