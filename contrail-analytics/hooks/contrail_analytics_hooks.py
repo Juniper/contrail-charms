@@ -212,8 +212,6 @@ def _update_ports(func, ports):
 
 
 def _http_services(vip):
-    if not vip:
-        return list()
     name = local_unit().replace("/", "-")
     addr = get_ip()
     return [{"service_name": "contrail-analytics-api",
@@ -228,8 +226,9 @@ def _http_services(vip):
 def http_services_joined(rel_id=None):
     _update_ports(close_port, ["8081"])
     vip = config.get("api_vip")
+    data = list() if not vip else _http_services(str(vip))
     relation_set(relation_id=rel_id,
-                 services=yaml.dump(_http_services(str(vip))))
+                 services=yaml.dump(data))
 
 
 @hooks.hook("http-services-relation-departed")
