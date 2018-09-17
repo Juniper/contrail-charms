@@ -13,6 +13,8 @@ from charmhelpers.core.hookenv import (
     status_set,
     relation_set,
     local_unit,
+    open_port,
+    close_port,
 )
 
 import contrail_analytics_utils as utils
@@ -36,6 +38,7 @@ def install():
     docker_utils.login()
 
     utils.update_charm_status()
+    open_port(8081, "TCP")
 
 
 @hooks.hook("config-changed")
@@ -147,24 +150,38 @@ def _notify_http_services():
             http_services_joined(rid)
 
 
-def _http_services():
-    vip = config.get("api_vip")
+def _http_services(vip):
     if not vip:
         return list()
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
     return [{"service_name": "contrail-analytics-api",
-             "service_host": str(vip),
+             "service_host": vip,
              "service_port": 8081,
              "service_options": ["option nolinger", "balance roundrobin"],
              "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
             }]
 
 
+def _update_ports(func, ports):
+    for port in ports:
+        try:
+            func(port, "TCP")
+        except Exception:
+            pass
+
+
 @hooks.hook("http-services-relation-joined")
 def http_services_joined(rel_id=None):
+    _update_ports(close_port, ["8081"])
+    vip = config.get("api_vip")
     relation_set(relation_id=rel_id,
-                 services=yaml.dump(_http_services()))
+                 services=yaml.dump(_http_services(str(vip))))
+
+
+@hooks.hook("http-services-relation-departed")
+def http_services_departed():
+    _update_ports(open_port, ["8081"])
 
 
 def main():

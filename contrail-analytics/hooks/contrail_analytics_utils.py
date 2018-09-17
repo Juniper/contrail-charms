@@ -7,7 +7,6 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     status_set,
-    open_port,
     log,
 )
 from charmhelpers.core.templating import render
@@ -162,12 +161,6 @@ def update_charm_status():
     # TODO: what should happens if relation departed?
 
     render_config(ctx)
-    try:
-        # TODO: do not open port if haproxy relation is present - and close after it's added
-        open_port(8081, "TCP")
-    except Exception:
-        # do not fail if port is already open by haproxy
-        pass
 
     docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
     docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
