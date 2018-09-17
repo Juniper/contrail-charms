@@ -38,7 +38,9 @@ def install():
     docker_utils.login()
 
     utils.update_charm_status()
-    open_port(8081, "TCP")
+    # NOTE: do not open port until haproxy can fail
+    # https://bugs.launchpad.net/charm-haproxy/+bug/1792939
+    #open_port(8081, "TCP")
 
 
 @hooks.hook("config-changed")
@@ -147,13 +149,6 @@ def upgrade_charm():
 
 
 def _notify_proxy_services():
-    vip = config.get("api_vip")
-    func = close_port if vip else open_port
-    for port in ["8081"]:
-        try:
-            func(port, "TCP")
-        except Exception:
-            pass
     for rid in relation_ids("http-services"):
         if related_units(rid):
             http_services_joined(rid)
@@ -173,6 +168,12 @@ def _http_services(vip):
 @hooks.hook("http-services-relation-joined")
 def http_services_joined(rel_id=None):
     vip = config.get("api_vip")
+    func = close_port if vip else open_port
+    for port in ["8081"]:
+        try:
+            func(port, "TCP")
+        except Exception:
+            pass
     data = list() if not vip else _http_services(str(vip))
     relation_set(relation_id=rel_id,
                  services=yaml.dump(data))
