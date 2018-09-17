@@ -90,11 +90,12 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
     changed |= _value_changed(data, "ssl-enabled", "ssl_enabled")
     changed |= _value_changed(data, "rabbitmq_hosts", "rabbitmq_hosts")
+    config.save()
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:
         utils.update_charm_status()
-        _notify_http_services()
+        _notify_proxy_services()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
@@ -105,8 +106,9 @@ def contrail_analytics_departed():
         for key in ["api_vip", "auth_info", "auth_mode", "orchestrator_info",
                     "ssl_enabled", "rabbitmq_hosts"]:
             config.pop(key, None)
+    config.save()
     utils.update_charm_status()
-    _notify_http_services()
+    _notify_proxy_services()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
@@ -144,15 +146,20 @@ def upgrade_charm():
     utils.update_charm_status()
 
 
-def _notify_http_services():
+def _notify_proxy_services():
+    vip = config.get("api_vip")
+    func = close_port if vip else open_port
+    for port in ["8081"]:
+        try:
+            func(port, "TCP")
+        except Exception:
+            pass
     for rid in relation_ids("http-services"):
         if related_units(rid):
             http_services_joined(rid)
 
 
 def _http_services(vip):
-    if not vip:
-        return list()
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
     return [{"service_name": "contrail-analytics-api",
@@ -163,25 +170,12 @@ def _http_services(vip):
             }]
 
 
-def _update_ports(func, ports):
-    for port in ports:
-        try:
-            func(port, "TCP")
-        except Exception:
-            pass
-
-
 @hooks.hook("http-services-relation-joined")
 def http_services_joined(rel_id=None):
-    _update_ports(close_port, ["8081"])
     vip = config.get("api_vip")
+    data = list() if not vip else _http_services(str(vip))
     relation_set(relation_id=rel_id,
-                 services=yaml.dump(_http_services(str(vip))))
-
-
-@hooks.hook("http-services-relation-departed")
-def http_services_departed():
-    _update_ports(open_port, ["8081"])
+                 services=yaml.dump(data))
 
 
 def main():
