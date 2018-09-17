@@ -82,8 +82,6 @@ def install():
     docker_login()
 
     update_charm_status()
-    for port in ["8082", "8080", "8143"]:
-        open_port(port, "TCP")
 
 
 @hooks.hook("leader-elected")
@@ -211,6 +209,7 @@ def config_changed():
         docker_login()
 
     update_charm_status()
+    _notify_proxy_services()
 
     if not is_leader():
         return
@@ -383,14 +382,6 @@ def upgrade_charm():
     update_charm_status()
 
 
-def _update_ports(func, ports):
-    for port in ports:
-        try:
-            func(port, "TCP")
-        except Exception:
-            pass
-
-
 def _http_services(vip):
     name = local_unit().replace("/", "-")
     addr = get_ip()
@@ -422,17 +413,12 @@ def _http_services(vip):
 
 
 @hooks.hook("http-services-relation-joined")
-def http_services_joined():
-    _update_ports(close_port, ["8080", "8082"])
+def http_services_joined(rel_id=None):
     vip = config.get("vip")
     if not vip:
         raise Exception("VIP must be set for allow relation to haproxy")
-    relation_set(services=yaml.dump(_http_services(str(vip))))
-
-
-@hooks.hook("http-services-relation-departed")
-def http_services_departed():
-    _update_ports(open_port, ["8080", "8082"])
+    relation_set(relation_id=rel_id,
+                 services=yaml.dump(_http_services(str(vip))))
 
 
 def _https_services(vip):
@@ -456,17 +442,28 @@ def _https_services(vip):
 
 
 @hooks.hook("https-services-relation-joined")
-def https_services_joined():
-    _update_ports(close_port, ["8143"])
+def https_services_joined(rel_id=None):
     vip = config.get("vip")
     if not vip:
         raise Exception("VIP must be set for allow relation to haproxy")
-    relation_set(services=yaml.dump(_https_services(str(vip))))
+    relation_set(relation_id=rel_id,
+                 services=yaml.dump(_https_services(str(vip))))
 
 
-@hooks.hook("https-services-relation-departed")
-def https_services_departed():
-    _update_ports(open_port, ["8143"])
+def _notify_proxy_services():
+    vip = config.get("vip")
+    func = close_port if vip else open_port
+    for port in ["8082", "8080", "8143"]:
+        try:
+            func(port, "TCP")
+        except Exception:
+            pass
+    for rid in relation_ids("http-services"):
+        if related_units(rid):
+            http_services_joined(rid)
+    for rid in relation_ids("https-services"):
+        if related_units(rid):
+            https_services_joined(rid)
 
 
 @hooks.hook('amqp-relation-joined')

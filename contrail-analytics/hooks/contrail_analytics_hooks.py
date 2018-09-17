@@ -119,11 +119,12 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "rabbitmq_hosts", "rabbitmq_hosts")
     changed |= _value_changed(data, "configdb_cassandra_user", "configdb_cassandra_user")
     changed |= _value_changed(data, "configdb_cassandra_password", "configdb_cassandra_password")
+    config.save()
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:
         update_charm_status()
-        _notify_http_services()
+        _notify_proxy_services()
 
 
 @hooks.hook("contrail-analytics-relation-departed")
@@ -141,8 +142,9 @@ def contrail_analytics_departed():
                 "Container is present but cloud orchestrator was disappeared."
                 " Please kill container by yourself or "
                 "restore cloud orchestrator.")
+    config.save()
     update_charm_status()
-    _notify_http_services()
+    _notify_proxy_services()
 
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
@@ -197,18 +199,17 @@ def upgrade_charm():
     update_charm_status()
 
 
-def _notify_http_services():
-    for rid in relation_ids("http-services"):
-        if related_units(rid):
-            http_services_joined(rid)
-
-
-def _update_ports(func, ports):
-    for port in ports:
+def _notify_proxy_services():
+    vip = config.get("api_vip")
+    func = close_port if vip else open_port
+    for port in ["8081"]:
         try:
             func(port, "TCP")
         except Exception:
             pass
+    for rid in relation_ids("http-services"):
+        if related_units(rid):
+            http_services_joined(rid)
 
 
 def _http_services(vip):
@@ -224,16 +225,10 @@ def _http_services(vip):
 
 @hooks.hook("http-services-relation-joined")
 def http_services_joined(rel_id=None):
-    _update_ports(close_port, ["8081"])
     vip = config.get("api_vip")
     data = list() if not vip else _http_services(str(vip))
     relation_set(relation_id=rel_id,
                  services=yaml.dump(data))
-
-
-@hooks.hook("http-services-relation-departed")
-def http_services_departed():
-    _update_ports(open_port, ["8081"])
 
 
 def main():
