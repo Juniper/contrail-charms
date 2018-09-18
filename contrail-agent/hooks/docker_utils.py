@@ -171,6 +171,6 @@ def _render_config():
     # From https://docs.docker.com/config/daemon/systemd/#httphttps-proxy
     if len(config.get('no_proxy')) > 2023:
         raise Exception('no_proxy longer than 2023 chars.')
-    render('dockre-proxy.conf', '/etc/systemd/system/docker.service.d/docker-proxy.conf', config)
+    render('docker-proxy.conf', '/etc/systemd/system/docker.service.d/docker-proxy.conf', config)
     check_call(['systemctl', 'daemon-reload'])
     service_restart('docker')
