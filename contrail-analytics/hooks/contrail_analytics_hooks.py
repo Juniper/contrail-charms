@@ -34,9 +34,6 @@ def install():
     common_utils.fix_hostname()
 
     docker_utils.install()
-    docker_utils.apply_insecure()
-    docker_utils.login()
-
     utils.update_charm_status()
     # NOTE: do not open port until haproxy can fail
     # https://bugs.launchpad.net/charm-haproxy/+bug/1792939
@@ -53,11 +50,7 @@ def config_changed():
             for rid in relation_ids(rname):
                 relation_set(relation_id=rid, relation_settings=settings)
 
-    if config.changed("docker-registry"):
-        docker_utils.apply_insecure()
-    if config.changed("docker-user") or config.changed("docker-password"):
-        docker_utils.login()
-
+    docker_utils.config_changed()
     utils.update_charm_status()
 
 

@@ -37,12 +37,8 @@ def install():
     common_utils.fix_hostname()
 
     docker_utils.install()
-    docker_utils.apply_insecure()
-    docker_utils.login()
-
     if config["dpdk"]:
         utils.fix_libvirt()
-
     utils.update_charm_status()
 
 
@@ -52,6 +48,7 @@ def config_changed():
     if config.changed("dpdk"):
         raise Exception("Configuration parameter dpdk couldn't be changed")
 
+    docker_utils.config_changed()
     utils.update_charm_status()
 
 

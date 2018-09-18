@@ -6,6 +6,7 @@ from subprocess import check_call, check_output
 
 from charmhelpers.core.hookenv import config, log
 from charmhelpers.core.host import service_restart
+from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install, apt_update
 
 config = config()
@@ -30,6 +31,9 @@ def install():
     check_output(cmd, shell=True)
     apt_update()
     apt_install(DOCKER_PACKAGES)
+    _render_config()
+    _apply_insecure()
+    _login()
 
 
 def _load_json_file(filepath):
@@ -50,7 +54,7 @@ def _save_json_file(filepath, data):
         json.dump(data, f)
 
 
-def apply_insecure():
+def _apply_insecure():
     if not config.get("docker-registry-insecure"):
         return
     docker_registry = config.get("docker-registry")
@@ -70,7 +74,7 @@ def apply_insecure():
     service_restart('docker')
 
 
-def login():
+def _login():
     # 'docker login' doesn't work simply on Ubuntu 18.04. let's hack.
     login = config.get("docker-user")
     password = config.get("docker-password")
@@ -147,3 +151,26 @@ def get_contrail_version(image, tag, pkg="python-contrail"):
     return check_output([DOCKER_CLI,
         "run", "--rm", "--entrypoint", "rpm", image_id,
         "-q", "--qf", "%{VERSION}-%{RELEASE}", pkg]).decode("UTF-8").rstrip()
+
+
+def config_changed():
+    changed = False
+    if config.changed("http_proxy") or config.changed("https_proxy") or config.changed("no_proxy"):
+        _render_config()
+        changed = True
+    if config.changed("docker-registry"):
+        _apply_insecure()
+        changed = True
+    if config.changed("docker-user") or config.changed("docker-password"):
+        _login()
+        changed = True
+    return changed
+
+
+def _render_config():
+    # From https://docs.docker.com/config/daemon/systemd/#httphttps-proxy
+    if len(config.get('no_proxy')) > 2023:
+        raise Exception('no_proxy longer than 2023 chars.')
+    render('dockre-proxy.conf', '/etc/systemd/system/docker.service.d/docker-proxy.conf', config)
+    check_call(['systemctl', 'daemon-reload'])
+    service_restart('docker')

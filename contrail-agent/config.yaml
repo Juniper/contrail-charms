@@ -79,3 +79,24 @@ options:
     default: latest
     description: |
       Tag of docker image.
+  http_proxy:
+    type: string
+    default: ""
+    description: |
+      URL to use for HTTP_PROXY to be used by Docker. Only useful in closed
+      environments where a proxy is the only option for routing to the
+      registry to pull images
+  https_proxy:
+    type: string
+    default: ""
+    description: |
+      URL to use for HTTPS_PROXY to be used by Docker. Only useful in closed
+      environments where a proxy is the only option for routing to the
+      registry to pull images
+  no_proxy:
+    type: string
+    default: ""
+    description: |
+      Comma-separated list of destinations (either domain names or IP
+      addresses) that should be directly accessed, by opposition of going
+      through the proxy defined above. Must be less than 2023 characters long

@@ -64,3 +64,6 @@ docker-registry-insecure | boolean | false | Is it docker-registry insecure and 
 docker-user | string | | Login to the docker registry.
 docker-password | string | | Password to the docker registry.
 image-tag | string | latest | Tag of docker image.
+http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
+https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
+no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long

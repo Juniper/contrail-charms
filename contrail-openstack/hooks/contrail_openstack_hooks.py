@@ -34,23 +34,16 @@ def install():
     status_set('maintenance', 'Installing...')
 
     docker_utils.install()
-    docker_utils.apply_insecure()
-    docker_utils.login()
     status_set("blocked", "Missing relation to contrail-controller")
 
 
 @hooks.hook("config-changed")
 def config_changed():
-    changed = False
-    if config.changed("docker-registry"):
-        docker_utils.apply_insecure()
-        changed = True
-    if config.changed("docker-user") or config.changed("docker-password"):
-        docker_utils.login()
-        changed = True
+    changed = docker_utils.config_changed()
     if changed:
         _notify_nova()
         _notify_neutron()
+        _notufy_heat()
 
     if is_leader():
         res = _configure_metadata_shared_secret()

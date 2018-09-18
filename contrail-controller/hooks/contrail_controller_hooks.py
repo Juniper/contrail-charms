@@ -43,9 +43,6 @@ def install():
     common_utils.fix_hostname()
 
     docker_utils.install()
-    docker_utils.apply_insecure()
-    docker_utils.login()
-
     utils.update_charm_status()
 
 
@@ -158,11 +155,7 @@ def config_changed():
         if is_leader():
             _address_changed(local_unit(), ip)
 
-    if config.changed("docker-registry"):
-        docker_utils.apply_insecure()
-    if config.changed("docker-user") or config.changed("docker-password"):
-        docker_utils.login()
-
+    docker_utils.config_changed()
     utils.update_charm_status()
     _notify_proxy_services()
 

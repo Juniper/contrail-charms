@@ -64,3 +64,6 @@ docker-user | string | | Login to the docker registry.
 docker-password | string | | Password to the docker registry.
 image-tag | string | | Tag of docker image.
 log-level | string | SYS_NOTICE | Log level for contrail services. Valid values are: SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
+http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
+https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
+no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long
