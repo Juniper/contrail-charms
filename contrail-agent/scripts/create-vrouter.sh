@@ -53,8 +53,8 @@ configVRouter()
 			    pre-up ip link add address \$(cat /sys/class/net/$2/address) type vhost
 			    pre-up vif --add $2 --mac \$(cat /sys/class/net/$2/address) --vrf 0 --vhost-phys --type physical
 			    pre-up vif --add vhost0 --mac \$(cat /sys/class/net/$2/address) --vrf 0 --type vhost --xconnect $2
-			    post-down vif --list | awk '/^vif.*OS: vhost0/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
-			    post-down vif --list | awk '/^vif.*OS: $2/ {split(\$1, arr, "\\/"); print arr[2];}' | xargs vif --delete
+			    post-down vif --list | awk '/^vif.*OS: vhost0/ {split(\$1, arr, "/"); print arr[2];}' | xargs vif --delete
+			    post-down vif --list | awk '/^vif.*OS: $2/ {split(\$1, arr, "/"); print arr[2];}' | xargs vif --delete
 			    post-down ip link delete vhost0
 			EOF
 	fi
