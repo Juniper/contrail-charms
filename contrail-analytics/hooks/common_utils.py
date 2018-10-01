@@ -170,7 +170,7 @@ def render_and_log(template, conf_file, ctx, perms=0o444):
     except Exception:
         old_lines = set()
 
-    render(template, conf_file, ctx, perms)
+    render(template, conf_file, ctx, perms=perms)
     with open(conf_file) as f:
         new_lines = set(f.readlines())
     new_set = new_lines.difference(old_lines)
