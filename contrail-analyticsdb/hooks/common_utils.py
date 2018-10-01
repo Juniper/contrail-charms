@@ -19,6 +19,7 @@ from charmhelpers.core.hookenv import (
     status_set
 )
 from charmhelpers.core.host import file_hash, write_file
+from charmhelpers.core.templating import render
 
 config = config()
 
@@ -157,3 +158,26 @@ def update_certificates(cert, key, ca):
         changed |= (old_hash != file_hash(cfile))
 
     return changed
+
+
+def render_and_log(template, conf_file, ctx, perms=0o444):
+    """Returns True if configuration has been changed."""
+
+    log("Render and store new configuration: " + conf_file)
+    try:
+        with open(conf_file) as f:
+            old_lines = set(f.readlines())
+    except Exception:
+        old_lines = set()
+
+    render(template, conf_file, ctx, perms)
+    with open(conf_file) as f:
+        new_lines = set(f.readlines())
+    new_set = new_lines.difference(old_lines)
+    old_set = old_lines.difference(new_lines)
+    if new_set or old_set:
+        log("New lines:\n{new}".format(new="".join(new_set)))
+        log("Old lines:\n{old}".format(old="".join(old_set)))
+        log("Configuration file has been changed.")
+    else:
+        log("Configuration file has not been changed.")

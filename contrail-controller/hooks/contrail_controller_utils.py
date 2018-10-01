@@ -137,22 +137,22 @@ def get_context():
 
 def render_config(ctx):
     common_utils.apply_keystone_ca(ctx)
-    render("config.env",
+    common_utils.render_and_log("config.env",
         BASE_CONFIGS_PATH + "/common_config.env", ctx)
 
-    render("config-api.yaml",
+    common_utils.render_and_log("config-api.yaml",
         CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    render("config-database.yaml",
+    common_utils.render_and_log("config-database.yaml",
         CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    render("control.yaml",
+    common_utils.render_and_log("control.yaml",
         CONTROL_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    render("webui.yaml",
+    common_utils.render_and_log("webui.yaml",
         WEBUI_CONFIGS_PATH + "/docker-compose.yaml", ctx)
 
     # redis is a common service that needs own synchronized env
-    render("redis.env",
+    common_utils.render_and_log("redis.env",
         BASE_CONFIGS_PATH + "/redis.env", ctx)
-    render("redis.yaml",
+    common_utils.render_and_log("redis.yaml",
         REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
 
 

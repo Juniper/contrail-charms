@@ -136,13 +136,13 @@ def get_context():
 
 def render_config(ctx):
     common_utils.apply_keystone_ca(ctx)
-    render("vrouter.env",
+    common_utils.render_and_log("vrouter.env",
            BASE_CONFIGS_PATH + "/common_vrouter.env", ctx)
 
-    render("vrouter.yaml",
+    common_utils.render_and_log("vrouter.yaml",
            CONFIGS_PATH + "/docker-compose.yaml", ctx)
 
-    render("contrail-vrouter-agent.conf",
+    common_utils.render_and_log("contrail-vrouter-agent.conf",
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
 
 
