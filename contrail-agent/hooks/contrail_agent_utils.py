@@ -109,7 +109,7 @@ def get_context():
     gateway_ip = config.get("vhost-gateway")
     if gateway_ip == "auto":
         gateway_ip = _get_iface_gateway_ip(iface)
-    ctx["vrouter_gateway"] = gateway_ip #if gateway_ip else ''
+    ctx["vrouter_gateway"] = gateway_ip if gateway_ip else ''
 
     ctx["agent_mode"] = "dpdk" if config["dpdk"] else "kernel"
     if config["dpdk"]:
