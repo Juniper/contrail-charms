@@ -87,15 +87,6 @@ def get_context():
     return ctx
 
 
-def render_config(ctx):
-    common_utils.apply_keystone_ca(ctx)
-    common_utils.render_and_log("analytics-database.env",
-           BASE_CONFIGS_PATH + "/common_analyticsdb.env", ctx)
-
-    common_utils.render_and_log("analytics-database.yaml",
-           CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-
 def update_charm_status():
     tag = config.get('image-tag')
     for image in IMAGES:
@@ -128,6 +119,12 @@ def update_charm_status():
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx)
-    docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+    changed = common_utils.apply_keystone_ca(ctx)
+    changed |= common_utils.render_and_log("analytics-database.env",
+        BASE_CONFIGS_PATH + "/common_analyticsdb.env", ctx)
+    changed |= common_utils.render_and_log("analytics-database.yaml",
+        CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed:
+        docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+
     common_utils.update_services_status(SERVICES)

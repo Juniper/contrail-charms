@@ -134,18 +134,6 @@ def get_context():
     return ctx
 
 
-def render_config(ctx):
-    common_utils.apply_keystone_ca(ctx)
-    common_utils.render_and_log("vrouter.env",
-           BASE_CONFIGS_PATH + "/common_vrouter.env", ctx)
-
-    common_utils.render_and_log("vrouter.yaml",
-           CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-    common_utils.render_and_log("contrail-vrouter-agent.conf",
-           "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
-
-
 def update_charm_status():
     tag = config.get('image-tag')
     for image in IMAGES + (IMAGES_DPDK if config["dpdk"] else IMAGES_KERNEL):
@@ -180,8 +168,18 @@ def update_charm_status():
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx)
-    docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+    changed = common_utils.apply_keystone_ca(ctx)
+    changed |= common_utils.render_and_log("vrouter.env",
+        BASE_CONFIGS_PATH + "/common_vrouter.env", ctx)
+    changed |= common_utils.render_and_log("vrouter.yaml",
+        CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed:
+        docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+
+    # local file for vif utility
+    common_utils.render_and_log("contrail-vrouter-agent.conf",
+           "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
+
     common_utils.update_services_status(SERVICES)
 
 

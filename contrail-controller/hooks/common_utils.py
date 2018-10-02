@@ -138,10 +138,17 @@ def json_loads(data, default=None):
 
 def apply_keystone_ca(ctx):
     ks_ca_path = "/etc/contrail/ssl/keystone-ca-cert.pem"
+    ks_ca_hash = file_hash(ks_ca_path)
     ks_ca = ctx.get("keystone_ssl_ca")
     save_file(ks_ca_path, ks_ca, 0o444)
+    ks_ca_hash_new = file_hash(ks_ca_path)
     if ks_ca:
         ctx["keystone_ssl_ca_path"] = ks_ca_path
+    ca_changed = (ks_ca_hash != ks_ca_hash_new)
+    if ca_changed:
+        log("Keystone CA cert has been changed: {h1} != {h2}"
+            .format(h1=ks_ca_hash, h2=ks_ca_hash_new))
+    return ca_changed
 
 
 def update_certificates(cert, key, ca):
@@ -175,9 +182,13 @@ def render_and_log(template, conf_file, ctx, perms=0o444):
         new_lines = set(f.readlines())
     new_set = new_lines.difference(old_lines)
     old_set = old_lines.difference(new_lines)
-    if new_set or old_set:
-        log("New lines:\n{new}".format(new="".join(new_set)))
-        log("Old lines:\n{old}".format(old="".join(old_set)))
-        log("Configuration file has been changed.")
-    else:
+    if not new_set and not old_set:
         log("Configuration file has not been changed.")
+    elif not old_lines:
+        log("Configuration file has been created and is not logged.")
+    else:
+        log("New lines set:\n{new}".format(new="".join(new_set)))
+        log("Old lines set:\n{old}".format(old="".join(old_set)))
+        log("Configuration file has been changed.")
+
+    return new_set or old_set

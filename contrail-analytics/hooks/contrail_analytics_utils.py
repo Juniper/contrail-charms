@@ -113,21 +113,6 @@ def get_context():
     return ctx
 
 
-def render_config(ctx):
-    common_utils.apply_keystone_ca(ctx)
-    common_utils.render_and_log("analytics.env",
-        BASE_CONFIGS_PATH + "/common_analytics.env", ctx)
-
-    common_utils.render_and_log("analytics.yaml",
-        ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-    # redis is a common service that needs own synchronized env
-    common_utils.render_and_log("redis.env",
-        BASE_CONFIGS_PATH + "/redis.env", ctx)
-    common_utils.render_and_log("redis.yaml",
-        REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-
 def update_charm_status():
     tag = config.get('image-tag')
     for image in ANALYTICS_IMAGES + REDIS_IMAGES:
@@ -160,8 +145,20 @@ def update_charm_status():
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx)
+    changed = common_utils.apply_keystone_ca(ctx)
+    changed |= common_utils.render_and_log("analytics.env",
+        BASE_CONFIGS_PATH + "/common_analytics.env", ctx)
+    changed |= common_utils.render_and_log("analytics.yaml",
+        ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed:
+        docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
 
-    docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    # redis is a common service that needs own synchronized env
+    changed = common_utils.render_and_log("redis.env",
+        BASE_CONFIGS_PATH + "/redis.env", ctx)
+    changed |= common_utils.render_and_log("redis.yaml",
+        REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed:
+        docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+
     common_utils.update_services_status(SERVICES)

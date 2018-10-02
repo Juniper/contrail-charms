@@ -135,27 +135,6 @@ def get_context():
     return ctx
 
 
-def render_config(ctx):
-    common_utils.apply_keystone_ca(ctx)
-    common_utils.render_and_log("config.env",
-        BASE_CONFIGS_PATH + "/common_config.env", ctx)
-
-    common_utils.render_and_log("config-api.yaml",
-        CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    common_utils.render_and_log("config-database.yaml",
-        CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    common_utils.render_and_log("control.yaml",
-        CONTROL_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    common_utils.render_and_log("webui.yaml",
-        WEBUI_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-    # redis is a common service that needs own synchronized env
-    common_utils.render_and_log("redis.env",
-        BASE_CONFIGS_PATH + "/redis.env", ctx)
-    common_utils.render_and_log("redis.yaml",
-        REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
-
 def update_charm_status():
     tag = config.get('image-tag')
     for image in ALL_IMAGES:
@@ -187,11 +166,36 @@ def update_charm_status():
         return
     # TODO: what should happens if relation departed?
 
-    render_config(ctx)
+    changed = common_utils.apply_keystone_ca(ctx)
+    changed |= common_utils.render_and_log("config.env",
+        BASE_CONFIGS_PATH + "/common_config.env", ctx)
 
-    docker_utils.compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
-    docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    service_changed = common_utils.render_and_log("config-api.yaml",
+        CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed or service_changed:
+        docker_utils.compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
+
+    service_changed = common_utils.render_and_log("config-database.yaml",
+        CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed or service_changed:
+        docker_utils.compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
+
+    service_changed = common_utils.render_and_log("control.yaml",
+        CONTROL_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed or service_changed:
+        docker_utils.compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
+
+    service_changed = common_utils.render_and_log("webui.yaml",
+        WEBUI_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed or service_changed:
+        docker_utils.compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
+
+    # redis is a common service that needs own synchronized env
+    changed = common_utils.render_and_log("redis.env",
+        BASE_CONFIGS_PATH + "/redis.env", ctx)
+    changed |= common_utils.render_and_log("redis.yaml",
+        REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    if changed:
+        docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+
     common_utils.update_services_status(SERVICES)
