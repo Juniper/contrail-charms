@@ -191,4 +191,4 @@ def render_and_log(template, conf_file, ctx, perms=0o444):
         log("Old lines set:\n{old}".format(old="".join(old_set)))
         log("Configuration file has been changed.")
 
-    return new_set or old_set
+    return bool(new_set or old_set)
