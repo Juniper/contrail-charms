@@ -1,10 +1,13 @@
 options:
-  control-network:
+  api-network:
     type: string
     description: |
-      The IP address and netmask of the control network (e.g. 192.168.0.0/24).
+      The IP address and netmask of the API network (e.g. 192.168.0.0/24).
       This network will be used for Contrail endpoints.
       If not specified, default network will be used.
+  control-network:
+    type: string
+    description: DEPRECATED. Use api-network.
   cassandra-minimum-diskgb:
     type: string
     default: "256"

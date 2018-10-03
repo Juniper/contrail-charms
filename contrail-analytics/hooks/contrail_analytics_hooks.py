@@ -69,7 +69,7 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
-    if config.changed("control-network"):
+    if config.changed("api-network"):
         settings = {'private-address': get_ip()}
         rnames = ("contrail-analytics", "contrail-analyticsdb",
                   "analytics-cluster", "http-services")

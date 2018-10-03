@@ -48,6 +48,7 @@ from contrail_controller_utils import (
 )
 from common_utils import (
     get_ip,
+    get_control_ip,
     fix_hostname,
     json_loads,
     update_certificates,
@@ -188,7 +189,7 @@ def config_changed():
         raise Exception("Config is invalid. auth-mode must one of: "
                         "rbac, cloud-admin, no-auth.")
 
-    if config.changed("control-network"):
+    if config.changed("api-network"):
         ip = get_ip()
         settings = {"private-address": ip}
         rnames = ("contrail-controller",
@@ -202,6 +203,11 @@ def config_changed():
             relation_set(relation_id=rid, relation_settings=settings)
         if is_leader():
             _address_changed(local_unit(), ip)
+    if config.changed("control-network"):
+        ip = get_control_ip()
+        settings = {"control-address": ip}
+        for rid in relation_ids("contrail-controller"):
+            relation_set(relation_id=rid, relation_settings=settings)
 
     if config.changed("docker-registry"):
         apply_docker_insecure()

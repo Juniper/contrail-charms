@@ -1,10 +1,16 @@
 options:
+  api-network:
+    type: string
+    description: |
+      The IP address and netmask of the API network (e.g. 192.168.0.0/24).
+      This network will be used for Contrail endpoints.
+      If not specified, default network will be used.
   control-network:
     type: string
     description: |
-      The IP address and netmask of the control network (e.g. 192.168.0.0/24).
-      This network will be used for Contrail endpoints.
-      If not specified, default network will be used.
+      The IP address and netmask of the control network (e.g. 10.0.0.0/24).
+      This network will be used by vrouter agents for XMPP connections.
+      If not specified, API or default network will be used.
   auth-mode:
     type: string
     default: rbac

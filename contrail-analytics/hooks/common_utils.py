@@ -38,20 +38,31 @@ config = config()
 
 
 def get_ip():
-    network = config.get("control-network")
-    if network:
-        # try to get ip from CIDR
-        try:
-            return get_address_in_network(network)
-        except Exception:
-            pass
-        # try to get ip from interface name
-        try:
-            return get_iface_addr(network)
-        except Exception:
-            pass
+    network = config.get("api-network")
+    ip = _get_ip(network)
+    return ip if ip else _get_default_ip()
 
-    return _get_default_ip()
+
+def get_control_ip():
+    network = config.get("control-network")
+    ip = _get_ip(network)
+    return ip if ip else get_ip()
+
+
+def _get_ip(network):
+    if not network:
+        return None
+    # try to get ip from CIDR
+    try:
+        return get_address_in_network(network)
+    except Exception:
+        pass
+    # try to get ip from interface name
+    try:
+        return get_iface_addr(network)
+    except Exception:
+        pass
+    return None
 
 
 def _get_default_ip():
