@@ -34,7 +34,7 @@ def get_ip():
             pass
         # try to get ip from interface name
         try:
-            return get_iface_addr(network)
+            return get_iface_addr(network)[0]
         except Exception:
             pass
 
