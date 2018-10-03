@@ -256,6 +256,7 @@ def update_northbound_relations(rid=None):
 def update_southbound_relations(rid=None):
     settings = {
         "api-vip": config.get("vip"),
+        "control-address": get_control_ip(),
         "analytics-server": json.dumps(get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
@@ -268,7 +269,11 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    settings = {"private-address": get_ip(), "port": 8082}
+    settings = {
+        "private-address": get_ip(),
+        "control-address": get_control_ip(),
+        "port": 8082
+    }
     relation_set(relation_settings=settings)
     if is_leader():
         update_southbound_relations(rid=relation_id())
