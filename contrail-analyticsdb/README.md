@@ -44,7 +44,7 @@ List of options
 
 Option   | Type| default | Description
 ---------|-----|---------|-------------
-api-network | string | | The IP address and netmask of the API network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
+control-network | string | | The IP address and netmask of the control network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
 cassandra-minimum-diskgb | string | 256 | Contrail has this as parameter and checks it at startup. If disk is smaller then status of DB is not good.
 docker-registry | string | | URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
 docker-user | string | | Login to the docker registry.

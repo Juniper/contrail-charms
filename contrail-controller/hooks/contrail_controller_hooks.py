@@ -48,7 +48,6 @@ from contrail_controller_utils import (
 )
 from common_utils import (
     get_ip,
-    get_control_ip,
     fix_hostname,
     json_loads,
     update_certificates,
@@ -189,7 +188,7 @@ def config_changed():
         raise Exception("Config is invalid. auth-mode must one of: "
                         "rbac, cloud-admin, no-auth.")
 
-    if config.changed("api-network"):
+    if config.changed("control-network"):
         ip = get_ip()
         settings = {"private-address": ip}
         rnames = ("contrail-controller",
@@ -203,11 +202,6 @@ def config_changed():
             relation_set(relation_id=rid, relation_settings=settings)
         if is_leader():
             _address_changed(local_unit(), ip)
-    if config.changed("control-network"):
-        ip = get_control_ip()
-        settings = {"control-address": ip}
-        for rid in relation_ids("contrail-controller"):
-            relation_set(relation_id=rid, relation_settings=settings)
 
     if config.changed("docker-registry"):
         apply_docker_insecure()
@@ -256,7 +250,6 @@ def update_northbound_relations(rid=None):
 def update_southbound_relations(rid=None):
     settings = {
         "api-vip": config.get("vip"),
-        "control-address": get_control_ip(),
         "analytics-server": json.dumps(get_analytics_list()),
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
@@ -269,11 +262,7 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    settings = {
-        "private-address": get_ip(),
-        "control-address": get_control_ip(),
-        "port": 8082
-    }
+    settings = {"private-address": get_ip(), "port": 8082}
     relation_set(relation_settings=settings)
     if is_leader():
         update_southbound_relations(rid=relation_id())

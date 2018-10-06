@@ -86,8 +86,7 @@ List of options
 
 Option   | Type| default | Description
 ---------|-----|---------|-------------
-api-network | string | | The IP address and netmask of the API network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
-control-network | string | | The IP address and netmask of the control network (e.g. 192.168.0.0/24). This network will be used by vrouter agents for XMPP connections. If not specified, API or default network will be used.
+control-network | string | | The IP address and netmask of the control network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
 cassandra-minimum-diskgb | string | 20 | Contrail has this as parameter and checks it at startup. If disk is smaller then status of DB is not good.
 auth-mode | string | rbac | It represents 'aaa_mode' configuration key of Contrail. Can be one of: 'rbac', 'cloud-admin' or 'no-auth' Authentication mode. Detailed information can be found in the Contrail documentation. https://github.com/Juniper/contrail-controller/wiki/RBAC In case of 'rbac' charm will configure Contrail to RBAC mode and administrator must configure RBAC rules to allow users to work. In case of 'cloud-admin' charm will configure Contrail in compatible mode.
 cloud-admin-role | string | admin | Role name in keystone for users that have full access to everything.

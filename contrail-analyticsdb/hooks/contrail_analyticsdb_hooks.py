@@ -84,7 +84,7 @@ def leader_settings_changed():
 
 @hooks.hook("config-changed")
 def config_changed():
-    if config.changed("api-network"):
+    if config.changed("control-network"):
         settings = {'private-address': get_ip()}
         rnames = ("contrail-analyticsdb", "analyticsdb-cluster")
         for rname in rnames:

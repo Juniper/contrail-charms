@@ -80,6 +80,7 @@ def retry(f=None, timeout=10, delay=2):
     @functools.wraps(f)
     def func(*args, **kwargs):
         start = time()
+        error = None
         while True:
             try:
                 return f(*args, **kwargs)
@@ -256,12 +257,6 @@ def get_controller_addresses():
             for unit in related_units(rid)]
 
 
-def get_control_addresses():
-    return [relation_get("control-address", unit, rid)
-            for rid in relation_ids("contrail-controller")
-            for unit in related_units(rid)]
-
-
 def _load_json_from_config(key):
     value = config.get(key)
     return json.loads(value) if value else {}
@@ -272,9 +267,13 @@ def get_context():
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
 
-    ctx["api_servers"] = get_controller_addresses()
+    ips = get_controller_addresses()
+    ctx["api_servers"] = ips
     ctx["api_port"] = config.get("api_port")
-    ctx["control_nodes"] = get_control_addresses()
+    ctx["control_nodes"] = [
+        relation_get("private-address", unit, rid)
+        for rid in relation_ids("contrail-controller")
+        for unit in related_units(rid)]
     ctx["analytics_nodes"] = _load_json_from_config("analytics_servers")
     info = _load_json_from_config("orchestrator_info")
     ctx["metadata_shared_secret"] = info.get("metadata_shared_secret")
