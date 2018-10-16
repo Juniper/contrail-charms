@@ -4,6 +4,8 @@ Juju charms for Contrail services.
 Overview
 --------
 
+Please note that master branch contains code for Contrail R4.x. For R5.x code please look into R5 branch https://github.com/Juniper/contrail-charms/tree/R5
+
 Contrail 4.0 would provide support for Docker containers. The existing contrail components, which run as services on a BMS or VM, would be running within a Docker container in contrail 4.0.
 This document describes how to deploy contrail 4.0 Docker containers, which would be running the several contrail service components using contrail-charms
 
