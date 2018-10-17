@@ -66,6 +66,7 @@ services:
       - /lib/modules:/lib/modules
       - /var/run:/var/run
       - /var/log/contrail:/var/log/contrail
+      - /var/lib/contrail:/var/lib/contrail
       - /etc/os-release:/etc/os-release
       - /etc/lsb-release:/etc/lsb-release
       - /dev:/dev
