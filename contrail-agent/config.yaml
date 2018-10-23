@@ -50,6 +50,16 @@ options:
     type: string
     description: |
       DPDK PMD Rx Descriptor size.
+  sriov-physical-interface:
+    type: string
+    description: |
+      Interface name for SR-IOV. This parameter and sriov-numvfs will be passed
+      into agent container that will configure SR-IOV.
+  sriov-numvfs:
+    type: string
+    description: |
+      NumVFS for specified device. This parameter and sriov-physical-interface
+      will be passed into agent container that will configure SR-IOV.
   log-level:
     type: string
     default: SYS_NOTICE

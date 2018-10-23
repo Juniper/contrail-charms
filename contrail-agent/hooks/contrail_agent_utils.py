@@ -101,6 +101,8 @@ def get_context():
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
+    ctx["sriov_physical_interface"] = config.get("sriov-physical-interface")
+    ctx["sriov_numvfs"] = config.get("sriov-numvfs")
 
     iface = config.get("physical-interface")
     if not iface:

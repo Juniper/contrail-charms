@@ -81,6 +81,8 @@ dpdk-coremask | string | 1 | vRouter CPU affinity mask. Determines on which CPUs
 dpdk-main-mempool-size | string | | Main packet pool size.
 dpdk-pmd-txd-size | string | | DPDK PMD Tx Descriptor size.
 dpdk-pmd-rxd-size | string | | DPDK PMD Rx Descriptor size.
+sriov-physical-interface | string | | Interface name for SR-IOV. This parameter and sriov-numvfs will be passed into agent container that will configure SR-IOV.
+sriov-numvfs | string | | NumVFS for specified device. This parameter and sriov-physical-interface will be passed into agent container that will configure SR-IOV.
 docker-registry | string | opencontrailnightly | URL of docker-registry
 docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it
 docker-user | string | Login to the docker registry.
