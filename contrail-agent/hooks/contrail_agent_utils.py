@@ -122,7 +122,13 @@ def _vhost_cidr(iface):
 
 
 def get_control_network_ip():
-    return config["vhost-cidr"].split('/')[0]
+    if config.get("vhost-ready") and "vhost-cidr" in config:
+        return config["vhost-cidr"].split('/')[0]
+
+    iface = config.get("physical-interface")
+    if not iface:
+        iface = _get_default_gateway_iface()
+    return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"]
 
 
 def configure_vrouter_interface():
@@ -194,7 +200,8 @@ def update_vrouter_provision_status():
     # TODO: update this logic with various scenario for data in relation
     info = _load_json_from_config("orchestrator_info")
     ready = (
-        config.get("api_port")
+        config.get("vhost-ready")
+        and config.get("api_port")
         and config.get("api_ip")
         and config.get("analytics_servers")
         and info.get("cloud_orchestrator"))
