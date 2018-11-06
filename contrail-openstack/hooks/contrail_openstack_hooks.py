@@ -208,6 +208,7 @@ def _get_orchestrator_info():
     _add_to_info("network_service_ip")
     return {"orchestrator-info": json.dumps(info)}
 
+
 @hooks.hook("heat-plugin-relation-joined")
 def heat_plugin_joined(rel_id=None):
     configure_sources(True, "install-sources", "install-keys")
@@ -245,6 +246,7 @@ def heat_plugin_joined(rel_id=None):
         "subordinate_configuration": json.dumps(conf)
     }
     relation_set(relation_id=rel_id, relation_settings=settings)
+
 
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
