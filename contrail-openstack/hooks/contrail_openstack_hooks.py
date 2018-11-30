@@ -66,22 +66,16 @@ def config_changed():
         _notify_neutron()
 
     if is_leader():
-        res = _configure_metadata_shared_secret()
-        if res:
-            _notify_controller()
+        _configure_metadata_shared_secret()
+        _notify_nova()
+        _notify_controller()
 
 
 @hooks.hook("leader-elected")
 def leader_elected():
-    res = _configure_metadata_shared_secret()
-    if res:
-        _notify_controller()
+    _configure_metadata_shared_secret()
     _notify_nova()
-
-
-@hooks.hook("leader-settings-changed")
-def leader_settings_changed():
-    _notify_nova()
+    _notify_controller()
 
 
 @hooks.hook("contrail-controller-relation-joined")
