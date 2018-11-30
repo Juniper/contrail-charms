@@ -175,14 +175,12 @@ def launch_docker_image(name, additional_args=[]):
         return
 
     image_id = "{}:{}".format(image_name, image_tag)
-    orchestrator = config.get("cloud_orchestrator")
     args = [DOCKER_CLI,
             "run",
             "--net=host",
             "--cap-add=AUDIT_WRITE",
             "--privileged",
             "--restart=unless-stopped",
-            "--env='CLOUD_ORCHESTRATOR=%s'" % (orchestrator),
             "--volume=/etc/contrailctl:/etc/contrailctl",
             "--name=%s" % name]
     args.extend(additional_args)

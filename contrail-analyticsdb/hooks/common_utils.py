@@ -177,8 +177,8 @@ def check_run_prerequisites(name, config_name, update_config_func, services):
     return True
 
 
-def run_container(name):
-    args = []
+def run_container(name, orchestrator):
+    args = ["--env='CLOUD_ORCHESTRATOR=%s'" % (orchestrator)]
     if platform.linux_distribution()[2].strip() == "trusty":
         args.append("--pid=host")
     launch_docker_image(name, args)

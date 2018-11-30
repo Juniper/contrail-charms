@@ -183,4 +183,4 @@ def update_charm_status(update_config=True, force=False):
     # TODO: what should happens if relation departed?
 
     _render_config(ctx, do_check=False)
-    run_container(CONTAINER_NAME)
+    run_container(CONTAINER_NAME, ctx.get("cloud_orchestrator"))
