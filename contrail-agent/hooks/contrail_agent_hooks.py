@@ -91,9 +91,10 @@ def contrail_controller_node_departed():
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
     hostname = gethostname()
+    cn = hostname.split(".")[0]
     sans = [hostname]
-    if '.' in hostname:
-        sans.append(hostname.split(".")[0])
+    if hostname != cn:
+        sans.append(cn)
     sans_ips = []
     try:
         sans_ips.append(gethostbyname(hostname))
