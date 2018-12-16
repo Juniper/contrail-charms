@@ -15,6 +15,11 @@ services:
       - /usr/bin:/host/usr/bin
       - /etc/contrail/ssl:/etc/contrail/ssl
       - /etc/sysctl.d:/etc/sysctl.d
+      - /etc/hosts:/etc/hosts
+      - /var/log/contrail:/var/log/contrail
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
+      - /var/crashes:/var/crashes
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -24,17 +29,12 @@ services:
       - CASSANDRA_JMX_LOCAL_PORT=7201
     network_mode: "host"
     volumes:
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/log/contrail:/var/log/contrail
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
-    restart: always
     depends_on:
       - node-init
+    restart: always
   cassandra:
     image: "{{ container_registry }}/contrail-external-cassandra:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env

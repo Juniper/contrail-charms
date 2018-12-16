@@ -12,6 +12,11 @@ services:
       - /usr/bin:/host/usr/bin
       - /etc/contrail/ssl:/etc/contrail/ssl
       - /etc/sysctl.d:/etc/sysctl.d
+      - /etc/hosts:/etc/hosts
+      - /var/log/contrail:/var/log/contrail
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
+      - /var/crashes:/var/crashes
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -19,12 +24,7 @@ services:
       - NODE_TYPE=config
     network_mode: "host"
     volumes:
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/log/contrail:/var/log/contrail
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     restart: always
@@ -34,12 +34,6 @@ services:
     image: "{{ container_registry }}/contrail-controller-config-api:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
     network_mode: "host"
-    volumes:
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/log/contrail:/var/log/contrail
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -49,12 +43,6 @@ services:
     image: "{{ container_registry }}/contrail-controller-config-svcmonitor:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_config.env
-    volumes:
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/log/contrail:/var/log/contrail
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -64,12 +52,6 @@ services:
     image: "{{ container_registry }}/contrail-controller-config-schema:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_config.env
-    volumes:
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/log/contrail:/var/log/contrail
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -79,12 +61,6 @@ services:
     image: "{{ container_registry }}/contrail-controller-config-devicemgr:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_config.env
-    volumes:
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/log/contrail:/var/log/contrail
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:

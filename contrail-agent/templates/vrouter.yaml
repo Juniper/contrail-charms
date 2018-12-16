@@ -12,6 +12,11 @@ services:
       - /usr/bin:/host/usr/bin
       - /etc/contrail/ssl:/etc/contrail/ssl
       - /etc/sysctl.d:/etc/sysctl.d
+      - /etc/hosts:/etc/hosts
+      - /var/log/contrail:/var/log/contrail
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
+      - /var/crashes:/var/crashes
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_vrouter.env
@@ -19,16 +24,12 @@ services:
       - NODE_TYPE=vrouter
     network_mode: host
     volumes:
-      - /var/log/contrail:/var/log/contrail
       - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
-    restart: on-failure
     depends_on:
       - node-init
+    restart: on-failure
   vrouter-kernel-init:
 {%- if agent_mode == 'dpdk' %}
     image: "{{ container_registry }}/contrail-vrouter-kernel-init-dpdk:{{ contrail_version_tag }}"
@@ -41,7 +42,6 @@ services:
     pid: host
     volumes:
       - /lib/modules:/lib/modules
-      - /var/log/contrail:/var/log/contrail
       - /bin:/host/bin
 {%- if agent_mode != 'dpdk' %}
       - /usr/src:/usr/src
@@ -65,20 +65,16 @@ services:
     volumes:
       - /lib/modules:/lib/modules
       - /var/run:/var/run
-      - /var/log/contrail:/var/log/contrail
       - /var/lib/contrail:/var/lib/contrail
       - /etc/os-release:/etc/os-release
       - /etc/lsb-release:/etc/lsb-release
       - /dev:/dev
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
-    restart: always
     depends_on:
       - vrouter-kernel-init
       - node-init
+    restart: always
 {%- endif %}
   vrouter-agent:
     image: "{{ container_registry }}/contrail-vrouter-agent:{{ contrail_version_tag }}"
@@ -92,16 +88,11 @@ services:
 {%- endif %}
       - /lib/modules:/lib/modules
       - /bin:/host/bin
-      - /var/log/contrail:/var/log/contrail
       - /var/lib/contrail:/var/lib/contrail
       - /var/run:/var/run
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
       - /dev:/dev
     volumes_from:
       - node-init
-    restart: always
     depends_on:
 {%- if agent_mode == 'dpdk' %}
       - vrouter-agent-dpdk
@@ -109,3 +100,4 @@ services:
       - vrouter-kernel-init
 {%- endif %}
       - node-init
+    restart: always

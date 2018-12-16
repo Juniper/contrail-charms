@@ -12,6 +12,11 @@ services:
       - /usr/bin:/host/usr/bin
       - /etc/contrail/ssl:/etc/contrail/ssl
       - /etc/sysctl.d:/etc/sysctl.d
+      - /etc/hosts:/etc/hosts
+      - /var/log/contrail:/var/log/contrail
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
+      - /var/crashes:/var/crashes
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_analytics.env
@@ -19,27 +24,16 @@ services:
       - NODE_TYPE=analytics
     network_mode: "host"
     volumes:
-      - /var/log/contrail:/var/log/contrail
       - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
-    restart: always
     depends_on:
       - node-init
+    restart: always
   api:
     image: "{{ container_registry }}/contrail-analytics-api:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
-    volumes:
-      - /var/log/contrail:/var/log/contrail
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -49,12 +43,6 @@ services:
     image: "{{ container_registry }}/contrail-analytics-collector:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
-    volumes:
-      - /var/log/contrail:/var/log/contrail
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -64,12 +52,6 @@ services:
     image: "{{ container_registry }}/contrail-analytics-query-engine:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
-    volumes:
-      - /var/log/contrail:/var/log/contrail
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -79,12 +61,6 @@ services:
     image: "{{ container_registry }}/contrail-analytics-alarm-gen:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
-    volumes:
-      - /var/log/contrail:/var/log/contrail
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -94,12 +70,6 @@ services:
     image: "{{ container_registry }}/contrail-analytics-snmp-collector:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
-    volumes:
-      - /var/log/contrail:/var/log/contrail
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
@@ -109,12 +79,6 @@ services:
     image: "{{ container_registry }}/contrail-analytics-topology:{{ contrail_version_tag }}"
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
-    volumes:
-      - /var/log/contrail:/var/log/contrail
-      - /etc/hosts:/etc/hosts
-      - /etc/timezone:/etc/timezone
-      - /etc/localtime:/etc/localtime
-      - /var/crashes:/var/crashes
     volumes_from:
       - node-init
     depends_on:
