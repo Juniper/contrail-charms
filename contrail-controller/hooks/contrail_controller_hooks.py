@@ -393,11 +393,13 @@ def _notify_proxy_services():
 
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
-    cn = gethostname().split(".")[0]
-    sans = [cn]
+    hostname = gethostname()
+    sans = [hostname]
+    if '.' in hostname:
+        sans.append(hostname.split(".")[0])
     sans_ips = []
     try:
-        sans_ips.append(gethostbyname(cn))
+        sans_ips.append(gethostbyname(hostname))
     except:
         pass
     control_ip = common_utils.get_ip()
