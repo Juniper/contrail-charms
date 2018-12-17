@@ -3,7 +3,7 @@
 import json
 import sys
 import yaml
-from socket import gethostbyname, gethostname
+from socket import gethostbyname, gethostname, getfqdn
 
 from subprocess import check_output
 from charmhelpers.core.hookenv import (
@@ -393,7 +393,7 @@ def _notify_proxy_services():
 
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
-    hostname = gethostname()
+    hostname = getfqdn()
     cn = hostname.split(".")[0]
     sans = [hostname]
     if hostname != cn:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import json
-from socket import gethostname, gethostbyname
+from socket import gethostname, gethostbyname, getfqdn
 import sys
 
 from charmhelpers.core.hookenv import (
@@ -90,7 +90,7 @@ def contrail_controller_node_departed():
 
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
-    hostname = gethostname()
+    hostname = getfqdn()
     cn = hostname.split(".")[0]
     sans = [hostname]
     if hostname != cn:
