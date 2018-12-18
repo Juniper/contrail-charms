@@ -75,17 +75,12 @@ def decode_cert(key):
 
 def save_file(path, data, perms=0o400):
     if data:
-        make_dir(os.path.dirname(path))
+        fdir = os.path.dirname(path)
+        if not os.path.exists(fdir):
+            os.makedirs(fdir)
         write_file(path, data, perms=perms)
     elif os.path.exists(path):
         os.remove(path)
-
-
-def make_dir(path, uid=0, gid=0, perms=0o750):
-    if not os.path.exists(path):
-        os.makedirs(path)
-    os.chmod(path, perms)
-    os.chown(path, uid, gid)
 
 
 def update_services_status(services):
@@ -159,9 +154,6 @@ def apply_keystone_ca(ctx):
 def update_certificates(cert, key, ca):
     # NOTE: store files in default paths cause no way to pass this path to
     # some of components (sandesh)
-    make_dir("/etc/contrail/ssl/certs", 0, 0, 0o755)
-    # group 1011 is a hardcoded group id for internal contrail purposes
-    make_dir("/etc/contrail/ssl/private", 0, 1011, 0x750)
     files = {"/etc/contrail/ssl/certs/server.pem": (cert, 0o644),
              "/etc/contrail/ssl/private/server-privkey.pem": (key, 0o640),
              "/etc/contrail/ssl/certs/ca-cert.pem": (ca, 0o644)}
@@ -171,6 +163,13 @@ def update_certificates(cert, key, ca):
         old_hash = file_hash(cfile)
         save_file(cfile, data, perms=files[cfile][1])
         changed |= (old_hash != file_hash(cfile))
+    # apply strange permissions to certs to allow containers to read them
+    # group 1011 is a hardcoded group id for internal contrail purposes
+    if os.path.exists("/etc/contrail/ssl/certs"):
+        os.chmod("/etc/contrail/ssl/certs", 0o755)
+    if os.path.exists("/etc/contrail/ssl/private"):
+        os.chmod("/etc/contrail/ssl/private", 0o750)
+        os.chown("/etc/contrail/ssl/private", 0, 1011)
     if key:
         os.chown("/etc/contrail/ssl/private/server-privkey.pem", 0, 1011)
 
