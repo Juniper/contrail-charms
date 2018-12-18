@@ -171,7 +171,8 @@ def update_certificates(cert, key, ca):
         old_hash = file_hash(cfile)
         save_file(cfile, data, perms=files[cfile][1])
         changed |= (old_hash != file_hash(cfile))
-    os.chown("/etc/contrail/ssl/private/server-privkey.pem", 0, 1011)
+    if key:
+        os.chown("/etc/contrail/ssl/private/server-privkey.pem", 0, 1011)
 
     return changed
 
