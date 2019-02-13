@@ -20,20 +20,37 @@ config = config()
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics_database"
-IMAGES = [
-    "contrail-node-init",
-    "contrail-nodemgr",
-    "contrail-external-kafka",
-    "contrail-external-cassandra",
-    "contrail-external-zookeeper",
-]
+IMAGES = {
+    '5.0': [
+        "contrail-node-init",
+        "contrail-nodemgr",
+        "contrail-external-kafka",
+        "contrail-external-cassandra",
+        "contrail-external-zookeeper",
+    ],
+    '5.1': [
+        "contrail-node-init",
+        "contrail-nodemgr",
+        "contrail-analytics-query-engine",
+        "contrail-external-cassandra",
+    ],
+}
 SERVICES = {
-    "database": [
-        "kafka",
-        "nodemgr",
-        "zookeeper",
-        "cassandra"
-    ]
+    '5.0': {
+        "database": [
+            "kafka",
+            "nodemgr",
+            "zookeeper",
+            "cassandra"
+        ]
+    },
+    '5.1': {
+        "database": [
+            "query-engine",
+            "nodemgr",
+            "cassandra"
+        ]
+    }
 }
 
 
@@ -89,7 +106,11 @@ def get_context():
 
 def update_charm_status():
     tag = config.get('image-tag')
-    for image in IMAGES:
+    cver = '5.1'
+    if '5.0.' in tag:
+        cver = '5.0'
+
+    for image in IMAGES[cver]:
         try:
             docker_utils.pull(image, tag)
         except Exception as e:
@@ -120,11 +141,11 @@ def update_charm_status():
     # TODO: what should happens if relation departed?
 
     changed = common_utils.apply_keystone_ca(ctx)
-    changed |= common_utils.render_and_log("analytics-database.env",
+    changed |= common_utils.render_and_log(cver + "/analytics-database.env",
         BASE_CONFIGS_PATH + "/common_analyticsdb.env", ctx)
-    changed |= common_utils.render_and_log("analytics-database.yaml",
+    changed |= common_utils.render_and_log(cver + "/analytics-database.yaml",
         CONFIGS_PATH + "/docker-compose.yaml", ctx)
     if changed:
         docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
 
-    common_utils.update_services_status(SERVICES)
+    common_utils.update_services_status(SERVICES[cver])

@@ -20,31 +20,63 @@ config = config()
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 ANALYTICS_CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics"
-ANALYTICS_IMAGES = [
-    "contrail-node-init",
-    "contrail-nodemgr",
-    "contrail-analytics-api",
-    "contrail-analytics-collector",
-    "contrail-analytics-query-engine",
-    "contrail-analytics-alarm-gen",
-    "contrail-analytics-snmp-collector",
-    "contrail-analytics-topology",
-]
-
+ANALYTICS_ALARM_CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics_alarm"
+ANALYTICS_SNMP_CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics_snmp"
 REDIS_CONFIGS_PATH = BASE_CONFIGS_PATH + "/redis"
-REDIS_IMAGES = [
-    "contrail-external-redis",
-]
+
+IMAGES = {
+    '5.0': [
+        "contrail-node-init",
+        "contrail-nodemgr",
+        "contrail-analytics-api",
+        "contrail-analytics-collector",
+        "contrail-analytics-query-engine",
+        "contrail-analytics-alarm-gen",
+        "contrail-analytics-snmp-collector",
+        "contrail-analytics-topology",
+        "contrail-external-redis",
+    ],
+    '5.1': [
+        "contrail-node-init",
+        "contrail-nodemgr",
+        "contrail-analytics-api",
+        "contrail-analytics-collector",
+        "contrail-analytics-alarm-gen",
+        "contrail-analytics-snmp-collector",
+        "contrail-analytics-snmp-topology",
+        "contrail-external-redis",
+    ],
+}  
+
 SERVICES = {
-    "analytics": [
-        "snmp-collector",
-        "query-engine",
-        "api",
-        "alarm-gen",
-        "nodemgr",
-        "collector",
-        "topology",
-    ]
+    '5.0': {
+        "analytics": [
+            "snmp-collector",
+            "query-engine",
+            "api",
+            "alarm-gen",
+            "nodemgr",
+            "collector",
+            "topology",
+        ]
+    },
+    '5.1': {
+        "analytics": [
+            "api",
+            "nodemgr",
+            "collector",
+        ],
+        "analytics-alarm": [
+            "alarm-gen",
+            "nodemgr",
+            "kafka",
+        ],
+        "analytics-snmp": [
+            "snmp-collector",
+            "nodemgr",
+            "topology",
+        ],
+    },
 }
 
 
@@ -115,7 +147,11 @@ def get_context():
 
 def update_charm_status():
     tag = config.get('image-tag')
-    for image in ANALYTICS_IMAGES + REDIS_IMAGES:
+    cver = '5.1'
+    if '5.0.' in tag:
+        cver = '5.0'
+
+    for image in IMAGES[cver]:
         try:
             docker_utils.pull(image, tag)
         except Exception as e:
@@ -146,12 +182,24 @@ def update_charm_status():
     # TODO: what should happens if relation departed?
 
     changed = common_utils.apply_keystone_ca(ctx)
-    changed |= common_utils.render_and_log("analytics.env",
+    changed |= common_utils.render_and_log(tdir + "/analytics.env",
         BASE_CONFIGS_PATH + "/common_analytics.env", ctx)
-    changed |= common_utils.render_and_log("analytics.yaml",
+
+    changed |= common_utils.render_and_log(tdir + "/analytics.yaml",
         ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
     if changed:
         docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
+
+    if cver == '5.1':
+        changed |= common_utils.render_and_log(tdir + "/analytics-alarm.yaml",
+            ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+        if changed:
+            docker_utils.compose_run(ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml")
+
+        changed |= common_utils.render_and_log(tdir + "/analytics-snmp.yaml",
+            ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+        if changed:
+            docker_utils.compose_run(ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml")
 
     # redis is a common service that needs own synchronized env
     changed = common_utils.render_and_log("redis.env",
@@ -161,4 +209,4 @@ def update_charm_status():
     if changed:
         docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
 
-    common_utils.update_services_status(SERVICES)
+    common_utils.update_services_status(SERVICES[cver])

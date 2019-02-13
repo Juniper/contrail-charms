@@ -20,48 +20,28 @@ config = config()
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 CONFIG_API_CONFIGS_PATH = BASE_CONFIGS_PATH + "/config_api"
-CONFIG_API_IMAGES = [
+CONFIG_DATABASE_CONFIGS_PATH = BASE_CONFIGS_PATH + "/config_database"
+CONTROL_CONFIGS_PATH = BASE_CONFIGS_PATH + "/control"
+WEBUI_CONFIGS_PATH = BASE_CONFIGS_PATH + "/webui"
+REDIS_CONFIGS_PATH = BASE_CONFIGS_PATH + "/redis"
+
+IMAGES = [
     "contrail-node-init",
     "contrail-nodemgr",
     "contrail-controller-config-api",
     "contrail-controller-config-svcmonitor",
     "contrail-controller-config-schema",
     "contrail-controller-config-devicemgr",
-]
-CONFIG_DATABASE_CONFIGS_PATH = BASE_CONFIGS_PATH + "/config_database"
-CONFIG_DATABASE_IMAGES = [
-    "contrail-node-init",
-    "contrail-nodemgr",
-    "contrail-external-cassandra",
-    "contrail-external-zookeeper",
-    "contrail-external-rabbitmq",
-]
-CONTROL_CONFIGS_PATH = BASE_CONFIGS_PATH + "/control"
-CONTROL_IMAGES = [
-    "contrail-node-init",
-    "contrail-nodemgr",
     "contrail-controller-control-control",
     "contrail-controller-control-named",
     "contrail-controller-control-dns",
-]
-WEBUI_CONFIGS_PATH = BASE_CONFIGS_PATH + "/webui"
-WEBUI_IMAGES = [
     "contrail-controller-webui-web",
     "contrail-controller-webui-job",
-]
-
-REDIS_CONFIGS_PATH = BASE_CONFIGS_PATH + "/redis"
-REDIS_IMAGES = [
+    "contrail-external-cassandra",
+    "contrail-external-zookeeper",
+    "contrail-external-rabbitmq",
     "contrail-external-redis",
 ]
-
-ALL_IMAGES = (
-    CONFIG_API_IMAGES
-    + CONFIG_DATABASE_IMAGES
-    + CONTROL_IMAGES
-    + WEBUI_IMAGES
-    + REDIS_IMAGES
-)
 
 SERVICES = {
     "control": [
@@ -137,7 +117,7 @@ def get_context():
 
 def update_charm_status():
     tag = config.get('image-tag')
-    for image in ALL_IMAGES:
+    for image in IMAGES:
         try:
             docker_utils.pull(image, tag)
         except Exception as e:
