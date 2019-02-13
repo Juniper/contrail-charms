@@ -182,21 +182,21 @@ def update_charm_status():
     # TODO: what should happens if relation departed?
 
     changed = common_utils.apply_keystone_ca(ctx)
-    changed |= common_utils.render_and_log(tdir + "/analytics.env",
+    changed |= common_utils.render_and_log(cver + "/analytics.env",
         BASE_CONFIGS_PATH + "/common_analytics.env", ctx)
 
-    changed |= common_utils.render_and_log(tdir + "/analytics.yaml",
+    changed |= common_utils.render_and_log(cver + "/analytics.yaml",
         ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
     if changed:
         docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
 
     if cver == '5.1':
-        changed |= common_utils.render_and_log(tdir + "/analytics-alarm.yaml",
+        changed |= common_utils.render_and_log(cver + "/analytics-alarm.yaml",
             ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml", ctx)
         if changed:
             docker_utils.compose_run(ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml")
 
-        changed |= common_utils.render_and_log(tdir + "/analytics-snmp.yaml",
+        changed |= common_utils.render_and_log(cver + "/analytics-snmp.yaml",
             ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml", ctx)
         if changed:
             docker_utils.compose_run(ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml")
