@@ -37,7 +37,7 @@ services:
   query-engine:
     image: "{{ container_registry }}/contrail-analytics-query-engine:{{ contrail_version_tag }}"
     network_mode: "host"
-    env_file: /etc/contrail/common_analytics.env
+    env_file: /etc/contrail/common_analyticsdb.env
     volumes_from:
       - node-init
     depends_on:
