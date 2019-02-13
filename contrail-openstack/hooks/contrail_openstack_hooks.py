@@ -46,17 +46,16 @@ def config_changed():
         _notufy_heat()
 
     if is_leader():
-        res = _configure_metadata_shared_secret()
-        if res:
-            _notify_controller()
+        _configure_metadata_shared_secret()
+        _notify_nova()
+        _notify_controller()
 
 
 @hooks.hook("leader-elected")
 def leader_elected():
-    res = _configure_metadata_shared_secret()
-    if res:
-        _notify_controller()
+    _configure_metadata_shared_secret()
     _notify_nova()
+    _notify_controller()
 
 
 @hooks.hook("leader-settings-changed")
@@ -142,10 +141,9 @@ def _configure_metadata_shared_secret():
     elif not config["enable-metadata-server"] and secret:
         secret = None
     else:
-        return False
+        return
 
     leader_set(settings={"metadata-shared-secret": secret})
-    return True
 
 
 def _notify_controller():
