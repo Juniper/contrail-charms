@@ -66,6 +66,16 @@ it at install stage and raises an error if kernel module can't be loaded.
 Repository for this charm and for contrail-openstack charm must additionaly
 contain Contrail's version for packages: nova-*, python-nova, libvirt*
 
+Plugin option
+-------------
+
+This charm can be linked with any plugin by vrouter-plugin relation.
+With option wait-for-external-plugin code will wait for ready flag in the relation.
+This charm accepts 'settings' value as a serialized dict to json in relation.
+All these option will be serilized to container settings and then
+into contrail-vrouter-agent.conf.
+Example of dict: {"DEFAULT": {"key1": "value1"}, "SECTION_2": {"key1": "value1"}}
+
 List of options
 ---------------
 
@@ -92,3 +102,4 @@ log-level | string | SYS_NOTICE | Log level for contrail services. Valid values 
 http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
 https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
 no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long
+wait-for-external-plugin | boolean | false | Enable external vRouter datapath plugin. This can be used with the agilio-vrouter charm to enable a hardware offloaded vRouter datapath.

@@ -10,6 +10,7 @@ from charmhelpers.core.hookenv import (
     relation_get,
     relation_ids,
     status_set,
+    unit_get,
     WARNING,
 )
 
@@ -130,6 +131,12 @@ def get_context():
     ips = common_utils.json_loads(config.get("analytics_servers"), list())
     ctx["analytics_servers"] = ips
 
+    if "plugin-ips" in config:
+        plugin_ips = json.loads(config.get["plugin-ips"])
+        my_ip = unit_get("private-address")
+        if my_ip in plugin_ips:
+            ctx["plugin_settings"] = plugin_ips[my_ip]
+
     log("CTX: " + str(ctx))
 
     ctx.update(common_utils.json_loads(config.get("auth_info"), dict()))
@@ -151,6 +158,8 @@ def update_charm_status():
     missing_relations = []
     if not ctx.get("controller_servers"):
         missing_relations.append("contrail-controller")
+    if config.get("wait-for-external-plugin", False) and "plugin_settings" not in ctx:
+        missing_relations.append("vrouter-plugin")
     if missing_relations:
         status_set('blocked',
                    'Missing relations: ' + ', '.join(missing_relations))

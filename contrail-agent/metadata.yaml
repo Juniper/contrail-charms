@@ -18,3 +18,6 @@ requires:
   tls-certificates:
     interface: tls-certificates
     optional: true
+  vrouter-plugin:
+    interface: vrouter-plugin
+    optional: true

@@ -15,6 +15,7 @@ from charmhelpers.core.hookenv import (
     related_units,
     status_set,
     local_unit,
+    unit_get,
 )
 
 from subprocess import (
@@ -137,6 +138,22 @@ def tls_certificates_relation_changed():
 @hooks.hook('tls-certificates-relation-departed')
 def tls_certificates_relation_departed():
     utils.tls_changed(None, None, None)
+
+
+@hooks.hook("vrouter-plugin-relation-changed")
+def vrouter_plugin_changed():
+    # accepts 'ready' value in realation (True/False)
+    # accepts 'settings' value as a serialized dict to json for contrail-vrouter-agent.conf:
+    # {"DEFAULT": {"key1": "value1"}, "SECTION_2": {"key1": "value1"}}
+    data = relation_get()
+    plugin_ip = data.get("private-address")
+    plugin_ready = data.get("ready", False)
+    if plugin_ready:
+        plugin_ips = json.loads(config.get("plugin-ips", "{}"))
+        plugin_ips[plugin_ip] = json.loads(data.get("settings", "{}"))
+        config["plugin-ips"] = json.dumps(plugin_ips)
+        config.save()
+    utils.update_charm_status()
 
 
 @hooks.hook("update-status")

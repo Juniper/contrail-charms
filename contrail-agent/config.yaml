@@ -110,3 +110,9 @@ options:
       Comma-separated list of destinations (either domain names or IP
       addresses) that should be directly accessed, by opposition of going
       through the proxy defined above. Must be less than 2023 characters long
+  wait-for-external-plugin:
+    type: boolean
+    default: false
+    descripton: |
+      Enable external vRouter datapath plugin. This can be used with the agilio-vrouter
+      charm to enable a hardware offloaded vRouter datapath.
