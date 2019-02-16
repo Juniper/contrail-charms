@@ -112,6 +112,13 @@ def get_image_id(image, tag):
 
 
 def pull(image, tag):
+    # check image presense
+    try:
+        check_call([DOCKER_CLI, "inspect", get_image_id(image, tag)])
+        return
+    except Excpetion:
+        pass
+    # pull image
     check_call([DOCKER_CLI, "pull", get_image_id(image, tag)])
 
 
