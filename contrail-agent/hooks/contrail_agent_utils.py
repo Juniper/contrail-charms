@@ -1,3 +1,5 @@
+import os
+
 from subprocess import (
     check_call,
     check_output,
@@ -144,6 +146,8 @@ def get_context():
 
 
 def update_charm_status():
+    fix_dns_settings()
+
     tag = config.get('image-tag')
     for image in IMAGES + (IMAGES_DPDK if config["dpdk"] else IMAGES_KERNEL):
         try:
@@ -192,6 +196,24 @@ def update_charm_status():
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
 
     common_utils.update_services_status(SERVICES)
+
+
+def fix_dns_settings():
+    # in some bionix installations DNS is proxied by local instance
+    # of systed-resolved service. this services applies DNS settings
+    # that was taken overDHCP to exact interface - ens3 for example.
+    # and when we move traffic from ens3 to vhost0 then local DNS
+    # service stops working correctly because vhost0 doesn't have
+    # upstream DNS server setting.
+    # while we don't know how to move DNS settings to vhost0 in
+    # vrouter-agent container - let's remove local DNS proxy from
+    # the path and send DNS requests directly to the HUB.
+    # this situation is observed only in bionic.
+    if lsb_release()['DISTRIB_CODENAME'] != 'bionic':
+        return
+    if not os.path.exists('/run/systemd/resolve/resolv.conf'):
+        os.remove('/etc/resolv.conf')
+        os.symlink('/run/systemd/resolve/resolv.conf', '/etc/resolv.conf')
 
 
 def fix_libvirt():
