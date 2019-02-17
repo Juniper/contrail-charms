@@ -116,7 +116,7 @@ def pull(image, tag):
     try:
         check_call([DOCKER_CLI, "inspect", get_image_id(image, tag)])
         return
-    except Excpetion:
+    except Exception:
         pass
     # pull image
     check_call([DOCKER_CLI, "pull", get_image_id(image, tag)])
