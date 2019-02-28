@@ -27,6 +27,7 @@ from charmhelpers.core.hookenv import (
     network_get_primary_address,
     unit_get,
     WARNING,
+    NoNetworkBinding,
 )
 
 from charmhelpers.core.host import (
@@ -109,7 +110,12 @@ def get_address_in_network(network, fallback=None, fatal=False):
         _validate_cidr(network)
         network = netaddr.IPNetwork(network)
         for iface in netifaces.interfaces():
-            addresses = netifaces.ifaddresses(iface)
+            try:
+                addresses = netifaces.ifaddresses(iface)
+            except ValueError:
+                # If an instance was deleted between
+                # netifaces.interfaces() run and now, its interfaces are gone
+                continue
             if network.version == 4 and netifaces.AF_INET in addresses:
                 for addr in addresses[netifaces.AF_INET]:
                     cidr = netaddr.IPNetwork("%s/%s" % (addr['addr'],
@@ -243,11 +249,11 @@ def is_ipv6_disabled():
     try:
         result = subprocess.check_output(
             ['sysctl', 'net.ipv6.conf.all.disable_ipv6'],
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.STDOUT,
+            universal_newlines=True)
     except subprocess.CalledProcessError:
         return True
-    if six.PY3:
-        result = result.decode('UTF-8')
+
     return "net.ipv6.conf.all.disable_ipv6 = 1" in result
 
 
@@ -490,7 +496,7 @@ def get_host_ip(hostname, fallback=None):
     if not ip_addr:
         try:
             ip_addr = socket.gethostbyname(hostname)
-        except:
+        except Exception:
             log("Failed to resolve hostname '%s'" % (hostname),
                 level=WARNING)
             return fallback
@@ -518,7 +524,7 @@ def get_hostname(address, fqdn=True):
         if not result:
             try:
                 result = socket.gethostbyaddr(address)[0]
-            except:
+            except Exception:
                 return None
     else:
         result = address
@@ -577,6 +583,9 @@ def get_relation_ip(interface, cidr_network=None):
         address = network_get_primary_address(interface)
     except NotImplementedError:
         # If network-get is not available
+        address = get_host_ip(unit_get('private-address'))
+    except NoNetworkBinding:
+        log("No network binding for {}".format(interface), WARNING)
         address = get_host_ip(unit_get('private-address'))
 
     if config('prefer-ipv6'):
