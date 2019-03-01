@@ -34,7 +34,7 @@ def install():
                  "software-properties-common"])
     cmd = [
         "/bin/bash", "-c",
-        "set -o pipefail ; curl {}"
+        "set -o pipefail ; curl {} "
         "-fsSL --connect-timeout 10 "
         "https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
         "".format(_format_curl_https_proxy_opt())

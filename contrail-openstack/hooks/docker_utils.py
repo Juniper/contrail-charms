@@ -4,7 +4,11 @@ import os
 import platform
 from subprocess import check_call, check_output
 
-from charmhelpers.core.hookenv import config, log
+from charmhelpers.core.hookenv import (
+    config,
+    log,
+    env_proxy_settings,
+)
 from charmhelpers.core.host import service_restart
 from charmhelpers.core.templating import render
 from charmhelpers.fetch import apt_install, apt_update
@@ -16,13 +20,25 @@ DOCKER_CLI = "/usr/bin/docker"
 DOCKER_COMPOSE_CLI = "docker-compose"
 
 
+def _format_curl_https_proxy_opt():
+    proxy_settings = env_proxy_settings(['https'])
+    https_proxy = None
+    if proxy_settings:
+        https_proxy = proxy_settings.get('https_proxy')
+        return '--proxy {}'.format(https_proxy) if https_proxy else ''
+    return ''
+
+
 def install():
     apt_install(["apt-transport-https", "ca-certificates", "curl",
                  "software-properties-common"])
-    cmd = ["/bin/bash", "-c",
-           "set -o pipefail ; curl -fsSL --connect-timeout 10 "
-           "https://download.docker.com/linux/ubuntu/gpg "
-           "| sudo apt-key add -"]
+    cmd = [
+        "/bin/bash", "-c",
+        "set -o pipefail ; curl {} "
+        "-fsSL --connect-timeout 10 "
+        "https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+        "".format(_format_curl_https_proxy_opt())
+    ]
     check_output(cmd)
     dist = platform.linux_distribution()[2].strip()
     cmd = ("add-apt-repository "

@@ -20,6 +20,8 @@ UBUNTU_RELEASES = (
     'yakkety',
     'zesty',
     'artful',
+    'bionic',
+    'cosmic',
 )
 
 
@@ -68,6 +70,14 @@ def lsb_release():
             k, v = l.split('=')
             d[k.strip()] = v.strip()
     return d
+
+
+def get_distrib_codename():
+    """Return the codename of the distribution
+    :returns: The codename
+    :rtype: str
+    """
+    return lsb_release()['DISTRIB_CODENAME'].lower()
 
 
 def cmp_pkgrevno(package, revno, pkgcache=None):
