@@ -31,6 +31,36 @@ from charmhelpers.core.templating import render
 config = config()
 
 
+PACKAGE_CODENAMES = {
+    'nova': OrderedDict([
+        ('12', 'liberty'),
+        ('13', 'mitaka'),
+        ('14', 'newton'),
+        ('15', 'ocata'),
+        ('16', 'pike'),
+        ('17', 'queens'),
+        ('18', 'rocky'),
+    ]),
+    'neutron': OrderedDict([
+        ('7', 'liberty'),
+        ('8', 'mitaka'),
+        ('9', 'newton'),
+        ('10', 'ocata'),
+        ('11', 'pike'),
+        ('12', 'queens'),
+        ('13', 'rocky'),
+    ]),
+    'heat': OrderedDict([
+        ('5', 'liberty'),
+        ('6', 'mitaka'),
+        ('7', 'newton'),
+        ('8', 'ocata'),
+        ('9', 'pike'),
+        ('10', 'queens'),
+        ('11', 'rocky'),
+    ]),
+}
+
 def update_service_ips():
     try:
         endpoints = _get_endpoints()
@@ -194,7 +224,7 @@ def _save_file(path, data):
         os.remove(path)
 
 
-def deploy_openstack_code(image):
+def deploy_openstack_code(image, env_dict=None):
     tag = config.get('image-tag')
     docker_utils.pull(image, tag)
 
@@ -211,7 +241,7 @@ def deploy_openstack_code(image):
         # that is /usr/bin in the system
         "/usr/bin:/opt/plugin/bin",
     ]
-    docker_utils.run(image, tag, volumes)
+    docker_utils.run(image, tag, volumes, env_dict=env_dict)
     try:
         version = docker_utils.get_contrail_version(image, tag)
         application_version_set(version)
@@ -220,16 +250,8 @@ def deploy_openstack_code(image):
 
 
 def nova_patch():
-    # patch nova for DPDK
-    try:
-        import nova
-    except Exception as e:
-        # nova is not installed
-        log("nova couldn't be imported: {exc}".format(exc=e), level=WARNING)
-        return
-
-    nova_version = pkg_resources.get_distribution("nova").version
-    if nova_version.split('.')[0] != '15':
+    version = get_openstack_version_codename('nova')
+    if version != 'ocata':
         # patch is required only for Ocata.
         # lower versions are not supported.
         # next versions do not requires the patch
@@ -252,3 +274,13 @@ def nova_patch():
     # TODO: un-patch
     # patch -p 2 -i files/nova.diff -d ${::nova_path} -b -R -f --dry-run
     # patch -p 2 -i files/nova.diff -d ${::nova_path} -b -R
+
+
+def get_openstack_version_codename(dist):
+    try:
+        version = pkg_resources.get_distribution(dist).version
+        return PACKAGE_CODENAMES[dist][version.split('.')[0]]
+    except Exception as e:
+        # nova is not installed
+        log("Version of {} couldn't be derived: {}".format(dist, e), level=WARNING)
+        return None

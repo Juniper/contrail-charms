@@ -164,6 +164,7 @@ def _notify_neutron():
         if related_units(rid):
             neutron_api_joined(rid)
 
+
 def _notify_heat():
     for rid in relation_ids("heat-plugin"):
         if related_units(rid):
@@ -186,6 +187,7 @@ def _get_orchestrator_info():
     _add_to_info("network_service_ip")
     return {"orchestrator-info": json.dumps(info)}
 
+
 @hooks.hook("heat-plugin-relation-joined")
 def heat_plugin_joined(rel_id=None):
     utils.deploy_openstack_code("contrail-openstack-heat-init")
@@ -195,9 +197,11 @@ def heat_plugin_joined(rel_id=None):
     }
     relation_set(relation_id=rel_id, relation_settings=settings)
 
+
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
-    utils.deploy_openstack_code("contrail-openstack-neutron-init")
+    version = utils.get_openstack_version_codename('neutron')
+    utils.deploy_openstack_code("contrail-openstack-neutron-init", {"OPENSTACK_VERSION": version})
 
     # create plugin config
     base = "neutron_plugin_contrail.plugins.opencontrail"

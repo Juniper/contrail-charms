@@ -157,7 +157,7 @@ def remove_container_by_image(image):
         check_call([DOCKER_CLI, "rm", cnt[0]])
 
 
-def run(image, tag, volumes, remove=False):
+def run(image, tag, volumes, remove=False, env_dict=None):
     image_id = get_image_id(image, tag)
     args = [DOCKER_CLI, "run"]
     if remove:
@@ -165,6 +165,9 @@ def run(image, tag, volumes, remove=False):
     args.extend(["-i", "--network", "host"])
     for volume in volumes:
         args.extend(["-v", volume])
+    if env_dict:
+        for key in env_dict:
+            args.extend("-e", "{}={}".format(key, env_dict[key])
     args.extend([image_id])
     check_call(args)
 
