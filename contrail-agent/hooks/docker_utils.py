@@ -167,7 +167,7 @@ def run(image, tag, volumes, remove=False, env_dict=None):
         args.extend(["-v", volume])
     if env_dict:
         for key in env_dict:
-            args.extend("-e", "{}={}".format(key, env_dict[key]))
+            args.extend(["-e", "{}={}".format(key, env_dict[key])])
     args.extend([image_id])
     check_call(args)
 
