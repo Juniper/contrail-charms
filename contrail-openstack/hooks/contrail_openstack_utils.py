@@ -258,6 +258,7 @@ def nova_patch():
         log("this nova version is unsupported: {}".format(nova_version), level=INFO)
         return
 
+    import nova
     nova_path = os.path.dirname(nova.__file__)
     pwd = os.getcwd()
     base_cmd = ["/usr/bin/patch", "-p", "2", "-i", pwd + "/files/nova.diff", "-d", nova_path, "-b"]
