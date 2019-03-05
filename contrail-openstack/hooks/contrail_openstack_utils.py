@@ -32,33 +32,33 @@ config = config()
 
 
 PACKAGE_CODENAMES = {
-    'nova': OrderedDict([
-        ('12', 'liberty'),
-        ('13', 'mitaka'),
-        ('14', 'newton'),
-        ('15', 'ocata'),
-        ('16', 'pike'),
-        ('17', 'queens'),
-        ('18', 'rocky'),
-    ]),
-    'neutron': OrderedDict([
-        ('7', 'liberty'),
-        ('8', 'mitaka'),
-        ('9', 'newton'),
-        ('10', 'ocata'),
-        ('11', 'pike'),
-        ('12', 'queens'),
-        ('13', 'rocky'),
-    ]),
-    'heat': OrderedDict([
-        ('5', 'liberty'),
-        ('6', 'mitaka'),
-        ('7', 'newton'),
-        ('8', 'ocata'),
-        ('9', 'pike'),
-        ('10', 'queens'),
-        ('11', 'rocky'),
-    ]),
+    'nova': {
+        '12': 'liberty',
+        '13': 'mitaka',
+        '14': 'newton',
+        '15': 'ocata',
+        '16': 'pike',
+        '17': 'queens',
+        '18': 'rocky',
+    },
+    'neutron': {
+        '7': 'liberty',
+        '8': 'mitaka',
+        '9': 'newton',
+        '10': 'ocata',
+        '11': 'pike',
+        '12': 'queens',
+        '13': 'rocky',
+    },
+    'heat': {
+        '5': 'liberty',
+        '6': 'mitaka',
+        '7': 'newton',
+        '8': 'ocata',
+        '9': 'pike',
+        '10': 'queens',
+        '11': 'rocky',
+    },
 }
 
 def update_service_ips():
