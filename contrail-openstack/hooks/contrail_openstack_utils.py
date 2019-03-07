@@ -255,7 +255,7 @@ def nova_patch():
         # patch is required only for Ocata.
         # lower versions are not supported.
         # next versions do not requires the patch
-        log("this nova version is unsupported: {}".format(nova_version), level=INFO)
+        log("this nova version is unsupported: {}".format(version), level=INFO)
         return
 
     import nova
