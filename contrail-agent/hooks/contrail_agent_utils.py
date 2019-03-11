@@ -211,7 +211,7 @@ def fix_dns_settings():
     # this situation is observed only in bionic.
     if lsb_release()['DISTRIB_CODENAME'] != 'bionic':
         return
-    if not os.path.exists('/run/systemd/resolve/resolv.conf'):
+    if os.path.exists('/run/systemd/resolve/resolv.conf'):
         os.remove('/etc/resolv.conf')
         os.symlink('/run/systemd/resolve/resolv.conf', '/etc/resolv.conf')
 
