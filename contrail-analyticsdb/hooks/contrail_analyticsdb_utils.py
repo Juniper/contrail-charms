@@ -107,7 +107,7 @@ def get_context():
 def update_charm_status():
     tag = config.get('image-tag')
     cver = '5.1'
-    if '5.0.' in tag:
+    if '5.0' in tag:
         cver = '5.0'
 
     for image in IMAGES[cver]:
