@@ -194,13 +194,6 @@ def _is_related_to(rel_name):
 
 def _get_context():
     ctx = {}
-
-    # this is still needed for version < 4.1.1
-    ip = config.get("api_vip")
-    if not ip:
-        ip = config.get("api_ip")
-    ctx["api_server"] = ip
-
     ctx["api_servers"] = [relation_get("private-address", unit, rid)
                           for rid in relation_ids("contrail-controller")
                           for unit in related_units(rid)]

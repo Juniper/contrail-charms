@@ -93,7 +93,7 @@ auth-mode | string | rbac | It represents 'aaa_mode' configuration key of Contra
 cassandra-jvm-extra-opts | string | | Memory limits for Java process of Cassandra.
 cloud-admin-role | string | admin | Role name in keystone for users that have full access to everything.
 global-read-only-role | string | | Role name in keystone for users that have read-only access to everything.
-vip | string | | Contrail API VIP to be used for configuring client-side software like neutron plugin. (to be set up also in KeepAlived charm configuration if it’s used for HA) Private IP of the first Contrail API unit will be used if not set.
+vip | string | | Contrail API VIP to be used for configuring haproxy relation for external clients. To be set up also in KeepAlived charm configuration if it’s used for HA. All internal clients like vrouter-agent and openstack clients like neutron will be configured with list of unit's IP-s.
 use-external-rabbitmq | boolean | false | Charm will wait for external AMQP relation if set. Charm will use internal RabbitMQ server if not set. **NOTE: Changing this flag after deployment is dangerous!**
 flow-export-rate | string | 0 | Defines how much flow records will be exported by vRouter agent to the Contrail Collector when a flow is created or deleted.
 docker-registry | string | | URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.

@@ -28,9 +28,10 @@ options:
   vip:
     type: string
     description: |
-      Contrail API VIP to be used for configuring client-side software like neutron plugin.
-      (to be set up also in KeepAlived charm configuration if it’s used for HA)
-      Private IP of the first Contrail API unit will be used if not set.
+      Contrail API VIP to be used for configuring haproxy relation for external clients.
+      To be set up also in KeepAlived charm configuration if it’s used for HA.
+      All internal clients like vrouter-agent and openstack clients like neutron
+      will be configured with list of unit's IP-s.
   cassandra-minimum-diskgb:
     type: string
     default: "20"
