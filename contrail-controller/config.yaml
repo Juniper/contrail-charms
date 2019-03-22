@@ -98,3 +98,13 @@ options:
       Comma-separated list of destinations (either domain names or IP
       addresses) that should be directly accessed, by opposition of going
       through the proxy defined above. Must be less than 2023 characters long
+  local-rabbitmq-hostname-resolution:
+    type: boolean
+    default: false
+    description: |
+      Write RabbitMQ resolutions for cluster node names into /etc/hosts based
+      on addresses from subnets configured in control-network config
+      as well as a system hostname plus '-contrail-rmq' postfix. This config
+      option is useful for multi-homed setups where a system hostname in the
+      configured DNS does not correspond to an address used for RabbitMQ
+      clustering traffic.

@@ -27,6 +27,8 @@ from charmhelpers.core.hookenv import (
     close_port,
 )
 
+from charmhelpers.core.unitdata import kv
+
 import contrail_controller_utils as utils
 import common_utils
 import docker_utils
@@ -41,6 +43,9 @@ def install():
 
     # TODO: try to remove this call
     common_utils.fix_hostname()
+
+    if config.get('local-rabbitmq-hostname-resolution'):
+        utils.update_rabbitmq_cluster_hostnames()
 
     docker_utils.install()
     utils.update_charm_status()
@@ -78,20 +83,47 @@ def leader_settings_changed():
 @hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
     settings = {"unit-address": common_utils.get_ip()}
+
+    if config.get('local-rabbitmq-hostname-resolution'):
+        settings.update({
+            "rabbitmq-hostname": utils.get_contrail_rabbit_hostname(),
+        })
+
+        # a remote unit might have already set rabbitmq-hostname if
+        # it came up before this unit was provisioned so the -changed
+        # event will not fire for it and we have to handle it here
+        data = relation_get()
+        log("Joined the peer relation with {}: {}".format(
+            remote_unit(), data))
+        ip = data.get("unit-address")
+        rabbit_hostname = data.get('rabbitmq-hostname')
+        if ip and rabbit_hostname:
+            utils.update_hosts_file(ip, rabbit_hostname)
+
     relation_set(relation_settings=settings)
     utils.update_charm_status()
 
 
 @hooks.hook("controller-cluster-relation-changed")
 def cluster_changed():
-    if not is_leader():
-        return
     data = relation_get()
+    log("Peer relation changed with {}: {}".format(
+        remote_unit(), data))
     ip = data.get("unit-address")
+
     if not ip:
         log("There is no unit-address in the relation")
         return
+
+    if config.get('local-rabbitmq-hostname-resolution'):
+        rabbit_hostname = data.get('rabbitmq-hostname')
+        if ip and rabbit_hostname:
+            utils.update_hosts_file(ip, rabbit_hostname)
     unit = remote_unit()
+
+    if not is_leader():
+        return
+
     _address_changed(unit, ip)
     utils.update_charm_status()
 
@@ -143,6 +175,7 @@ def config_changed():
     if config.changed("control-network"):
         ip = common_utils.get_ip()
         settings = {"private-address": ip}
+
         rnames = ("contrail-controller",
                   "contrail-analytics", "contrail-analyticsdb",
                   "http-services", "https-services")
@@ -150,10 +183,32 @@ def config_changed():
             for rid in relation_ids(rname):
                 relation_set(relation_id=rid, relation_settings=settings)
         settings = {"unit-address": ip}
+
+        if config.get('local-rabbitmq-hostname-resolution'):
+            settings.update({
+                "rabbitmq-hostname": utils.get_contrail_rabbit_hostname(),
+            })
+            # this will also take care of updating the hostname in case
+            # control-network changes to something different although
+            # such host reconfiguration is unlikely
+            utils.update_rabbitmq_cluster_hostnames()
+
         for rid in relation_ids("controller-cluster"):
             relation_set(relation_id=rid, relation_settings=settings)
         if is_leader():
             _address_changed(local_unit(), ip)
+
+    if config.changed("local-rabbitmq-hostname-resolution"):
+        if config.get("local-rabbitmq-hostname-resolution"):
+            # enabling this option will trigger events on other units
+            # so their hostnames will be added as -changed events fire
+            # we just need to set our hostname
+            utils.update_rabbitmq_cluster_hostnames()
+        else:
+            kvstore = kv()
+            rabbitmq_hosts = kvstore.get(key='rabbitmq_hosts', default={})
+            for ip, hostname in rabbitmq_hosts:
+                utils.update_hosts_file(ip, hostname, remove_hostname=True)
 
     docker_utils.config_changed()
     utils.update_charm_status()
