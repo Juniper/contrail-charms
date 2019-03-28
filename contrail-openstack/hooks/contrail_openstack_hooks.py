@@ -191,8 +191,28 @@ def _get_orchestrator_info():
 def heat_plugin_joined(rel_id=None):
     utils.deploy_openstack_code("contrail-openstack-heat-init")
 
+    plugin_dirs = config.get("heat-plugin-dirs")
+    ctx = utils.get_context()
+    sections = {
+        "clients_contrail": [
+            ("user", ctx.get("keystone_admin_user")),
+            ("password", ctx.get("keystone_admin_password")),
+            ("tenant", ctx.get("keystone_admin_tenant")),
+            ("api_server", " ".join(ctx.get("api_servers"))),
+            ("auth_host_ip", ctx.get("keystone_ip"))
+        ]
+    }
+
+    conf = {
+        "heat": {
+            "/etc/heat/heat.conf": {
+                "sections": sections
+            }
+         }
+    }
     settings = {
-        "plugin-dirs": config.get("heat-plugin-dirs"),
+        "plugin-dirs": plugin_dirs,
+        "subordinate_configuration": json.dumps(conf)
     }
     relation_set(relation_id=rel_id, relation_settings=settings)
 

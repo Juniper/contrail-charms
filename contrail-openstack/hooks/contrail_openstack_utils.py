@@ -170,7 +170,7 @@ def write_configs():
     if not neutron and not heat:
         return
 
-    ctx = _get_context()
+    ctx = get_context()
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
     path = "/etc/contrail/keystone/ssl/ca-cert.pem"
@@ -192,7 +192,7 @@ def _is_related_to(rel_name):
     return True if units else False
 
 
-def _get_context():
+def get_context():
     ctx = {}
     ctx["api_servers"] = [relation_get("private-address", unit, rid)
                           for rid in relation_ids("contrail-controller")
