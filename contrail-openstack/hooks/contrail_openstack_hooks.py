@@ -43,7 +43,7 @@ def config_changed():
     if changed:
         _notify_nova()
         _notify_neutron()
-        _notufy_heat()
+        _notify_heat()
 
     if is_leader():
         _configure_metadata_shared_secret()
