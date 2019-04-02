@@ -108,3 +108,17 @@ options:
       option is useful for multi-homed setups where a system hostname in the
       configured DNS does not correspond to an address used for RabbitMQ
       clustering traffic.
+  haproxy-https-mode:
+    type: string
+    default: tcp
+    description: |
+      Mode for haproxy for https connections - tcp or http.
+      tcp means pass-through for SSL connection - client will see cert from 
+      backend. http mode means ssl-termination in haproxy - cert from backend
+      will be parsed by haproxy and client will see cert that is set for
+      haproxy itself.
+  haproxy-https-bind-options:
+    type: string
+    description: |
+      Additional options for bind directive for https relation with haproxy.
+      Example: transparent ssl crt /etc/pki/tls/private/overcloud_endpoint.pem

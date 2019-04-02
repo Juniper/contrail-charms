@@ -212,7 +212,7 @@ def config_changed():
 
     docker_utils.config_changed()
     utils.update_charm_status()
-    _notify_proxy_services()
+    _notify_haproxy_services()
 
     if not is_leader():
         return
@@ -378,7 +378,7 @@ def _http_services(vip):
             "timeout connect 4000",
          ],
          "servers": [[name, addr, 8080,
-            "cookie " + addr + " weight 1 maxconn 1024 check port 8082"]]},
+            "cookie " + addr + " weight 1 maxconn 1024 check port 8080"]]},
         {"service_name": "contrail-api",
          "service_host": vip,
          "service_port": 8082,
@@ -401,7 +401,7 @@ def http_services_joined(rel_id=None):
                  services=yaml.dump(_http_services(str(vip))))
 
 
-def _https_services(vip):
+def _https_services_tcp(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
     return [
@@ -417,7 +417,36 @@ def _https_services(vip):
             "timeout connect 4000",
          ],
          "servers": [[name, addr, 8143,
-            "cookie " + addr + " weight 1 maxconn 1024 check port 8082"]]},
+            "cookie " + addr + " weight 1 maxconn 1024 check port 8143"]]},
+    ]
+
+
+def _https_services_http(vip):
+    name = local_unit().replace("/", "-")
+    addr = common_utils.get_ip()
+    opts = config.get("haproxy-https-bind-options", "")
+    return [
+        {"service_name": "contrail-webui-https",
+         "service_host": vip,
+         "service_port": 8143,
+         "service_options": [
+            "bind {}:8143 {}".format(vip, opts), #where is cert?
+            "timeout client 86400000",
+            "mode http",
+            "balance roundrobin",
+            "timeout server 30000",
+            "timeout connect 4000",
+            "hash-type consistent", #?
+            "http-request set-header X-Forwarded-Proto https if { ssl_fc }",
+            "http-request set-header X-Forwarded-Proto http if !{ ssl_fc }",
+            "option httpchk GET /", #?
+            "option httplog",
+            "option forwardfor",
+            "redirect scheme https code 301 if { hdr(host) -i " + str(vip) + " } !{ ssl_fc }",
+            "rsprep ^Location:\ http://(.*) Location:\ https://\1", #?
+         ],
+         "servers": [[name, addr, 8143,
+            "check fall 5 inter 2000 rise 2 ssl verify none"]]},
     ]
 
 
@@ -426,11 +455,18 @@ def https_services_joined(rel_id=None):
     vip = config.get("vip")
     if not vip:
         raise Exception("VIP must be set for allow relation to haproxy")
+    mode = config.get("haproxy-https-mode", "tcp")
+    if mode == "tcp":
+        data = _https_services_tcp(str(vip))
+    elif mode == "http"
+        data = _https_services_http(str(vip))
+    else:
+        raise Exception("Invalid haproxy-https-mode: {}. Possible values: tcp or http".format(mode))
     relation_set(relation_id=rel_id,
-                 services=yaml.dump(_https_services(str(vip))))
+                 services=yaml.dump(data))
 
 
-def _notify_proxy_services():
+def _notify_haproxy_services():
     vip = config.get("vip")
     func = close_port if vip else open_port
     for port in ["8082", "8080", "8143"]:
