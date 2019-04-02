@@ -424,26 +424,26 @@ def _https_services_tcp(vip):
 def _https_services_http(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    opts = config.get("haproxy-https-bind-options", "")
+    opts = config.get("haproxy-https-bind-options")
     return [
         {"service_name": "contrail-webui-https",
          "service_host": vip,
          "service_port": 8143,
+         "crts": ["DEFAULT"],
          "service_options": [
-            "bind {}:8143 {}".format(vip, opts), #where is cert?
             "timeout client 86400000",
             "mode http",
             "balance roundrobin",
             "timeout server 30000",
             "timeout connect 4000",
-            "hash-type consistent", #?
+            "hash-type consistent",
             "http-request set-header X-Forwarded-Proto https if { ssl_fc }",
             "http-request set-header X-Forwarded-Proto http if !{ ssl_fc }",
-            "option httpchk GET /", #?
+            "option httpchk GET /",
             "option httplog",
             "option forwardfor",
             "redirect scheme https code 301 if { hdr(host) -i " + str(vip) + " } !{ ssl_fc }",
-            "rsprep ^Location:\ http://(.*) Location:\ https://\1", #?
+            "rsprep ^Location:\\ http://(.*) Location:\\ https://\\1",
          ],
          "servers": [[name, addr, 8143,
             "check fall 5 inter 2000 rise 2 ssl verify none"]]},
@@ -458,7 +458,7 @@ def https_services_joined(rel_id=None):
     mode = config.get("haproxy-https-mode", "tcp")
     if mode == "tcp":
         data = _https_services_tcp(str(vip))
-    elif mode == "http"
+    elif mode == "http":
         data = _https_services_http(str(vip))
     else:
         raise Exception("Invalid haproxy-https-mode: {}. Possible values: tcp or http".format(mode))

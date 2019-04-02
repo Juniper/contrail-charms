@@ -117,8 +117,3 @@ options:
       backend. http mode means ssl-termination in haproxy - cert from backend
       will be parsed by haproxy and client will see cert that is set for
       haproxy itself.
-  haproxy-https-bind-options:
-    type: string
-    description: |
-      Additional options for bind directive for https relation with haproxy.
-      Example: transparent ssl crt /etc/pki/tls/private/overcloud_endpoint.pem
