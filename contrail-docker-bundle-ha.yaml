@@ -138,7 +138,7 @@ services:
     series: xenial
     options:
       log-level: "SYS_DEBUG"
-      cassandra-minimum-diskgb: 4
+      cassandra-minimum-diskgb: "4"
       cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
     to: [ "1", "2", "3" ]
   contrail-controller:
@@ -147,8 +147,9 @@ services:
     options:
       vip: 192.168.1.254
       log-level: "SYS_DEBUG"
-      cassandra-minimum-diskgb: 4
+      cassandra-minimum-diskgb: "4"
       cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
+    num_units: 3
     to: [ "1", "2", "3" ]
   contrail-keystone-auth:
     charm: ./contrail-keystone-auth
@@ -167,6 +168,7 @@ services:
     expose: true
     options:
       peering_mode: "active-active"
+    num_units: 3
     to: [ "1", "2", "3" ]
 
 relations:
@@ -178,8 +180,8 @@ relations:
   - [ "glance", "mysql" ]
   - [ "glance", "keystone" ]
   - [ glance, glance-hacluster ]
-  - [ "nova-cloud-controller", "mysql" ]
-  - [ "nova-cloud-controller", "rabbitmq-server" ]
+  - [ "nova-cloud-controller:shared-db", "mysql:shared-db" ]
+  - [ "nova-cloud-controller:amqp", "rabbitmq-server:amqp" ]
   - [ "nova-cloud-controller", "keystone" ]
   - [ "nova-cloud-controller", "glance" ]
   - [ nova-cloud-controller, ncc-hacluster ]
@@ -213,10 +215,10 @@ relations:
   - [ "contrail-agent", "contrail-controller"]
 
   #haproxy
-  - [ "haproxy:juju-info", "keepalived:juju-info" ]
-  - [ "contrail-analytics", "haproxy" ]
-  - [ "contrail-controller:http-services", "haproxy" ]
-  - [ "contrail-controller:https-services", "haproxy" ]
+  - [ "contrail-haproxy:juju-info", "contrail-keepalived:juju-info" ]
+  - [ "contrail-analytics", "contrail-haproxy" ]
+  - [ "contrail-controller:http-services", "contrail-haproxy" ]
+  - [ "contrail-controller:https-services", "contrail-haproxy" ]
 
 machines:
   "1":
