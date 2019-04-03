@@ -411,6 +411,7 @@ def _https_services_tcp(vip):
          "service_options": [
             "timeout client 86400000",
             "mode tcp",
+            "option tcplog",
             "balance roundrobin",
             "cookie SERVERID insert indirect nocache",
             "timeout server 30000",
@@ -440,7 +441,6 @@ def _https_services_http(vip):
             "http-request set-header X-Forwarded-Proto https if { ssl_fc }",
             "http-request set-header X-Forwarded-Proto http if !{ ssl_fc }",
             "option httpchk GET /",
-            "option httplog",
             "option forwardfor",
             "redirect scheme https code 301 if { hdr(host) -i " + str(vip) + " } !{ ssl_fc }",
             "rsprep ^Location:\\ http://(.*) Location:\\ https://\\1",
