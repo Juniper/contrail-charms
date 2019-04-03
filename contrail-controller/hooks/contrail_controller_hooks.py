@@ -434,7 +434,7 @@ def _https_services_http(vip):
          "service_options": [
             "timeout client 86400000",
             "mode http",
-            "balance roundrobin",
+            "balance source",
             "timeout server 30000",
             "timeout connect 4000",
             "hash-type consistent",

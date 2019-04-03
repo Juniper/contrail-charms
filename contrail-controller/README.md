@@ -60,6 +60,14 @@ Such option allows to relate this charm to different haproxy applications
 where first haproxy app has ssl_cert/ssl_key in configuration and makes SSL termination itself
 but second doesn't have SSL parameters and acts as a proxy/load-balancer.
 
+By default tcp mode for https connections (webui) is used. If you want to implement ssl-termination for HAproxy for webui
+you can configure it:
+
+    juju config contrail-controller haproxy-https-mode=http
+    juju config haproxy ssl_cert=SELFSIGNED
+
+Or another certificate is also can be used for haproxy charm. Please check its manual for more information.
+
 SSL
 ---
 
@@ -105,3 +113,4 @@ log-level | string | SYS_NOTICE | Log level for contrail services. Valid values 
 http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
 https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
 no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long
+haproxy-https-mode | string | tcp | Mode for haproxy for https connections - tcp or http.
