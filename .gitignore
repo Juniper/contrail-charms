@@ -6,3 +6,4 @@ __pycache__/
 *.project
 *.pydevproject
 *.settings
+/.vscode/settings.json
