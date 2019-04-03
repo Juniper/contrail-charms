@@ -65,11 +65,11 @@ def leader_settings_changed():
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    if not is_leader():
-        return
-
-    data = _get_orchestrator_info()
-    relation_set(**data)
+    settings = {'unit-type': 'openstack'}
+    relation_set(relation_settings=settings)
+    if is_leader():
+        data = _get_orchestrator_info()
+        relation_set(**data)
 
 
 @hooks.hook("contrail-controller-relation-changed")
@@ -171,8 +171,7 @@ def _notify_heat():
 
 
 def _get_orchestrator_info():
-    info = {"cloud_orchestrator": "openstack", "unit-type": "openstack"}
-
+    info = {"cloud_orchestrator": "openstack"}
     if config["enable-metadata-server"]:
         info["metadata_shared_secret"] = leader_get("metadata-shared-secret")
 
