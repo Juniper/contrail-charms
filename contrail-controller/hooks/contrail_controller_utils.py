@@ -174,6 +174,8 @@ def update_charm_status():
 
     service_changed = common_utils.render_and_log("webui.yaml",
         WEBUI_CONFIGS_PATH + "/docker-compose.yaml", ctx)
+    service_changed |= common_utils.render_and_log("web.env",
+        BASE_CONFIGS_PATH + "/common_web.env", ctx)
     if changed or service_changed:
         docker_utils.compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
 
