@@ -113,7 +113,7 @@ Manual installation
     ```
     juju deploy cs:xenial/haproxy --to <first contrail-controller machine> --config peering_mode=active-active
     juju add-unit haproxy --to <another contrail-controller machine>
-    juju deploy cs:~boucherv29/keepalived-19 --config virtual_ip=<vip>
+    juju deploy cs:~containers/keepalived --config virtual_ip=<vip>
     ```
 
     Expose haproxy to be available. Do not expose contrail-controller and contrail-analytics in this case.

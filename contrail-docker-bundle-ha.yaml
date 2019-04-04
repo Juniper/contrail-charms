@@ -158,7 +158,7 @@ services:
     to: [ "lxd:1" ]
 
   contrail-keepalived:
-    charm: cs:~boucherv29/keepalived-19
+    charm: cs:~containers/keepalived
     series: xenial
     options:
       virtual_ip: 192.168.1.254
