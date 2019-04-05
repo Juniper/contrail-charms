@@ -14,11 +14,16 @@ from charmhelpers.contrib.network.ip import (
 from charmhelpers.core.hookenv import (
     ERROR,
     application_version_set,
+    charm_dir,
     config,
     log,
     status_set
 )
-from charmhelpers.core.host import file_hash, write_file
+from charmhelpers.core.host import (
+    file_hash,
+    rsync,
+    write_file,
+)
 from charmhelpers.core.templating import render
 
 config = config()
@@ -201,3 +206,43 @@ def render_and_log(template, conf_file, ctx, perms=0o444):
         log("Configuration file has been changed.")
 
     return bool(new_set or old_set)
+
+
+def rsync_nrpe_checks(plugins_dir):
+    if not os.path.exists(plugins_dir):
+        os.makedirs(plugins_dir)
+
+    charm_plugin_dir = os.path.join(charm_dir(),
+                                    'files',
+                                    'plugins/')
+    rsync(charm_plugin_dir,
+          plugins_dir,
+          options=['--executability'])
+
+
+def add_nagios_to_sudoers():
+    sudoers_content = 'nagios ALL = NOPASSWD: /usr/bin/contrail-status'
+    cmd = ('sudo bash -c \'echo \"{}\" > /etc/sudoers.d/nagios\''
+           .format(sudoers_content))
+    try:
+        check_call(cmd, shell=True)
+    except CalledProcessError as err:
+        log('Failed to run cmd: {}'.format(err.cmd))
+
+
+def contrail_status_cmd(name, plugins_dir):
+    script_name = 'check_contrail_status_{}.py'.format(name)
+    tag = config.get('image-tag')
+    cver = '5.1'
+    if '5.0' in tag:
+        cver = '5.0'
+
+    check_contrail_status_script = os.path.join(
+        plugins_dir,
+        script_name
+        )
+    check_contrail_status_cmd = (
+        '{} {}'
+        .format(check_contrail_status_script, cver)
+    )
+    return check_contrail_status_cmd

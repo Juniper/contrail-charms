@@ -16,6 +16,9 @@ provides:
     interface: http
   https-services:
     interface: http
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
 requires:
   contrail-auth:
     interface: contrail-auth

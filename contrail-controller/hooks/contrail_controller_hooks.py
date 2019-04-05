@@ -6,6 +6,7 @@ import yaml
 from socket import gethostbyname, gethostname, getfqdn
 
 from subprocess import check_output
+
 from charmhelpers.core.hookenv import (
     Hooks,
     UnregisteredHookError,
@@ -28,6 +29,7 @@ from charmhelpers.core.hookenv import (
 )
 
 from charmhelpers.core.unitdata import kv
+from charmhelpers.contrib.charmsupport import nrpe
 
 import contrail_controller_utils as utils
 import common_utils
@@ -167,6 +169,7 @@ def cluster_departed():
 
 @hooks.hook("config-changed")
 def config_changed():
+    update_nrpe_config()
     auth_mode = config.get("auth-mode")
     if auth_mode not in ("rbac", "cloud-admin", "no-auth"):
         raise Exception("Config is invalid. auth-mode must one of: "
@@ -544,6 +547,42 @@ def _tls_changed(cert, key, ca):
     update_northbound_relations()
 
     utils.update_charm_status()
+
+
+@hooks.hook('nrpe-external-master-relation-changed')
+def nrpe_external_master_relation_changed():
+    update_nrpe_config()
+
+
+def update_nrpe_config():
+    plugins_dir = '/usr/local/lib/nagios/plugins'
+    nrpe_compat = nrpe.NRPE()
+    component_ip = common_utils.get_ip()
+    common_utils.rsync_nrpe_checks(plugins_dir)
+    common_utils.add_nagios_to_sudoers()
+
+    check_ui_cmd = 'check_http -H {} -p 8143 -S'.format(component_ip)
+    nrpe_compat.add_check(
+        shortname='check_contrail_web_ui',
+        description='Check Contrail WebUI',
+        check_cmd=check_ui_cmd
+    )
+
+    check_api_cmd = 'check_http -H {} -p 8082'.format(component_ip)
+    nrpe_compat.add_check(
+        shortname='check_contrail_api',
+        description='Check Contrail API',
+        check_cmd=check_api_cmd
+    )
+
+    ctl_status_shortname = 'check_contrail_status_controller'
+    nrpe_compat.add_check(
+        shortname=ctl_status_shortname,
+        description='Check contrail-status',
+        check_cmd=common_utils.contrail_status_cmd('controller', plugins_dir)
+    )
+
+    nrpe_compat.write()
 
 
 def main():

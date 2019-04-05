@@ -12,4 +12,7 @@ peers:
 provides:
   contrail-analyticsdb:
     interface: contrail-analyticsdb
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
 

@@ -9,6 +9,9 @@ series:
 provides:
   contrail-auth:
     interface: contrail-auth
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
 requires:
   identity-admin:
     interface: keystone-admin

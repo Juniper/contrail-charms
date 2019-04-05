@@ -9,6 +9,10 @@ series:
   - xenial
   - bionic
 subordinate: true
+provides:
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
 requires:
   juju-info:
     interface: juju-info

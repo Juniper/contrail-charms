@@ -16,6 +16,7 @@ from charmhelpers.core.hookenv import (
     open_port,
     close_port,
 )
+from charmhelpers.contrib.charmsupport import nrpe
 
 import contrail_analytics_utils as utils
 import common_utils
@@ -42,6 +43,7 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
+    update_nrpe_config()
     if config.changed("control-network"):
         settings = {'private-address': common_utils.get_ip()}
         rnames = ("contrail-analytics", "contrail-analyticsdb",
@@ -170,6 +172,35 @@ def http_services_joined(rel_id=None):
     data = list() if not vip else _http_services(str(vip))
     relation_set(relation_id=rel_id,
                  services=yaml.dump(data))
+
+
+@hooks.hook('nrpe-external-master-relation-changed')
+def nrpe_external_master_relation_changed():
+    update_nrpe_config()
+
+
+def update_nrpe_config():
+    plugins_dir = '/usr/local/lib/nagios/plugins'
+    nrpe_compat = nrpe.NRPE()
+    component_ip = common_utils.get_ip()
+    common_utils.rsync_nrpe_checks(plugins_dir)
+    common_utils.add_nagios_to_sudoers()
+
+    check_api_cmd = 'check_http -H {} -p 8081'.format(component_ip)
+    nrpe_compat.add_check(
+        shortname='check_analytics_api',
+        description='Check Contrail Analytics API',
+        check_cmd=check_api_cmd
+    )
+
+    ctl_status_shortname = 'check_contrail_status_analytics'
+    nrpe_compat.add_check(
+        shortname=ctl_status_shortname,
+        description='Check contrail-status',
+        check_cmd=common_utils.contrail_status_cmd('analytics', plugins_dir)
+    )
+
+    nrpe_compat.write()
 
 
 def main():

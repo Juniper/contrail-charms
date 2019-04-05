@@ -17,10 +17,10 @@ from charmhelpers.core.hookenv import (
     local_unit,
     unit_get,
 )
+from charmhelpers.contrib.charmsupport import nrpe
 
-from subprocess import (
-    check_output,
-)
+from subprocess import check_output
+
 
 import contrail_agent_utils as utils
 import common_utils
@@ -45,6 +45,7 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
+    update_nrpe_config()
     # Charm doesn't support changing of some parameters.
     if config.changed("dpdk"):
         raise Exception("Configuration parameter dpdk couldn't be changed")
@@ -164,6 +165,27 @@ def update_status():
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
     utils.update_charm_status()
+
+
+@hooks.hook('nrpe-external-master-relation-changed')
+def nrpe_external_master_relation_changed():
+    update_nrpe_config()
+
+
+def update_nrpe_config():
+    plugins_dir = '/usr/local/lib/nagios/plugins'
+    nrpe_compat = nrpe.NRPE(primary=False)
+    common_utils.rsync_nrpe_checks(plugins_dir)
+    common_utils.add_nagios_to_sudoers()
+
+    ctl_status_shortname = 'check_contrail_status_agent'
+    nrpe_compat.add_check(
+        shortname=ctl_status_shortname,
+        description='Check contrail-status',
+        check_cmd=common_utils.contrail_status_cmd('agent', plugins_dir)
+    )
+
+    nrpe_compat.write()
 
 
 def main():

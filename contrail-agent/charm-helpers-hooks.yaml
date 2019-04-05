@@ -5,3 +5,4 @@ include:
   - fetch
   - osplatform
   - contrib.network
+  - contrib.charmsupport
