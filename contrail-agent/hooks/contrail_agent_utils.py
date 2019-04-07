@@ -88,9 +88,10 @@ def _get_default_gateway_iface():
 
 
 def _get_iface_gateway_ip(iface):
+    ifaces = [iface, "vhost0"]
     for line in check_output(["route", "-n"]).splitlines()[2:]:
         l = line.split()
-        if "G" in l[3] and l[7] == iface:
+        if "G" in l[3] and l[7] in ifaces:
             log("Found gateway {} for interface {}".format(l[1], iface))
             return l[1]
     log("vrouter-gateway set to 'auto' but gateway could not be determined "
