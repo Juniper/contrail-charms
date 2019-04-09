@@ -9,3 +9,4 @@ __pycache__/
 *.settings
 .vscode
 bin/
+repo-info
