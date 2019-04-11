@@ -96,7 +96,7 @@ def leader_elected():
         leader_set(rabbitmq_password_int=password)
         update_northbound_relations()
 
-    ip_list = leader_get("controller_ip_list")
+    ip_list = json_loads(leader_get("controller_ip_list"),list())
     ips = get_controller_ips()
     if not ip_list:
         ip_list = ips.values()
