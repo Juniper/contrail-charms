@@ -55,7 +55,7 @@ def install():
 
 @hooks.hook("leader-elected")
 def leader_elected():
-    ip_list = leader_get("controller_ip_list")
+    ip_list = common_utils.json_loads(leader_get("controller_ip_list"), list())
     ips = utils.get_controller_ips()
     if not ip_list:
         ip_list = ips.values()
