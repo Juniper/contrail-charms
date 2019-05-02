@@ -155,7 +155,7 @@ Manual installation
     juju add-relation neutron-api:amqp rabbitmq-server:amqp
 
     juju add-relation contrail-controller ntp
-    juju add-relation nova-compute:juju info ntp:juju info
+    juju add-relation nova-compute:juju info ntp:juju-info
 
     juju add-relation contrail-controller contrail-keystone-auth
     juju add-relation contrail-keystone-auth keystone
@@ -167,6 +167,6 @@ Manual installation
     juju add-relation contrail-openstack nova-compute
     juju add-relation contrail-openstack contrail-controller
 
-    juju add-relation contrail-agent:juju info nova-compute:juju info
+    juju add-relation contrail-agent:juju info nova-compute:juju-info
     juju add-relation contrail-agent contrail-controller
     ```
