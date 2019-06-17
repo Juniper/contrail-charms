@@ -112,11 +112,19 @@ options:
     type: string
     default: tcp
     description: |
-      Mode for haproxy for https connections - tcp or http.
+      Mode for haproxy for https backends (WebUI) - tcp or http.
       tcp means pass-through for SSL connection - client will see cert from 
       backend. http mode means ssl-termination in haproxy - cert from backend
       will be parsed by haproxy and client will see cert that is set for
       haproxy itself.
+  haproxy-http-mode:
+    type: string
+    default: http
+    description: |
+      Mode for haproxy for http backends - http or https.
+      https means that haproxy will be configured with SSL termination.
+      http configures haproxy without SSL and http services (config-api and
+      analytics-api) can be accessed via haproxy by http connection.
   nagios_context:
     default: "juju"
     type: string

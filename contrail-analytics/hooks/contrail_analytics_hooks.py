@@ -152,12 +152,36 @@ def _notify_proxy_services():
 def _http_services(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    return [{"service_name": "contrail-analytics-api",
-             "service_host": vip,
-             "service_port": 8081,
-             "service_options": ["option nolinger", "balance roundrobin"],
-             "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
-            }]
+
+    mode = config.get("haproxy-http-mode", "http")
+    result = [{
+        "service_name": "contrail-analytics-api",
+        "service_host": vip,
+        "service_port": 8081,
+        "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]}]
+    if mode == 'http':
+        result[0]['service_options'] = [
+            "timeout client 3m",
+            "option nolinger",
+            "timeout server 3m",
+            "balance roundrobin"]
+    else:
+        result[0]['service_options'] = [
+            "timeout client 86400000",
+            "mode http",
+            "balance source",
+            "timeout server 30000",
+            "timeout connect 4000",
+            "hash-type consistent",
+            "http-request set-header X-Forwarded-Proto https if { ssl_fc }",
+            "http-request set-header X-Forwarded-Proto http if !{ ssl_fc }",
+            "option httpchk GET /",
+            "option forwardfor",
+            "redirect scheme https code 301 if { hdr(host) -i " + str(vip) + " } !{ ssl_fc }",
+            "rsprep ^Location:\\ http://(.*) Location:\\ https://\\1"]
+        result[0]['crts'] = ["DEFAULT"]
+
+    return result
 
 
 @hooks.hook("http-services-relation-joined")

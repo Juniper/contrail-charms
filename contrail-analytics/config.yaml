@@ -55,6 +55,14 @@ options:
       Comma-separated list of destinations (either domain names or IP
       addresses) that should be directly accessed, by opposition of going
       through the proxy defined above. Must be less than 2023 characters long
+  haproxy-http-mode:
+    type: string
+    default: http
+    description: |
+      Mode for haproxy for http backends - http or https.
+      https means that haproxy will be configured with SSL termination.
+      http configures haproxy without SSL and http services (config-api and
+      analytics-api) can be accessed via haproxy by http connection.
   nagios_context:
     default: "juju"
     type: string

@@ -368,31 +368,38 @@ def upgrade_charm():
 def _http_services(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    return [
-        {"service_name": "contrail-webui-http",
-         "service_host": vip,
-         "service_port": 8080,
-         "service_options": [
-            "timeout client 86400000",
-            "mode http",
-            "balance roundrobin",
-            "cookie SERVERID insert indirect nocache",
-            "timeout server 30000",
-            "timeout connect 4000",
-         ],
-         "servers": [[name, addr, 8080,
-            "cookie " + addr + " weight 1 maxconn 1024 check port 8080"]]},
+
+    mode = config.get("haproxy-http-mode", "http")
+    result = [
         {"service_name": "contrail-api",
          "service_host": vip,
          "service_port": 8082,
-         "service_options": [
+         "service_options": options,
+         "servers": [[name, addr, 8082, "check inter 2000 rise 2 fall 3"]]}
+    ]
+    if mode == 'http':
+        result[0]['service_options'] = [
             "timeout client 3m",
             "option nolinger",
             "timeout server 3m",
-            "balance roundrobin",
-         ],
-         "servers": [[name, addr, 8082, "check inter 2000 rise 2 fall 3"]]}
-    ]
+            "balance roundrobin"]
+    else:
+        result[0]['service_options'] = [
+            "timeout client 86400000",
+            "mode http",
+            "balance source",
+            "timeout server 30000",
+            "timeout connect 4000",
+            "hash-type consistent",
+            "http-request set-header X-Forwarded-Proto https if { ssl_fc }",
+            "http-request set-header X-Forwarded-Proto http if !{ ssl_fc }",
+            "option httpchk GET /",
+            "option forwardfor",
+            "redirect scheme https code 301 if { hdr(host) -i " + str(vip) + " } !{ ssl_fc }",
+            "rsprep ^Location:\\ http://(.*) Location:\\ https://\\1"]
+        result[0]['crts'] = ["DEFAULT"]
+
+    return result
 
 
 @hooks.hook("http-services-relation-joined")
@@ -428,7 +435,6 @@ def _https_services_tcp(vip):
 def _https_services_http(vip):
     name = local_unit().replace("/", "-")
     addr = common_utils.get_ip()
-    opts = config.get("haproxy-https-bind-options")
     return [
         {"service_name": "contrail-webui-https",
          "service_host": vip,
