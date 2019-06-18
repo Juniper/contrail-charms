@@ -374,7 +374,6 @@ def _http_services(vip):
         {"service_name": "contrail-api",
          "service_host": vip,
          "service_port": 8082,
-         "service_options": options,
          "servers": [[name, addr, 8082, "check inter 2000 rise 2 fall 3"]]}
     ]
     if mode == 'http':
