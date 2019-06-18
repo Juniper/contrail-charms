@@ -52,6 +52,10 @@ load balanced:
 
     juju add-relation contrail-analytics haproxy
 
+For this http connection there are two modes - http and https. Both modes configure haproxy in http mode (termination). Mode https additionaly configure haproxy to use SSL for frontend. By default http mode is used. To confugire haproxy in https mode you can run:
+
+    juju config contrail-analytics haproxy-http-mode=https
+
 List of options
 ---------------
 
@@ -67,3 +71,4 @@ log-level | string | SYS_NOTICE | Log level for contrail services. Valid values 
 http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
 https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
 no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long
+haproxy-http-mode | string | http | Mode for haproxy for http connections - http or https

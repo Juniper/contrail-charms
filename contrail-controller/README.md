@@ -54,17 +54,17 @@ load balanced:
     juju add-relation contrail-controller:https-services haproxy
 
 The charm can tell to haproxy list of backends via two relations: http-services and https-services.
-It tells unsecured backend (like contrail-api:8082 and webUI:8080) via http-services
-and secured (like webUI:8143) via https-services.
-Such option allows to relate this charm to different haproxy applications
-where first haproxy app has ssl_cert/ssl_key in configuration and makes SSL termination itself
-but second doesn't have SSL parameters and acts as a proxy/load-balancer.
+It passes unsecured backend (like contrail-api:8082) via http-services and secured (like webUI:8143) via https-services.
+Such option allows to relate this charm to different haproxy applications.
 
-By default tcp mode for https connections (webui) is used. If you want to implement ssl-termination for HAproxy for webui
-you can configure it:
+For https connections there are two modes - tcp and http. Mode tcp means that haproxy will be configured in pass-through mode and mode http mode means that haproxy will be configured in termination mode. By default tcp mode (webui) is used. If you want to implement ssl-termination for HAproxy for webui you can configure it:
 
     juju config contrail-controller haproxy-https-mode=http
     juju config haproxy ssl_cert=SELFSIGNED
+
+For http connections there are two modes - http and https. Both modes configure haproxy in http mode (termination). Mode https additionaly configure haproxy to use SSL for frontend. By default http mode is used. To confugire haproxy in https mode you can run:
+
+    juju config contrail-controller haproxy-http-mode=https
 
 Or another certificate is also can be used for haproxy charm. Please check its manual for more information.
 
@@ -114,3 +114,4 @@ http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
 https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
 no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long
 haproxy-https-mode | string | tcp | Mode for haproxy for https connections - tcp or http.
+haproxy-http-mode | string | http | Mode for haproxy for http connections - http or https
