@@ -1,0 +1,51 @@
+options:
+  log-level:
+    type: string
+    default: SYS_NOTICE
+    description: |
+      Log level for contrail services. Valid values are:
+      SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
+  docker-registry:
+    type: string
+    default: opencontrailnightly
+    description: |
+      URL of docker-registry
+  docker-registry-insecure:
+    type: boolean
+    default: false
+    description: |
+      Is it docker-registry insecure and should docker be configured for it
+  docker-user:
+    type: string
+    description: |
+      Login to the docker registry.
+  docker-password:
+    type: string
+    description: |
+      Password to the docker registry.
+  image-tag:
+    type: string
+    default: latest
+    description: |
+      Tag of docker image.
+  http_proxy:
+    type: string
+    default: ""
+    description: |
+      URL to use for HTTP_PROXY to be used by Docker. Only useful in closed
+      environments where a proxy is the only option for routing to the
+      registry to pull images
+  https_proxy:
+    type: string
+    default: ""
+    description: |
+      URL to use for HTTPS_PROXY to be used by Docker. Only useful in closed
+      environments where a proxy is the only option for routing to the
+      registry to pull images
+  no_proxy:
+    type: string
+    default: ""
+    description: |
+      Comma-separated list of destinations (either domain names or IP
+      addresses) that should be directly accessed, by opposition of going
+      through the proxy defined above. Must be less than 2023 characters long

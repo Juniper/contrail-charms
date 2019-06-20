@@ -91,7 +91,7 @@ def save_file(path, data, perms=0o400):
 def update_services_status(services):
     try:
         output = check_output("contrail-status")
-    except CalledProcessError as e:
+    except Exception as e:
         log("Container is not ready to get contrail-status: " + str(e))
         status_set("waiting", "Waiting services to run in container")
         return

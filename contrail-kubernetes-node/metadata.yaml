@@ -1,0 +1,15 @@
+name: contrail-kubernetes-node
+summary: Contrail Kubernetes Worker node
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
+description: |
+  Contral analyticsdb component within docker container.
+series:
+  - xenial
+  - bionic
+requires:
+  cni:
+    interface: kubernetes-cni
+    scope: container
+  contrail-kubernetes-config:
+    interface: contrail-kubernetes-config
+subordinate: true

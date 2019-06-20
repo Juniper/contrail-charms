@@ -46,7 +46,8 @@ def install():
            + dist + " stable\"")
     check_output(cmd, shell=True)
     apt_update()
-    apt_install(DOCKER_PACKAGES)
+    for package in DOCKER_PACKAGES:
+        apt_install([package])
     _render_config()
     _apply_insecure()
     _login()

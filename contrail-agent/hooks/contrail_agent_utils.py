@@ -173,15 +173,25 @@ def update_charm_status():
         status_set('blocked',
                    'Missing analytics_servers info in relation '
                    'with contrail-controller.')
+        return
     if not ctx.get("cloud_orchestrator"):
         status_set('blocked',
                    'Missing cloud_orchestrator info in relation '
                    'with contrail-controller.')
         return
-    if not ctx.get("keystone_ip"):
+    if ctx.get("cloud_orchestrator") == "openstack" and not ctx.get("keystone_ip"):
         status_set('blocked',
                    'Missing auth info in relation with contrail-controller.')
         return
+    if ctx.get("cloud_orchestrator") == "kubernetes" and not ctx.get("kube_manager_token"):
+        status_set('blocked',
+                   'Kube manager token undefined.')
+        return
+    if ctx.get("cloud_orchestrator") == "kubernetes" and not ctx.get("kubernetes_api_server"):
+        status_set('blocked',
+                   'Kubernetes API unavailable')
+        return
+
     # TODO: what should happens if relation departed?
 
     changed = common_utils.apply_keystone_ca(ctx)

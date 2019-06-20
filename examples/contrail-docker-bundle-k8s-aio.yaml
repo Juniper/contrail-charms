@@ -1,0 +1,202 @@
+series: xenial
+services:
+
+# contrail-kubernetes
+
+  contrail-kubernetes-master:
+    charm: ./contrail-kubernetes-master
+    series: xenial
+    num_units: 1
+    to:
+      - "0"
+
+  contrail-kubernetes-node:
+    charm: ./contrail-kubernetes-node
+    series: xenial
+    
+# contrail
+
+  contrail-agent:
+    charm: ./contrail-agent
+    series: xenial
+    options:
+      log-level: "SYS_DEBUG"
+      docker-registry: "opencontrailnightly"
+      image-tag: "master-latest"
+
+  contrail-analytics:
+    charm: ./contrail-analytics
+    series: xenial
+    num_units: 1
+    options:
+      log-level: "SYS_DEBUG"
+      docker-registry: "opencontrailnightly"
+      image-tag: "master-latest"
+    expose: true
+    to:
+      - "0"
+
+  contrail-analyticsdb:
+    charm: ./contrail-analyticsdb
+    series: xenial
+    num_units: 1
+    options:
+      log-level: "SYS_DEBUG"
+      cassandra-minimum-diskgb: "4"
+      cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
+      docker-registry: "opencontrailnightly"
+      image-tag: "master-latest"
+    expose: true
+    to:
+      - "0"
+
+  contrail-controller:
+    charm: ./contrail-controller
+    series: xenial
+    num_units: 1
+    options:
+      log-level: "SYS_DEBUG"
+      auth-mode: "no-auth"
+      cassandra-minimum-diskgb: "4"
+      cassandra-jvm-extra-opts: "-Xms1g -Xmx2g"
+      docker-registry: "opencontrailnightly"
+      image-tag: "master-latest"
+    expose: true
+    to:
+      - "0"
+
+# kubernetes
+
+  easyrsa:
+    annotations:
+      gui-x: '450'
+      gui-y: '550'
+    charm: cs:~containers/easyrsa
+    num_units: 1
+    resources:
+      easyrsa: 5
+    to:
+    - lxd:0
+
+  etcd:
+    annotations:
+      gui-x: '800'
+      gui-y: '550'
+    charm: cs:~containers/etcd
+    num_units: 1
+    options:
+      channel: 3.2/stable
+    resources:
+      etcd: 3
+      snapshot: 0
+    to:
+    - '0'
+
+  kubernetes-master:
+    annotations:
+      gui-x: '800'
+      gui-y: '850'
+    charm: cs:~containers/kubernetes-master
+    constraints: cores=2 mem=4G root-disk=16G
+    expose: true
+    num_units: 1
+    options:
+      channel: 1.14/stable
+      enable-dashboard-addons: false
+      enable-metrics: false
+      dns-provider: 'none'
+      docker_runtime: 'custom'
+      docker_runtime_repo: 'deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable'
+      docker_runtime_key_url: 'https://download.docker.com/linux/ubuntu/gpg'
+      docker_runtime_package: docker-ce"
+    resources:
+      cdk-addons: 0
+      kube-apiserver: 0
+      kube-controller-manager: 0
+      kube-proxy: 0
+      kube-scheduler: 0
+      kubectl: 0
+    to:
+    - '0'
+
+  kubernetes-worker:
+    annotations:
+      gui-x: '100'
+      gui-y: '850'
+    charm: cs:~containers/kubernetes-worker
+    constraints: cores=4 mem=4G root-disk=16G
+    expose: true
+    num_units: 1
+    options:
+      channel: 1.14/stable
+      ingress: false
+      docker_runtime: 'custom'
+      docker_runtime_repo: 'deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable'
+      docker_runtime_key_url: 'https://download.docker.com/linux/ubuntu/gpg'
+      docker_runtime_package: docker-ce"
+    resources:
+      cni-amd64: 154
+      cni-arm64: 146
+      cni-s390x: 152
+      kube-proxy: 0
+      kubectl: 0
+      kubelet: 0
+    to:
+    - '0'
+
+# misc
+
+  ntp:
+    charm: cs:xenial/ntp
+    options:
+      source: 169.254.169.123
+
+relations:
+
+# contrail-kubernetes
+
+- - contrail-kubernetes-node:cni
+  - kubernetes-master:cni
+- - contrail-kubernetes-node:cni
+  - kubernetes-worker:cni
+- - contrail-kubernetes-master:contrail-controller
+  - contrail-controller:contrail-controller
+- - contrail-kubernetes-master:kube-api-endpoint
+  - kubernetes-master:kube-api-endpoint
+- - contrail-agent:juju-info
+  - kubernetes-worker:juju-info
+- - contrail-kubernetes-master:contrail-kubernetes-config
+  - contrail-kubernetes-node:contrail-kubernetes-config
+
+# contrail
+
+- - contrail-controller
+  - contrail-analytics
+- - contrail-controller
+  - contrail-analyticsdb
+- - contrail-analytics
+  - contrail-analyticsdb
+- - contrail-agent
+  - contrail-controller
+- - contrail-controller
+  - ntp
+
+# kubernetes
+
+- - kubernetes-master:kube-api-endpoint
+  - kubernetes-worker:kube-api-endpoint
+- - kubernetes-master:kube-control
+  - kubernetes-worker:kube-control
+- - kubernetes-master:certificates
+  - easyrsa:client
+- - kubernetes-master:etcd
+  - etcd:db
+- - kubernetes-worker:certificates
+  - easyrsa:client
+- - etcd:certificates
+  - easyrsa:client
+
+machines:
+  "0":
+    series: xenial
+    constraints: mem=16G cores=4 root-disk=32G

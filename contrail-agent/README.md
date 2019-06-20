@@ -44,7 +44,6 @@ This charm is typically related to contrail-controller.
 This instructs the Contrail vRouter agent to use the API endpoints for
 locating needed information.
 
-
 DPDK mode
 ---------
 
@@ -75,6 +74,16 @@ This charm accepts 'settings' value as a serialized dict to json in relation.
 All these option will be serilized to container settings and then
 into contrail-vrouter-agent.conf.
 Example of dict: {"DEFAULT": {"key1": "value1"}, "SECTION_2": {"key1": "value1"}}
+
+Kubernetes
+----------
+
+This charm can be used with The Charmed Distribution Of Kubernetes.
+In this case relation must be set to Kubernetes Worker instead of the nova-compute:
+
+```
+juju add-relation contrail-agent:juju-info kubernetes-worker:juju-info
+```
 
 List of options
 ---------------

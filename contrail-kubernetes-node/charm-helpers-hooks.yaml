@@ -1,0 +1,8 @@
+repo: https://github.com/juju/charm-helpers
+destination: hooks/charmhelpers
+include:
+  - core
+  - fetch
+  - osplatform
+  - contrib.network
+  - contrib.charmsupport

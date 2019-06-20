@@ -1,0 +1,19 @@
+name: contrail-kubernetes-master
+summary: Contrail Kubernetes Manager Node
+maintainer: Andrey Pavlov <andrey.mp@gmail.com>
+description: |
+  Contral kube-manager component within docker container.
+series:
+  - xenial
+  - bionic
+requires:
+  contrail-controller:
+    interface: contrail-controller
+  kube-api-endpoint:
+    interface: http
+provides:
+  contrail-kubernetes-config:
+    interface: contrail-kubernetes-config
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
