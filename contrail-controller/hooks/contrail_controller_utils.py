@@ -102,6 +102,7 @@ def get_analytics_list():
 def get_context():
     ctx = {}
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
+    ctx["bgp_asn"] = config.get("bgp-asn", "64512")
     ctx["flow_export_rate"] = config.get("flow-export-rate")
     ctx["auth_mode"] = config.get("auth-mode")
     ctx["cloud_admin_role"] = config.get("cloud-admin-role")
