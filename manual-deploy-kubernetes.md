@@ -15,7 +15,7 @@ Manual installation
     Some of applications may need an additional configuration. You can configure it 
     by using a yaml-formatted file or or by passing options/values directly on the command line
 
-        [Application Configuration](https://docs.jujucharms.com/2.4/en/charms-config)
+    [Application Configuration](https://docs.jujucharms.com/2.4/en/charms-config)
 
     You must use the same docker version for Contrail and Kubernetes.
 
@@ -63,6 +63,8 @@ Manual installation
 
     Deploy contrail-analyticsdb, contrail-analytics, contrail-controller,
     contrail-kubernets-master, contrail-kubernetes-node, contrail-agent from the directory you have downloaded the charms.
+
+    The "auth-mode" parameter of the contrail-controller charm must be set to “no-auth” if Contrail is deployed without a keystone.
 
     ```
     juju deploy contrail-analytics contrail-analytics

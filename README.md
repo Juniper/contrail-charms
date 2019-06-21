@@ -90,7 +90,7 @@ git clone https://github.com/Juniper/contrail-charms -b R5
     - Create or modify the Juju deployment bundle yaml file to point to machines in which the contrail-charms should be deployed and to include options you need.
     - Deploy the bundle using the command `juju deploy <bundle_yaml_file>`
     - [Example of bundle.yaml file for deployment of OpenStack and Contrail in Amazon environment.](examples/contrail-docker-bundle-ha.yaml)
-    - [Example of bundle.yaml file for deployment of Kubernetes and Contrail in Amazon environment (all-in-one).](examples/contrail-docker-bundle-ha.yaml)
+    - [Example of bundle.yaml file for deployment of Kubernetes and Contrail in Amazon environment (all-in-one).](examples/contrail-docker-bundle-k8s-aio.yaml)
 
 - Manually
 
