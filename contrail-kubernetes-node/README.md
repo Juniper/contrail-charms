@@ -24,10 +24,10 @@ Kubernetes Master and Kubernetes Worker are prerequisite service to deploy.
 
 Once ready, deploy and relate as follows:
 
-juju deploy contrail-kubernetes-node
-juju add-relation kubernetes-master contrail-kubernetes-node
-juju add-relation kubernetes-worker contrail-kubernetes-node
-juju add-relation contrail-kubernetes-master contrail-kubernetes-node
+    juju deploy contrail-kubernetes-node
+    juju add-relation kubernetes-master contrail-kubernetes-node
+    juju add-relation kubernetes-worker contrail-kubernetes-node
+    juju add-relation contrail-kubernetes-master contrail-kubernetes-node
 
 External Docker repository
 --------------------------
@@ -42,6 +42,10 @@ List of options
 
 Option   | Type| default | Description
 ---------|-----|---------|-------------
+docker_runtime | string | upstream | Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive), "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and `docker_runtime_package` name).
+docker_runtime_key_url | string | | Custom Docker repository validation key URL.
+docker_runtime_package | string | | Custom Docker repository package name.
+docker_runtime_repo | string | | Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime. Use `{CODE}` to set release codename. E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
 docker-registry | string | opencontrailnightly | URL of docker-registry.
 docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it.
 docker-user | string | | Login to the docker registry.

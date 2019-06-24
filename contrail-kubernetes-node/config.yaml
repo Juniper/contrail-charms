@@ -5,6 +5,27 @@ options:
     description: |
       Log level for contrail services. Valid values are:
       SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
+  docker_runtime:
+    type: string
+    default: upstream
+    description: |
+      Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive),
+      "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL,
+      `docker_runtime_key_url` URL and `docker_runtime_package` name).
+  docker_runtime_key_url:
+    type: string
+    description: |
+      Custom Docker repository validation key URL.
+  docker_runtime_package:
+    type: string
+    description: |
+      Custom Docker repository package name.
+  docker_runtime_repo:
+    type: string
+    description: |
+      Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime.
+      Use `{CODE}` to set release codename.
+      E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
   docker-registry:
     type: string
     default: opencontrailnightly

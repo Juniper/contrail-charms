@@ -104,6 +104,10 @@ global-read-only-role | string | | Role name in keystone for users that have rea
 vip | string | | Contrail API VIP to be used for configuring haproxy relation for external clients. To be set up also in KeepAlived charm configuration if it’s used for HA. All internal clients like vrouter-agent and openstack clients like neutron will be configured with list of unit's IP-s.
 use-external-rabbitmq | boolean | false | Charm will wait for external AMQP relation if set. Charm will use internal RabbitMQ server if not set. **NOTE: Changing this flag after deployment is dangerous!**
 flow-export-rate | string | 0 | Defines how much flow records will be exported by vRouter agent to the Contrail Collector when a flow is created or deleted.
+docker_runtime | string | upstream | Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive), "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and `docker_runtime_package` name).
+docker_runtime_key_url | string | | Custom Docker repository validation key URL.
+docker_runtime_package | string | | Custom Docker repository package name.
+docker_runtime_repo | string | | Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime. Use `{CODE}` to set release codename. E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
 docker-registry | string | | URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
 docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it
 docker-user | string | | Login to the docker registry.

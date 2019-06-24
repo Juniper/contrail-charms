@@ -15,7 +15,7 @@ from charmhelpers.fetch import apt_install, apt_update
 
 config = config()
 
-DOCKER_PACKAGES = ["docker.ce", "docker-compose"]
+DOCKER_ADD_PACKAGES = ["docker-compose"]
 DOCKER_CLI = "/usr/bin/docker"
 DOCKER_COMPOSE_CLI = "docker-compose"
 
@@ -30,24 +30,41 @@ def _format_curl_https_proxy_opt():
 
 
 def install():
+    docker_runtime = config.get("docker_runtime")
+    if docker_runtime == "apt" or docker_runtime == "auto":
+        docker_package = "docker.io"
+        docker_repo = None
+        docker_key_url = None
+    elif docker_runtime == "upstream":
+        docker_package = "docker.ce"
+        docker_repo = "deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable"
+        docker_key_url = "https://download.docker.com/linux/ubuntu/gpg"
+    else:
+        # custom or default
+        docker_package = config.get("docker_runtime_package") or "docker.ce"
+        docker_repo = (config.get("docker_runtime_repo") or
+                       "deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable")
+        docker_key_url = config.get("docker_runtime_key_url") or "https://download.docker.com/linux/ubuntu/gpg"
+
     apt_install(["apt-transport-https", "ca-certificates", "curl",
                  "software-properties-common"])
-    cmd = [
-        "/bin/bash", "-c",
-        "set -o pipefail ; curl {} "
-        "-fsSL --connect-timeout 10 "
-        "https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
-        "".format(_format_curl_https_proxy_opt())
-    ]
-    check_output(cmd)
+    if docker_key_url:
+        cmd = [
+            "/bin/bash", "-c",
+            "set -o pipefail ; curl {} "
+            "-fsSL --connect-timeout 10 "
+            "{} | sudo apt-key add -"
+            "".format(_format_curl_https_proxy_opt(), docker_key_url)
+        ]
+        check_output(cmd)
+    arch = "amd64"
     dist = platform.linux_distribution()[2].strip()
-    cmd = ("add-apt-repository "
-           "\"deb [arch=amd64] https://download.docker.com/linux/ubuntu "
-           + dist + " stable\"")
-    check_output(cmd, shell=True)
+    if docker_repo:
+        cmd = ("add-apt-repository \"{}\"".format(docker_repo.replace("{ARCH}", arch).replace("{CODE}", dist)))
+        check_output(cmd, shell=True)
     apt_update()
-    for package in DOCKER_PACKAGES:
-        apt_install([package])
+    apt_install(docker_package)
+    apt_install(DOCKER_ADD_PACKAGES)
     _render_config()
     _apply_insecure()
     _login()

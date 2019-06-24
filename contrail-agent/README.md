@@ -102,6 +102,10 @@ dpdk-pmd-txd-size | string | | DPDK PMD Tx Descriptor size.
 dpdk-pmd-rxd-size | string | | DPDK PMD Rx Descriptor size.
 sriov-physical-interface | string | | Interface name for SR-IOV. This parameter and sriov-numvfs will be passed into agent container that will configure SR-IOV.
 sriov-numvfs | string | | NumVFS for specified device. This parameter and sriov-physical-interface will be passed into agent container that will configure SR-IOV.
+docker_runtime | string | upstream | Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive), "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and `docker_runtime_package` name).
+docker_runtime_key_url | string | | Custom Docker repository validation key URL.
+docker_runtime_package | string | | Custom Docker repository package name.
+docker_runtime_repo | string | | Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime. Use `{CODE}` to set release codename. E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
 docker-registry | string | opencontrailnightly | URL of docker-registry
 docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it
 docker-user | string | Login to the docker registry.

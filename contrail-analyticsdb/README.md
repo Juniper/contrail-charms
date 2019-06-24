@@ -47,6 +47,10 @@ Option   | Type| default | Description
 control-network | string | | The IP address and netmask of the control network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
 cassandra-minimum-diskgb | string | 256 | Contrail has this as parameter and checks it at startup. If disk is smaller then status of DB is not good.
 cassandra-jvm-extra-opts | string | | Memory limits for Java process of Cassandra.
+docker_runtime | string | upstream | Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive), "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and `docker_runtime_package` name).
+docker_runtime_key_url | string | | Custom Docker repository validation key URL.
+docker_runtime_package | string | | Custom Docker repository package name.
+docker_runtime_repo | string | | Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime. Use `{CODE}` to set release codename. E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
 docker-registry | string | | URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
 docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it
 docker-user | string | | Login to the docker registry.
