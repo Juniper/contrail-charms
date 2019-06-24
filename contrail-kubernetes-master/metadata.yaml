@@ -11,9 +11,11 @@ requires:
     interface: contrail-controller
   kube-api-endpoint:
     interface: http
+    scope: container
 provides:
   contrail-kubernetes-config:
     interface: contrail-kubernetes-config
   nrpe-external-master:
     interface: nrpe-external-master
     scope: container
+subordinate: true

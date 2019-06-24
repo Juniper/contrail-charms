@@ -8,15 +8,9 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     relation_get,
-    related_units,
     relation_ids,
-    relation_types,
-    relations,
     status_set,
     relation_set,
-    related_units,
-    is_leader,
-    leader_set,
 )
 from charmhelpers.contrib.charmsupport import nrpe
 
@@ -52,13 +46,24 @@ def config_changed():
 def contrail_kubernetes_config_changed():
     cidr = relation_get("pod_subnets")
     if not cidr:
-        return
+        raise Exception('no pod_subnets in contrail-kubernetes-config relation')
     config["pod_subnets"] = cidr
     config.save()
-    # send cni config data
+    _notify_kubernetes()
+
+
+@hooks.hook("cni-relation-joined")
+def cni_joined(rel_id=None):
+    cidr = config.get("pod_subnets")
+    if not cidr:
+        return
+    data = {"cidr": cidr}
+    relation_set(relation_id=rel_id, relation_settings=data)
+
+
+def _notify_kubernetes():
     for rid in relation_ids("cni"):
-        relation_set(relation_id=rid, relation_settings={"cidr": cidr})
-    utils.update_charm_status()
+        cni_joined(rid)
 
 
 @hooks.hook("update-status")
