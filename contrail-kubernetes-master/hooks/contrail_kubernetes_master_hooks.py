@@ -111,6 +111,8 @@ def kube_api_endpoint_departed():
 @hooks.hook("contrail-kubernetes-config-relation-joined")
 def contrail_kubernetes_config_joined():
     data = {"pod_subnets": config.get("pod_subnets")}
+    if not data["pod_subnets"]:
+        raise Exception('no pod_subnets in contrail-kubernetes-config relation')
     relation_set(relation_settings=data)
 
 

@@ -46,7 +46,7 @@ def config_changed():
 def contrail_kubernetes_config_changed():
     cidr = relation_get("pod_subnets")
     if not cidr:
-        raise Exception('no pod_subnets in contrail-kubernetes-config relation')
+        return
     config["pod_subnets"] = cidr
     config.save()
     _notify_kubernetes()
