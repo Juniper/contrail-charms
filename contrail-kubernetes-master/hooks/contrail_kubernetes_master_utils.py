@@ -1,6 +1,4 @@
 import json
-from socket import inet_aton
-import struct
 import time
 import os
 import base64
@@ -14,13 +12,10 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_ids,
     status_set,
-    relation_set,
     is_leader,
     leader_get,
     leader_set,
-    unit_private_ip,
     charm_dir,
-
 )
 from charmhelpers.core.templating import render
 
@@ -51,14 +46,16 @@ def kubernetes_token():
     try:
         account_file = os.path.join(charm_dir(), 'files', 'contrail-kubemanager-serviceaccount.yaml')
         check_output(["snap", "run", "kubectl", "apply", "-f", account_file])
-    except:
+    except Exception as e:
+        log("Can't apply manifest for service account: {}".format(e))
         return None
     token_id = None
     for i in range (10):
         try:
             token_id = check_output(["snap", "run", "kubectl", "get", "sa", "contrail-kubemanager", "-n", "contrail",
                                 "-ogo-template=\"{{(index .secrets 0).name}}\""]).strip('\"')
-        except:
+        except Exception as e:
+            log("Can't get SA for contrail-kubemanager {}".format(e))
             return None
         if token_id:
             break
@@ -70,8 +67,20 @@ def kubernetes_token():
                             "-ogo-template=\"{{.data.token}}\""]).strip('\"')
         token = base64.b64decode(token_64)
         return token
-    except:
-        return None
+    except Exception as e:
+        log("Can't get secret for token: {}".format(e))
+
+    return None
+
+
+def update_kubernetes_token():
+    if leader_get("kube_manager_token"):
+        return False
+    token = utils.kubernetes_token()
+    if not token:
+        return False
+    leader_set({"kube_manager_token": token})
+    return True
 
 
 def get_context():
@@ -90,7 +99,10 @@ def get_context():
     ctx["host_network_service"] = config.get("host_network_service")
     ctx["public_fip_pool"] = config.get("public_fip_pool")
 
-    ctx.update(common_utils.json_loads(leader_get("orchestrator-info"), dict()))
+    ctx["cloud_orchestrator"] = "kubernetes"
+    ctx["kube_manager_token"] = leader_get("kube_manager_token")
+    ctx["kubernetes_api_server"] = config.get("kubernetes_api_server")
+    ctx["kubernetes_api_secure_port"] = config.get("kubernetes_api_secure_port")
 
     ips = [relation_get("private-address", unit, rid)
            for rid in relation_ids("contrail-controller")
@@ -101,30 +113,6 @@ def get_context():
 
     log("CTX: {}".format(ctx))
     return ctx
-
-
-def update_kube_manager_token():
-    if not is_leader() or leader_get("kube_manager_token"):
-        return
-    token = kubernetes_token()
-    if token:
-        leader_set({"kube_manager_token":token})
-
-
-def update_orchestrator_info():
-    data = common_utils.json_loads(leader_get("orchestrator-info"), dict())
-    values = dict()
-
-    def _check_key(key):
-        val = data.get(key)
-        get = leader_get(key)
-        if val != get:
-            values[key] = get
-
-    _check_key("kube_manager_token")
-    _check_key("kubernetes_api_server")
-    _check_key("kubernetes_api_secure_port")
-    return values
 
 
 def update_charm_status():

@@ -13,7 +13,6 @@ from charmhelpers.core.hookenv import (
     related_units,
     status_set,
     relation_set,
-    unit_private_ip,
     is_leader,
     leader_set,
     leader_get,
@@ -43,25 +42,27 @@ def install():
 @hooks.hook("config-changed")
 def config_changed():
     update_nrpe_config()
+    _notify_contrail_kubernetes_node()
+
+    # TODO: analyze changed params and raise exception if readonly params were changed
+
     docker_utils.config_changed()
     utils.update_charm_status()
 
 
 @hooks.hook("contrail-controller-relation-joined")
-def contrail_controller_joined():
-    settings = {'unit-type': 'kubernetes',
-                'orchestrator-info': json.dumps({"cloud_orchestrator": "kubernetes"})}
-    relation_set(relation_settings=settings)
+def contrail_controller_joined(rel_id=None):
+    settings = {'unit-type': 'kubernetes'}
+    relation_set(relation_id=rel_id, relation_settings=settings)
+    if is_leader():
+        data = _get_orchestrator_info()
+        relation_set(relation_id=rel_id, **data)
 
 
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     data = relation_get()
     log("RelData: " + str(data))
-
-    def _update_config(key, data_key):
-        if data_key in data:
-            config[key] = data[data_key]
 
     _update_config("analytics_servers", "analytics-server")
     config.save()
@@ -71,80 +72,89 @@ def contrail_controller_changed():
 
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_cotroller_departed():
-    status_set("blocked", "Missing relation to contrail-controller")
+    units = [unit for rid in relation_ids("contrail-controller")
+                      for unit in related_units(rid)]
+    if units:
+        return
 
-
-@hooks.hook("kube-api-endpoint-relation-joined")
-def kube_api_endpoint_joined():
-    _get_kubernetes_api_endpoint()
-    # send orchestrator data
-    if is_leader() and utils.update_orchestrator_info():
-        _notify_controller()
     utils.update_charm_status()
+    status_set("blocked", "Missing relation to contrail-controller")
 
 
 @hooks.hook("kube-api-endpoint-relation-changed")
 def kube_api_endpoint_changed():
-    _get_kubernetes_api_endpoint()
-    # send orchestrator data
-    if is_leader() and utils.update_orchestrator_info():
-        _notify_controller()
+    data = relation_get()
+    log("RelData: " + str(data))
+
+    changed = _update_config("kubernetes_api_server", "hostname")
+    changed |= _update_config("kubernetes_api_secure_port", "port")
+    config.save()
+
+    if is_leader():
+        changed |= utils.update_kubernetes_token()
+    if not changed:
+        return
+    # notify clients
+    _notify_controller()
+    # and update self
     utils.update_charm_status()
 
 
-def _get_kubernetes_api_endpoint():
-    if not is_leader():
-        return
-    kubernetes_api_server = relation_get("hostname")
-    if kubernetes_api_server:
-        leader_set({"kubernetes_api_server": kubernetes_api_server})
-    kubernetes_api_secure_port = relation_get("port")
-    if kubernetes_api_secure_port:
-        leader_set({"kubernetes_api_secure_port": kubernetes_api_secure_port})
-
-
-@hooks.hook("kube-api-endpoint-relation-departed")
-def kube_api_endpoint_departed():
-    status_set("blocked", "Missing relation to kube-api-endpoint")
-
-
 @hooks.hook("contrail-kubernetes-config-relation-joined")
-def contrail_kubernetes_config_joined():
+def contrail_kubernetes_config_joined(rel_id=None):
     data = {"pod_subnets": config.get("pod_subnets")}
-    if not data["pod_subnets"]:
-        raise Exception('no pod_subnets in contrail-kubernetes-config relation')
-    relation_set(relation_settings=data)
+    relation_set(relation_id=rel_id, relation_settings=data)
 
 
 @hooks.hook("update-status")
 def update_status():
-    # wait to kubectl is available
-    utils.update_kube_manager_token()
-    # send orchestrator data
-    if is_leader() and utils.update_orchestrator_info():
-        _notify_controller()
+    # try to obtain token again if it's not set yet
+    if not is_leader():
+        return
+
+    changed = utils.update_kubernetes_token()
+    if not changed:
+        return
+    # notify clients
+    _notify_controller()
+    # and update self
     utils.update_charm_status()
 
 
+def _update_config(key, data_key):
+    if data_key in data:
+        changed = config[key] != data[data_key]
+        config[key] = data[data_key]
+        return changed
+    # absence of key in relation means that this key was not set in the relation
+    # non-leader may send not all data
+    # and it doesn't mean that key was unset
+    return False
+
+
+def _notify_contrail_kubernetes_node():
+    for rid in relation_ids("contrail-kubernetes-config"):
+        if related_units(rid):
+            contrail_kubernetes_config_joined(relation_id=rid)
+
+
 def _notify_controller():
-    data = _get_orchestrator_info()
-    leader_set(data)
     for rid in relation_ids("contrail-controller"):
         if related_units(rid):
-            relation_set(relation_id=rid, **data)
+            contrail_controller_joined(relation_id=rid)
 
 
 def _get_orchestrator_info():
     info = {"cloud_orchestrator": "kubernetes"}
 
-    def _add_to_info(key):
-        value = leader_get(key)
+    def _add_to_info(key, func):
+        value = func(key)
         if value:
             info[key] = value
 
-    _add_to_info("kube_manager_token")
-    _add_to_info("kubernetes_api_server")
-    _add_to_info("kubernetes_api_secure_port")
+    _add_to_info("kube_manager_token", leader_get)
+    _add_to_info("kubernetes_api_server", config.get)
+    _add_to_info("kubernetes_api_secure_port", config.get)
     return {"orchestrator-info": json.dumps(info)}
 
 

@@ -36,7 +36,7 @@ options:
       Kubernetes IP fabric forwarding
   ip_fabric_snat:
     type: boolean
-    default: false
+    default: true
     description: |
       Kubernetes IP fabric snat
   host_network_service:

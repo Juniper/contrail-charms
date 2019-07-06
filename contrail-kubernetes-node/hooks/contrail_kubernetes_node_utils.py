@@ -1,12 +1,8 @@
-from socket import inet_aton
-import struct
-
 from charmhelpers.core.hookenv import (
     config,
     status_set,
     log,
 )
-from charmhelpers.core.templating import render
 import common_utils
 import docker_utils
 

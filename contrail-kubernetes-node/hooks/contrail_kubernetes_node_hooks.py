@@ -12,16 +12,10 @@ from charmhelpers.core.hookenv import (
     status_set,
     relation_set,
 )
-from charmhelpers.contrib.charmsupport import nrpe
 
 import contrail_kubernetes_node_utils as utils
 import docker_utils
-import time
 
-from subprocess import (
-    check_call,
-    check_output,
-)
 
 hooks = Hooks()
 config = config()
@@ -63,11 +57,6 @@ def cni_joined(rel_id=None):
 def _notify_kubernetes():
     for rid in relation_ids("cni"):
         cni_joined(rid)
-
-
-@hooks.hook("update-status")
-def update_status():
-    utils.update_charm_status()
 
 
 @hooks.hook("upgrade-charm")
