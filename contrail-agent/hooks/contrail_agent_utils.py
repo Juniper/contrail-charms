@@ -28,6 +28,7 @@ import common_utils
 import docker_utils
 
 
+MODULE = "agent"
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 CONFIGS_PATH = BASE_CONFIGS_PATH + "/vrouter"
@@ -206,7 +207,7 @@ def update_charm_status():
     common_utils.render_and_log("contrail-vrouter-agent.conf",
            "/etc/contrail/contrail-vrouter-agent.conf", ctx, perms=0o440)
 
-    common_utils.update_services_status(SERVICES)
+    common_utils.update_services_status(MODULE, SERVICES)
 
 
 def fix_dns_settings():

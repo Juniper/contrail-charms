@@ -88,9 +88,9 @@ def save_file(path, data, perms=0o400):
         os.remove(path)
 
 
-def update_services_status(services):
+def update_services_status(module, services):
     try:
-        output = check_output("contrail-status")
+        output = check_output("export CONTRAIL_STATUS_CONTAINER_NAME=contrail-status-{} ; contrail-status".format(module), shell=True)
     except Exception as e:
         log("Container is not ready to get contrail-status: " + str(e))
         status_set("waiting", "Waiting services to run in container")

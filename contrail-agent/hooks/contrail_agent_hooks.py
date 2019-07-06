@@ -178,11 +178,11 @@ def update_nrpe_config():
     common_utils.rsync_nrpe_checks(plugins_dir)
     common_utils.add_nagios_to_sudoers()
 
-    ctl_status_shortname = 'check_contrail_status_agent'
+    ctl_status_shortname = 'check_contrail_status_' + utils.MODULE
     nrpe_compat.add_check(
         shortname=ctl_status_shortname,
         description='Check contrail-status',
-        check_cmd=common_utils.contrail_status_cmd('agent', plugins_dir)
+        check_cmd=common_utils.contrail_status_cmd(utils.MODULE, plugins_dir)
     )
 
     nrpe_compat.write()

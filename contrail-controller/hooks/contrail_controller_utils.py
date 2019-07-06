@@ -22,6 +22,7 @@ import docker_utils
 
 config = config()
 
+MODULE = "controller"
 HOSTS_FILE = '/etc/hosts'
 
 BASE_CONFIGS_PATH = "/etc/contrail"
@@ -188,7 +189,7 @@ def update_charm_status():
     if changed:
         docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
 
-    common_utils.update_services_status(SERVICES)
+    common_utils.update_services_status(MODULE, SERVICES)
 
 
 def update_hosts_file(ip, hostname, remove_hostname=False):

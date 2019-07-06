@@ -15,7 +15,6 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.contrib.charmsupport import nrpe
 
 import contrail_kubernetes_node_utils as utils
-import common_utils
 import docker_utils
 import time
 

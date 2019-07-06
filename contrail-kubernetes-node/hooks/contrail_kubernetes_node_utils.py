@@ -14,12 +14,12 @@ import docker_utils
 config = config()
 
 
-BASE_CONFIGS_PATH = "/host/etc_cni/net.d"
+BASE_CONFIGS_PATH = "/etc/contrail"
 
-CONFIGS_PATH = BASE_CONFIGS_PATH + "/10-contrail.conf"
+CONFIGS_PATH = BASE_CONFIGS_PATH + "/contrail-kubernetes-node"
 IMAGES = [
-        "contrail-kubernetes-cni-init",
-    ]
+    "contrail-kubernetes-cni-init",
+]
 
 
 def get_context():
@@ -34,7 +34,6 @@ def get_context():
 
 def update_charm_status():
     tag = config.get('image-tag')
-
     for image in IMAGES:
         try:
             docker_utils.pull(image, tag)
@@ -45,9 +44,10 @@ def update_charm_status():
             return
 
     ctx = get_context()
-    changed = common_utils.render_and_log("/contrail-cni.yaml",
+    changed = common_utils.render_and_log("cni.env",
+        BASE_CONFIGS_PATH + "/common_cni.env", ctx)
+    changed |= common_utils.render_and_log("/contrail-cni.yaml",
         CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
     if changed:
         docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
 

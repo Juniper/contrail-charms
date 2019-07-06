@@ -33,13 +33,18 @@ from subprocess import (
 
 config = config()
 
-
+MODULE = "kubernetes-master"
 BASE_CONFIGS_PATH = "/etc/contrail"
 
-CONFIGS_PATH = BASE_CONFIGS_PATH + "/contrail-kubernetes"
+CONFIGS_PATH = BASE_CONFIGS_PATH + "/contrail-kubernetes-master"
 IMAGES = [
-        "contrail-kubernetes-kube-manager",
+    "contrail-kubernetes-kube-manager",
+]
+SERVICES = {
+    "kubernetes": [
+        "kube-manager",
     ]
+}
 
 
 def kubernetes_token():
@@ -124,7 +129,6 @@ def update_orchestrator_info():
 
 def update_charm_status():
     tag = config.get('image-tag')
-
     for image in IMAGES:
         try:
             docker_utils.pull(image, tag)
@@ -144,16 +148,15 @@ def update_charm_status():
         status_set('blocked',
                    'Missing relations: ' + ', '.join(missing_relations))
         return
-    if not ctx.get("kube_manager_token") or ctx.get("kube_manager_token") == "":
+    if not ctx.get("kube_manager_token"):
         status_set('waiting',
-                   'Kube manager token undefined. Wait to kubectl is running.')
+                   'Kube manager token is absent. Wait for token from kubectl run.')
         return
-    changed = common_utils.render_and_log("kube-manager.env",
+    changed = common_utils.render_and_log("kubemanager.env",
         BASE_CONFIGS_PATH + "/common_kubemanager.env", ctx)
     changed |= common_utils.render_and_log("/contrail-kubemanager.yaml",
         CONFIGS_PATH + "/docker-compose.yaml", ctx)
-
     if changed:
         docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
 
-    status_set("active", "Unit is ready")
+    common_utils.update_services_status(MODULE, SERVICES)

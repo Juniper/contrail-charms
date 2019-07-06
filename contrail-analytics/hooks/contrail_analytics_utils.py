@@ -17,6 +17,7 @@ import docker_utils
 config = config()
 
 
+MODULE = "analytics"
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 ANALYTICS_CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics"
@@ -209,4 +210,4 @@ def update_charm_status():
     if changed:
         docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
 
-    common_utils.update_services_status(SERVICES[cver])
+    common_utils.update_services_status(MODULE, SERVICES[cver])

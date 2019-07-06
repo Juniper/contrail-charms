@@ -17,6 +17,7 @@ import docker_utils
 config = config()
 
 
+MODULE = "analyticsdb"
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 CONFIGS_PATH = BASE_CONFIGS_PATH + "/analytics_database"
@@ -148,4 +149,4 @@ def update_charm_status():
     if changed:
         docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
 
-    common_utils.update_services_status(SERVICES[cver])
+    common_utils.update_services_status(MODULE, SERVICES[cver])

@@ -217,11 +217,11 @@ def update_nrpe_config():
         check_cmd=check_api_cmd
     )
 
-    ctl_status_shortname = 'check_contrail_status_analytics'
+    ctl_status_shortname = 'check_contrail_status_' + utils.MODULE
     nrpe_compat.add_check(
         shortname=ctl_status_shortname,
         description='Check contrail-status',
-        check_cmd=common_utils.contrail_status_cmd('analytics', plugins_dir)
+        check_cmd=common_utils.contrail_status_cmd(utils.MODULE, plugins_dir)
     )
 
     nrpe_compat.write()
