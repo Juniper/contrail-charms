@@ -64,7 +64,7 @@ def contrail_controller_changed():
     data = relation_get()
     log("RelData: " + str(data))
 
-    _update_config("analytics_servers", "analytics-server")
+    _update_config(data, "analytics_servers", "analytics-server")
     config.save()
 
     utils.update_charm_status()
@@ -86,8 +86,8 @@ def kube_api_endpoint_changed():
     data = relation_get()
     log("RelData: " + str(data))
 
-    changed = _update_config("kubernetes_api_server", "hostname")
-    changed |= _update_config("kubernetes_api_secure_port", "port")
+    changed = _update_config(data, "kubernetes_api_server", "hostname")
+    changed |= _update_config(data, "kubernetes_api_secure_port", "port")
     config.save()
 
     if is_leader():
@@ -121,9 +121,9 @@ def update_status():
     utils.update_charm_status()
 
 
-def _update_config(key, data_key):
+def _update_config(data, key, data_key):
     if data_key in data:
-        changed = config[key] != data[data_key]
+        changed = config.get(key) != data[data_key]
         config[key] = data[data_key]
         return changed
     # absence of key in relation means that this key was not set in the relation
@@ -135,13 +135,13 @@ def _update_config(key, data_key):
 def _notify_contrail_kubernetes_node():
     for rid in relation_ids("contrail-kubernetes-config"):
         if related_units(rid):
-            contrail_kubernetes_config_joined(relation_id=rid)
+            contrail_kubernetes_config_joined(rel_id=rid)
 
 
 def _notify_controller():
     for rid in relation_ids("contrail-controller"):
         if related_units(rid):
-            contrail_controller_joined(relation_id=rid)
+            contrail_controller_joined(rel_id=rid)
 
 
 def _get_orchestrator_info():

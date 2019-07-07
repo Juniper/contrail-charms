@@ -125,7 +125,7 @@ def update_services_status(module, services):
             if status not in ["active", "backup"]:
                 workload = "waiting" if status == "initializing" else "blocked"
                 status_set(workload, "{} is not ready. Reason: {}"
-                           .format(srv, desc))
+                           .format(srv, desc if desc else status))
                 return
 
     status_set("active", "Unit is ready")

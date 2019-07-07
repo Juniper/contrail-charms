@@ -76,7 +76,7 @@ def kubernetes_token():
 def update_kubernetes_token():
     if leader_get("kube_manager_token"):
         return False
-    token = utils.kubernetes_token()
+    token = kubernetes_token()
     if not token:
         return False
     leader_set({"kube_manager_token": token})

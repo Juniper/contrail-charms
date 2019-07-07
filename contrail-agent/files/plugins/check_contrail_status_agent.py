@@ -55,7 +55,7 @@ def check_contrail_status(services):
             status, desc = statuses[group].get(srv)
             if status not in ['active', 'backup']:
                 message = ('CRITICAL: {} is not ready. Reason: {}'
-                           .format(srv, desc))
+                           .format(srv, desc if desc else status))
                 print(message)
                 sys.exit(CRITICAL)
     print('Contrail status OK')
