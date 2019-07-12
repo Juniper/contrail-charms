@@ -14,7 +14,6 @@ from charmhelpers.core.hookenv import (
     status_set,
     relation_set,
     is_leader,
-    leader_set,
     leader_get,
 )
 from charmhelpers.contrib.charmsupport import nrpe

@@ -91,6 +91,7 @@ services:
       - /var/lib/contrail:/var/lib/contrail
       - /var/run:/var/run
       - /dev:/dev
+      - /etc/resolv.conf:/etc/resolv.conf
     volumes_from:
       - node-init
     depends_on:
