@@ -286,12 +286,12 @@ def contrail_controller_changed():
 
 @hooks.hook("contrail-controller-relation-departed")
 def contrail_controller_departed():
-    # while we have at least one openstack unit on the remote end
-    # then we can suggest that orchestrator is still openstack
+    # while we have at least one openstack/kubernetes unit on the remote end
+    # then we can suggest that orchestrator is still defined
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
             utype = relation_get('unit-type', unit, rid)
-            if utype == "openstack":
+            if utype == "openstack" or utype == "kubernetes":
                 return
 
     config.pop("orchestrator_info", None)

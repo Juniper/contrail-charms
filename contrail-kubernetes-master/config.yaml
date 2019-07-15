@@ -50,6 +50,15 @@ options:
     description: |
       Kubernetes public floating IP pool
 
+  kubernetes_api_hostname:
+    type: string
+    description: |
+      Virtual IP or hostname to access to Kubernetes Cluster API
+  kubernetes_api_secure_port:
+    type: string
+    description: |
+      Secure port to access a Kubernetes Cluster API
+
   log-level:
     type: string
     default: SYS_NOTICE

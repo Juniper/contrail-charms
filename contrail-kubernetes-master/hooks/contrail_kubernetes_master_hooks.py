@@ -38,10 +38,17 @@ def install():
     status_set("blocked", "Missing relation to contrail-controller")
 
 
+@hooks.hook("leader-elected")
+def leader_elected():
+    _notify_controller()
+
+
 @hooks.hook("config-changed")
 def config_changed():
     update_nrpe_config()
     _notify_contrail_kubernetes_node()
+    if config.changed("kubernetes_api_hostname") or config.changed("kubernetes_api_secure_port"):
+        _notify_controller()
 
     # TODO: analyze changed params and raise exception if readonly params were changed
 
@@ -86,13 +93,14 @@ def kube_api_endpoint_changed():
     log("RelData: " + str(data))
 
     changed = _update_config(data, "kubernetes_api_server", "hostname")
-    changed |= _update_config(data, "kubernetes_api_secure_port", "port")
+    changed |= _update_config(data, "kubernetes_api_port", "port")
     config.save()
 
     if is_leader():
         changed |= utils.update_kubernetes_token()
     if not changed:
         return
+
     # notify clients
     _notify_controller()
     # and update self
@@ -105,12 +113,16 @@ def contrail_kubernetes_config_joined(rel_id=None):
     relation_set(relation_id=rel_id, relation_settings=data)
 
 
+@hooks.hook("leader-settings-changed")
+def leader_settings_changed():
+    utils.update_charm_status()
+
+
 @hooks.hook("update-status")
 def update_status():
-    # try to obtain token again if it's not set yet
     if not is_leader():
         return
-
+    # try to obtain token again if it's not set yet
     changed = utils.update_kubernetes_token()
     if not changed:
         return
@@ -146,14 +158,19 @@ def _notify_controller():
 def _get_orchestrator_info():
     info = {"cloud_orchestrator": "kubernetes"}
 
-    def _add_to_info(key, func):
-        value = func(key)
+    def _add_to_info(key, value):
         if value:
             info[key] = value
 
-    _add_to_info("kube_manager_token", leader_get)
-    _add_to_info("kubernetes_api_server", config.get)
-    _add_to_info("kubernetes_api_secure_port", config.get)
+    _add_to_info("kube_manager_token", leader_get("kube_manager_token"))
+
+    if config.get("kubernetes_api_hostname") and config.get("kubernetes_api_secure_port"):
+        _add_to_info("kubernetes_api_server", config.get("kubernetes_api_hostname"))
+        _add_to_info("kubernetes_api_secure_port", config.get("kubernetes_api_secure_port"))
+    else:
+        _add_to_info("kubernetes_api_server", config.get("kubernetes_api_server"))
+        _add_to_info("kubernetes_api_secure_port", config.get("kubernetes_api_port"))
+
     return {"orchestrator-info": json.dumps(info)}
 
 

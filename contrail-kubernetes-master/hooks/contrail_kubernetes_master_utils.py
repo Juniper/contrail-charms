@@ -101,8 +101,12 @@ def get_context():
 
     ctx["cloud_orchestrator"] = "kubernetes"
     ctx["kube_manager_token"] = leader_get("kube_manager_token")
-    ctx["kubernetes_api_server"] = config.get("kubernetes_api_server")
-    ctx["kubernetes_api_secure_port"] = config.get("kubernetes_api_secure_port")
+    if config.get("kubernetes_api_hostname") and config.get("kubernetes_api_secure_port"):
+        ctx["kubernetes_api_server"] = config.get("kubernetes_api_hostname")
+        ctx["kubernetes_api_secure_port"] = config.get("kubernetes_api_secure_port")
+    else:
+        ctx["kubernetes_api_server"] = config.get("kubernetes_api_server")
+        ctx["kubernetes_api_secure_port"] = config.get("kubernetes_api_port")
 
     ips = [relation_get("private-address", unit, rid)
            for rid in relation_ids("contrail-controller")
