@@ -35,7 +35,7 @@ services:
     network_mode: "host"
     env_file: /etc/contrail/common_analytics.env
     environment:
-      - KAFKA_NODES={{ analyticsdb_servers|sort|join(',') }}
+      - KAFKA_NODES={{ analytics_servers|sort|join(',') }}
       - ZOOKEEPER_NODES={{ controller_servers|sort|join(',') }}
       - ZOOKEEPER_PORT=2181
       - NODE_TYPE=analytics-alarm
