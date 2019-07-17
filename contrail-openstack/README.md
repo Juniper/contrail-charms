@@ -50,24 +50,3 @@ Option 'enable-metadata-server' controls if a local nova-api-metadata service is
 started (per Compute Node) and registered to serve metadata requests. It is
 the recommended approach for serving metadata to instances and is enabled by
 default.
-
-List of options
----------------
-
-Option   | Type| default | Description
----------|-----|---------|-------------
-+enable-metadata-server | boolean | true | Configures metadata shared secret and tells nova to run a local instance of nova-api-metadata for serving metadata to VMs.
-use-internal-endpoints | boolean | False | Openstack mostly defaults to using public endpoints for internal communication between services. If set to True this option will configure services to use internal endpoints where possible.
-heat-plugin-dirs | string | "/usr/lib64/heat,/usr/lib/heat/usr/lib/python2.7/dist-packages/vnc_api/gen/heat/resources" | Set directories where heat will search for new resources.
-docker_runtime | string | upstream | Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive), "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and `docker_runtime_package` name).
-docker_runtime_key_url | string | | Custom Docker repository validation key URL.
-docker_runtime_package | string | | Custom Docker repository package name.
-docker_runtime_repo | string | | Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime. Use `{CODE}` to set release codename. E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
-docker-registry | string | opencontrailnightly | URL of docker-registry
-docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it
-docker-user | string | | Login to the docker registry.
-docker-password | string | | Password to the docker registry.
-image-tag | string | latest | Tag of docker image.
-http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
-https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
-no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long

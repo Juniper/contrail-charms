@@ -88,34 +88,3 @@ Charm can be related to RabbitMQ:
 
 In this case internal RabbitMQ server will not be run and Contrail software will be configured
 to use external one.
-
-List of options
----------------
-
-Option   | Type| default | Description
----------|-----|---------|-------------
-control-network | string | | The IP address and netmask of the control network (e.g. 192.168.0.0/24). This network will be used for Contrail endpoints. If not specified, default network will be used.
-auth-mode | string | rbac | It represents 'aaa_mode' configuration key of Contrail. Can be one of: 'rbac', 'cloud-admin' or 'no-auth' Authentication mode. Detailed information can be found in the [Contrail documentation](https://github.com/Juniper/contrail-controller/wiki/RBAC) In case of 'rbac' charm will configure Contrail to RBAC mode and administrator must configure RBAC rules to allow users to work. In case of 'cloud-admin' charm will configure Contrail in compatible mode.
-cassandra-minimum-diskgb | string | 20 | Contrail has this as parameter and checks it at startup. If disk is smaller then status of DB is not good.
-auth-mode | string | rbac | It represents 'aaa_mode' configuration key of Contrail. Can be one of: 'rbac', 'cloud-admin' or 'no-auth' Authentication mode. Detailed information can be found in the Contrail documentation. https://github.com/Juniper/contrail-controller/wiki/RBAC In case of 'rbac' charm will configure Contrail to RBAC mode and administrator must configure RBAC rules to allow users to work. In case of 'cloud-admin' charm will configure Contrail in compatible mode.
-cassandra-jvm-extra-opts | string | | Memory limits for Java process of Cassandra.
-cloud-admin-role | string | admin | Role name in keystone for users that have full access to everything.
-global-read-only-role | string | | Role name in keystone for users that have read-only access to everything.
-vip | string | | Contrail API VIP to be used for configuring haproxy relation for external clients. To be set up also in KeepAlived charm configuration if it’s used for HA. All internal clients like vrouter-agent and openstack clients like neutron will be configured with list of unit's IP-s.
-use-external-rabbitmq | boolean | false | Charm will wait for external AMQP relation if set. Charm will use internal RabbitMQ server if not set. **NOTE: Changing this flag after deployment is dangerous!**
-flow-export-rate | string | 0 | Defines how much flow records will be exported by vRouter agent to the Contrail Collector when a flow is created or deleted.
-docker_runtime | string | upstream | Docker runtime to install valid values are "upstream" (Docker PPA), "apt" (Ubuntu archive), "auto" (Ubuntu archive), or "custom" (must have set `docker_runtime_repo` URL, `docker_runtime_key_url` URL and `docker_runtime_package` name).
-docker_runtime_key_url | string | | Custom Docker repository validation key URL.
-docker_runtime_package | string | | Custom Docker repository package name.
-docker_runtime_repo | string | | Custom Docker repository, given in deb format. Use `{ARCH}` to determine architecture at runtime. Use `{CODE}` to set release codename. E.g. `deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable`.
-docker-registry | string | | URL of docker-registry. Should be passed only if registry is not secured and must be added to docker config to allow work with it.
-docker-registry-insecure | boolean | false | Is it docker-registry insecure and should docker be configured for it
-docker-user | string | | Login to the docker registry.
-docker-password | string | | Password to the docker registry.
-image-tag | string | | Tag of docker image.
-log-level | string | SYS_NOTICE | Log level for contrail services. Valid values are: SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
-http_proxy | string | | URL to use for HTTP_PROXY to be used by Docker.
-https_proxy | string | | URL to use for HTTPS_PROXY to be used by Docker.
-no_proxy | string | | Comma-separated list of destinations that should be directly accessed, by opposition of going through the proxy defined above. Must be less than 2023 characters long
-haproxy-https-mode | string | tcp | Mode for haproxy for https connections - tcp or http.
-haproxy-http-mode | string | http | Mode for haproxy for http connections - http or https

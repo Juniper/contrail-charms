@@ -21,10 +21,3 @@ Deploy it and relate to other ends.
     juju deploy contrail-keystone-auth
     juju add-relation contrail-controller contrail-keystone-auth
     juju add-relation contrail-keystone-auth keystone
-
-List of options
----------------
-
-Option   | Type| default | Description
----------|-----|---------|-------------
-ssl_ca | string | | base64-encoded SSL CA to use with the certificate and key provided  to keystone - this is only required if you are providing a privately signed ssl_cert and ssl_key. This certificate will be provided to Contrail's keystone clients.
