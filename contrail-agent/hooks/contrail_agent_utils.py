@@ -1,5 +1,5 @@
 import os
-
+import socket
 from subprocess import (
     check_call,
     check_output,
@@ -80,7 +80,7 @@ def _get_hugepages():
 
 
 def _get_default_gateway_iface():
-    #TODO: get iface from route to CONTROL_NODES
+    # TODO: get iface from route to CONTROL_NODES
     if hasattr(netifaces, "gateways"):
         return netifaces.gateways()["default"][netifaces.AF_INET][1]
 
@@ -140,6 +140,7 @@ def get_context():
         my_ip = unit_get("private-address")
         if my_ip in plugin_ips:
             ctx["plugin_settings"] = plugin_ips[my_ip]
+    ctx["hostname"] = socket.getfqdn()
 
     log("CTX: " + str(ctx))
 
