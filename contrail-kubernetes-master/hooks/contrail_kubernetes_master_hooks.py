@@ -126,14 +126,12 @@ def leader_settings_changed():
 
 @hooks.hook("update-status")
 def update_status():
-    if not is_leader():
-        return
-    # try to obtain token again if it's not set yet
-    changed = utils.update_kubernetes_token()
-    if not changed:
-        return
-    # notify clients
-    _notify_controller()
+    if is_leader():
+        # try to obtain token again if it's not set yet
+        changed = utils.update_kubernetes_token()
+        if changed:
+            # notify clients
+           _notify_controller()
     # and update self
     utils.update_charm_status()
 
