@@ -45,6 +45,9 @@ def leader_elected():
 
 @hooks.hook("config-changed")
 def config_changed():
+    if config.changed("nested_mode"):
+        raise Exception('Nested mode cannot be changed after deployment.')
+
     update_nrpe_config()
     _notify_contrail_kubernetes_node()
     if config.changed("kubernetes_api_hostname") or config.changed("kubernetes_api_secure_port"):

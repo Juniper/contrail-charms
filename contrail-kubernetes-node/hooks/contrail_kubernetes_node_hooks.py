@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import yaml
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -42,8 +43,14 @@ def contrail_kubernetes_config_changed():
         if value:
             config[key] = value
 
+    def _add_bool_to_config(key):
+        value = relation_get(key)
+        if not isinstance(value, bool):
+            value = yaml.load(value)
+        config[key] = value
+
     _add_to_config("pod_subnets")
-    _add_to_config("nested_mode")
+    _add_bool_to_config("nested_mode")
     _add_to_config("nested_mode_config")
     config.save()
     _notify_kubernetes()
