@@ -118,8 +118,6 @@ def get_context():
         ips = common_utils.json_loads(config.get("analytics_servers"), list())
         ctx["analytics_servers"] = ips
     else:
-        # container need string value for nested_mode
-        ctx["nested_mode"] = "1"
         # TODO: create  KUBERNETES_NESTED_VROUTER_VIP link-local services in Contrail via config API
         ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
 

@@ -43,15 +43,13 @@ def contrail_kubernetes_config_changed():
         if value:
             config[key] = value
 
-    def _add_bool_to_config(key):
-        value = relation_get(key)
-        if not isinstance(value, bool):
-            value = yaml.load(value)
-        config[key] = value
-
     _add_to_config("pod_subnets")
-    _add_bool_to_config("nested_mode")
     _add_to_config("nested_mode_config")
+    nested_mode = relation_get("nested_mode")
+    if nested_mode is not None:
+        if isinstance(nested_mode, basestring):
+            nested_mode = yaml.load(nested_mode)
+        config["nested_mode"] = nested_mode
     config.save()
     _notify_kubernetes()
     utils.update_charm_status()
