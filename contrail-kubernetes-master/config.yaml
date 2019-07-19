@@ -59,6 +59,31 @@ options:
     description: |
       Secure port to access a Kubernetes Cluster API
 
+  nested_mode:
+    type: boolean
+    default: false
+    description: |
+      Nested mode flag. Kubernetes cluster inside an OpenStack cluster
+  nested_mode_config:
+    type: string
+    default: "{}"
+    description: |
+      Configuration of OpenStack and Contrail underlay cluster.
+      This is a dictionary of configuration variables in JSON format. E.g.
+      {
+      "CONTROLLER_NODES": "10.0.12.20",
+      "KEYSTONE_AUTH_ADMIN_TENANT": "admin",
+      "KEYSTONE_AUTH_ADMIN_USER": "admin",
+      "KEYSTONE_AUTH_ADMIN_PASSWORD": "password",
+      "KEYSTONE_AUTH_URL_VERSION": "/v2.0",
+      "KEYSTONE_AUTH_HOST": "10.0.12.122",
+      "KEYSTONE_AUTH_PROTO": "http",
+      "KEYSTONE_AUTH_PUBLIC_PORT":"5000",
+      "KEYSTONE_AUTH_REGION_NAME": "RegionOne",
+      "KEYSTONE_AUTH_INSECURE": "True",
+      "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5"
+      }
+
   log-level:
     type: string
     default: SYS_NOTICE

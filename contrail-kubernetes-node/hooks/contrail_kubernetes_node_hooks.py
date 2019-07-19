@@ -37,12 +37,17 @@ def config_changed():
 
 @hooks.hook("contrail-kubernetes-config-relation-changed")
 def contrail_kubernetes_config_changed():
-    cidr = relation_get("pod_subnets")
-    if not cidr:
-        return
-    config["pod_subnets"] = cidr
+    def _add_to_config(key):
+        value = relation_get(key)
+        if value:
+            config[key] = value
+
+    _add_to_config("pod_subnets")
+    _add_to_config("nested_mode")
+    _add_to_config("nested_mode_config")
     config.save()
     _notify_kubernetes()
+    utils.update_charm_status()
 
 
 @hooks.hook("cni-relation-joined")

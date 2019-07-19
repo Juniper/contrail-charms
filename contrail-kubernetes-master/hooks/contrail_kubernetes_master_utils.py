@@ -1,4 +1,3 @@
-import json
 import time
 import os
 import base64
@@ -91,6 +90,7 @@ def get_context():
 
     ctx["cluster_name"] = config.get("cluster_name")
     ctx["cluster_project"] = config.get("cluster_project")
+    ctx["cluster_network"] =  config.get("cluster_network")
     ctx["pod_subnets"] = config.get("pod_subnets")
     ctx["ip_fabric_subnets"] = config.get("ip_fabric_subnets")
     ctx["service_subnets"] = config.get("service_subnets")
@@ -108,12 +108,20 @@ def get_context():
         ctx["kubernetes_api_server"] = config.get("kubernetes_api_server")
         ctx["kubernetes_api_secure_port"] = config.get("kubernetes_api_port")
 
-    ips = [relation_get("private-address", unit, rid)
-           for rid in relation_ids("contrail-controller")
-           for unit in related_units(rid)]
-    ctx["controller_servers"] = ips
-    ips = common_utils.json_loads(config.get("analytics_servers"), list())
-    ctx["analytics_servers"] = ips
+    ctx["nested_mode"] = config.get("nested_mode")
+    if not ctx["nested_mode"]:
+        # get contrail configuration from relation
+        ips = [relation_get("private-address", unit, rid)
+               for rid in relation_ids("contrail-controller")
+               for unit in related_units(rid)]
+        ctx["controller_servers"] = ips
+        ips = common_utils.json_loads(config.get("analytics_servers"), list())
+        ctx["analytics_servers"] = ips
+    else:
+        # container need string value for nested_mode
+        ctx["nested_mode"] = "1"
+        # TODO: create  KUBERNETES_NESTED_VROUTER_VIP link-local services in Contrail via config API
+        ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
 
     log("CTX: {}".format(ctx))
     return ctx
@@ -132,7 +140,7 @@ def update_charm_status():
 
     ctx = get_context()
     missing_relations = []
-    if not ctx.get("controller_servers"):
+    if not ctx.get("nested_mode") and not ctx.get("controller_servers"):
         missing_relations.append("contrail-controller")
     if not ctx.get("kubernetes_api_server"):
         missing_relations.append("kube-api-endpoint")

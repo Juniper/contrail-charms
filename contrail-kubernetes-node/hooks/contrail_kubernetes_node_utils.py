@@ -24,6 +24,12 @@ def get_context():
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
 
+    ctx["nested_mode"] = config.get("nested_mode")
+    if ctx["nested_mode"]:
+        # container need string value for nested_mode
+        ctx["nested_mode"] = "1"
+        ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
+
     log("CTX: {}".format(ctx))
     return ctx
 

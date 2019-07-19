@@ -9,6 +9,7 @@ series:
 requires:
   contrail-controller:
     interface: contrail-controller
+    optional: true
   kube-api-endpoint:
     interface: http
     scope: container

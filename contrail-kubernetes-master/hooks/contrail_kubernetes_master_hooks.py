@@ -109,7 +109,10 @@ def kube_api_endpoint_changed():
 
 @hooks.hook("contrail-kubernetes-config-relation-joined")
 def contrail_kubernetes_config_joined(rel_id=None):
-    data = {"pod_subnets": config.get("pod_subnets")}
+    data = {}
+    data["pod_subnets"] = config.get("pod_subnets")
+    data["nested_mode"] = config.get("nested_mode")
+    data["nested_mode_config"] = config.get("nested_mode_config")
     relation_set(relation_id=rel_id, relation_settings=data)
 
 
