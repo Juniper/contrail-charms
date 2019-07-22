@@ -47,13 +47,19 @@ def leader_elected():
 def config_changed():
     if config.changed("nested_mode"):
         raise Exception('Nested mode cannot be changed after deployment.')
+    # TODO: analyze other params and raise exception if readonly params were changed
 
     update_nrpe_config()
+    if config.changed("control-network"):
+        settings = {'private-address': common_utils.get_ip()}
+        rnames = ("contrail-controller", "contrail-kubernetes-config")
+        for rname in rnames:
+            for rid in relation_ids(rname):
+                relation_set(relation_id=rid, relation_settings=settings)
+
     _notify_contrail_kubernetes_node()
     if config.changed("kubernetes_api_hostname") or config.changed("kubernetes_api_secure_port"):
         _notify_controller()
-
-    # TODO: analyze changed params and raise exception if readonly params were changed
 
     docker_utils.config_changed()
     utils.update_charm_status()

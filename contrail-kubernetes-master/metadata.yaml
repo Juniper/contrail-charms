@@ -6,6 +6,9 @@ description: |
 series:
   - xenial
   - bionic
+peers:
+  kubernetes-master-cluster:
+    interface: contrail-kubernetes-master-cluster
 requires:
   contrail-controller:
     interface: contrail-controller

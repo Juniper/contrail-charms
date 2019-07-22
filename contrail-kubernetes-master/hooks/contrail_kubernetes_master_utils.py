@@ -1,6 +1,8 @@
 import time
 import os
 import base64
+from socket import inet_aton
+import struct
 
 from charmhelpers.core.hookenv import (
     Hooks,
@@ -88,6 +90,25 @@ def get_context():
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
 
+    # self IP-s
+    kubemanager_ip_list = [
+        relation_get("private-address", unit, rid)
+        for rid in relation_ids("kubernetes-master-cluster")
+        for unit in related_units(rid)]
+    # add it's own ip address
+    kubemanager_ip_list.append(common_utils.get_ip())
+    sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
+    ctx["kubemanager_servers"] = sorted(kubemanager_ip_list, key=sort_key)
+    # get contrail configuration from relation
+    ips = [relation_get("private-address", unit, rid)
+            for rid in relation_ids("contrail-controller")
+            for unit in related_units(rid)]
+    ctx["controller_servers"] = ips
+    ips = common_utils.json_loads(config.get("analytics_servers"), list())
+    ctx["analytics_servers"] = ips
+
+    # TODO: add ssl
+
     ctx["cluster_name"] = config.get("cluster_name")
     ctx["cluster_project"] = config.get("cluster_project")
     ctx["cluster_network"] =  config.get("cluster_network")
@@ -109,15 +130,7 @@ def get_context():
         ctx["kubernetes_api_secure_port"] = config.get("kubernetes_api_port")
 
     ctx["nested_mode"] = config.get("nested_mode")
-    if not ctx["nested_mode"]:
-        # get contrail configuration from relation
-        ips = [relation_get("private-address", unit, rid)
-               for rid in relation_ids("contrail-controller")
-               for unit in related_units(rid)]
-        ctx["controller_servers"] = ips
-        ips = common_utils.json_loads(config.get("analytics_servers"), list())
-        ctx["analytics_servers"] = ips
-    else:
+    if ctx["nested_mode"]:
         # TODO: create  KUBERNETES_NESTED_VROUTER_VIP link-local services in Contrail via config API
         ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
 

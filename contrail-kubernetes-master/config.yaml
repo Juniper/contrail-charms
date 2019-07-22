@@ -1,4 +1,17 @@
 options:
+  control-network:
+    type: string
+    description: |
+      The IP address and netmask of the control network (e.g. 192.168.0.0/24).
+      This network will be used for Contrail endpoints.
+      If not specified, default network will be used.
+  log-level:
+    type: string
+    default: SYS_NOTICE
+    description: |
+      Log level for contrail services. Valid values are:
+      SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
+
   cluster_name:
     type: string
     default: k8s
@@ -53,11 +66,13 @@ options:
   kubernetes_api_hostname:
     type: string
     description: |
-      Virtual IP or hostname to access to Kubernetes Cluster API
+      Virtual IP or hostname to access to Kubernetes Cluster API.
+      This parameter is optinal. If it's not specified then local kubernetes address will be used.
   kubernetes_api_secure_port:
     type: string
     description: |
-      Secure port to access a Kubernetes Cluster API
+      Secure port to access a Kubernetes Cluster API.
+      This parameter is optinal. If it's not specified then local kubernetes address will be used.
 
   nested_mode:
     type: boolean
@@ -84,12 +99,6 @@ options:
       "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5"
       }
 
-  log-level:
-    type: string
-    default: SYS_NOTICE
-    description: |
-      Log level for contrail services. Valid values are:
-      SYS_EMERG, SYS_ALERT, SYS_CRIT, SYS_ERR, SYS_WARN, SYS_NOTICE, SYS_INFO, SYS_DEBUG
   docker_runtime:
     type: string
     default: upstream
