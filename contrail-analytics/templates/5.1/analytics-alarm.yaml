@@ -39,10 +39,11 @@ services:
       - ZOOKEEPER_NODES={{ controller_servers|sort|join(',') }}
       - ZOOKEEPER_PORT=2181
       - NODE_TYPE=analytics-alarm
+    volumes_from:
+      - node-init
+    depends_on:
+      - node-init
     restart: always
-    volumes:
-     - /etc/hosts:/etc/hosts
-     - /etc/contrail/ssl:/etc/contrail/ssl
   alarm-gen:
     image: "{{ container_registry }}/contrail-analytics-alarm-gen:{{ contrail_version_tag }}"
     network_mode: "host"

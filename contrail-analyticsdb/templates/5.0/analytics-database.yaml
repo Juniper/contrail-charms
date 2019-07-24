@@ -44,10 +44,11 @@ services:
       - ZOOKEEPER_NODES={{ analyticsdb_servers|sort|join(',') }}
       - ZOOKEEPER_PORT=2182
       - NODE_TYPE=database
+    volumes_from:
+      - node-init
+    depends_on:
+      - node-init
     restart: always
-    volumes:
-     - /etc/hosts:/etc/hosts
-     - /etc/contrail/ssl:/etc/contrail/ssl
   cassandra:
     image: "{{ container_registry }}/contrail-external-cassandra:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_analyticsdb.env
@@ -62,8 +63,11 @@ services:
       - CASSANDRA_JMX_LOCAL_PORT=7200
       - NODE_TYPE=database
     volumes:
-     - analytics_cassandra:/var/lib/cassandra/data
-     - /etc/hosts:/etc/hosts
+      - analytics_cassandra:/var/lib/cassandra/data
+    volumes_from:
+      - node-init
+    depends_on:
+      - node-init
     network_mode: "host"
     restart: always
   zookeeper:
@@ -75,8 +79,11 @@ services:
       - ZOOKEEPER_PORT=2182
       - NODE_TYPE=database
     volumes:
-     - analytics_zookeeper:/data
-     - analytics_zookeeper:/datalog
-     - /etc/hosts:/etc/hosts
+      - analytics_zookeeper:/data
+      - analytics_zookeeper:/datalog
+    volumes_from:
+      - node-init
+    depends_on:
+      - node-init
     network_mode: "host"
     restart: always
