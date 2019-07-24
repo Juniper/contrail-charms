@@ -17,7 +17,8 @@ from charmhelpers.core.hookenv import (
     charm_dir,
     config,
     log,
-    status_set
+    status_set,
+    local_unit
 )
 from charmhelpers.core.host import (
     file_hash,
