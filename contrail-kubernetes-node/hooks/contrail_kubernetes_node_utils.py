@@ -20,6 +20,7 @@ IMAGES = [
 
 def get_context():
     ctx = {}
+    ctx["module"] = MODULE
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")

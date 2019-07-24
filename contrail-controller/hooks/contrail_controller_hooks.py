@@ -230,7 +230,6 @@ def update_northbound_relations(rid=None):
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
-        "ssl-enabled": config.get("ssl_enabled", False),
     }
 
     if rid:
@@ -492,66 +491,20 @@ def _notify_haproxy_services():
 
 @hooks.hook('tls-certificates-relation-joined')
 def tls_certificates_relation_joined():
-    hostname = getfqdn()
-    cn = hostname.split(".")[0]
-    sans = [hostname]
-    if hostname != cn:
-        sans.append(cn)
-    sans_ips = []
-    try:
-        sans_ips.append(gethostbyname(hostname))
-    except:
-        pass
-    control_ip = common_utils.get_ip()
-    if control_ip not in sans_ips:
-        sans_ips.append(control_ip)
-    res = check_output(['getent', 'hosts', control_ip])
-    control_name = res.split()[1].split('.')[0]
-    if control_name not in sans:
-        sans.append(control_name)
-    sans_ips.append("127.0.0.1")
-    sans.extend(sans_ips)
-    settings = {
-        'sans': json.dumps(sans),
-        'common_name': cn,
-        'certificate_name': cn
-    }
-    log("TLS_CTX: {}".format(settings))
+    settings = common_utils.get_tls_settings(common_utils.get_ip())
     relation_set(relation_settings=settings)
 
 
 @hooks.hook('tls-certificates-relation-changed')
 def tls_certificates_relation_changed():
-    unitname = local_unit().replace('/', '_')
-    cert_name = '{0}.server.cert'.format(unitname)
-    key_name = '{0}.server.key'.format(unitname)
-    cert = relation_get(cert_name)
-    key = relation_get(key_name)
-    ca = relation_get('ca')
-
-    if not cert or not key or not ca:
-        log('tls-certificates relation data is not fully available')
-        cert = key = ca = None
-
-    _tls_changed(cert, key, ca)
+    if common_utils.tls_changed(utils.MODULE, relation_get()):
+        utils.update_charm_status()
 
 
 @hooks.hook('tls-certificates-relation-departed')
 def tls_certificates_relation_departed():
-    _tls_changed(None, None, None)
-
-
-def _tls_changed(cert, key, ca):
-    changed = common_utils.update_certificates(cert, key, ca)
-    if not changed:
-        return
-
-    # save certs & notify relations
-    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
-    config.save()
-    update_northbound_relations()
-
-    utils.update_charm_status()
+    if common_utils.tls_changed(utils.MODULE, None):
+        utils.update_charm_status()
 
 
 @hooks.hook('nrpe-external-master-relation-changed')

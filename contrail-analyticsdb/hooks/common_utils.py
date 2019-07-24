@@ -1,7 +1,7 @@
 import json
 import os
 from base64 import b64decode
-from socket import gaierror, gethostbyname, gethostname
+from socket import gaierror, gethostbyname, gethostname, getfqdn
 from subprocess import CalledProcessError, check_call, check_output
 
 import netifaces
@@ -156,12 +156,69 @@ def apply_keystone_ca(ctx):
     return ca_changed
 
 
-def update_certificates(cert, key, ca):
+def get_tls_settings(self_ip):
+    hostname = getfqdn()
+    cn = hostname.split(".")[0]
+    sans = [hostname]
+    if hostname != cn:
+        sans.append(cn)
+    sans_ips = []
+    try:
+        sans_ips.append(gethostbyname(hostname))
+    except:
+        pass
+    control_ip = self_ip
+    if control_ip not in sans_ips:
+        sans_ips.append(control_ip)
+    res = check_output(['getent', 'hosts', control_ip])
+    control_name = res.split()[1].split('.')[0]
+    if control_name not in sans:
+        sans.append(control_name)
+    sans_ips.append("127.0.0.1")
+    sans.extend(sans_ips)
+    settings = {
+        'sans': json.dumps(sans),
+        'common_name': cn,
+        'certificate_name': cn
+    }
+    log("TLS_CTX: {}".format(settings))
+    return settings
+
+
+def tls_changed(module, rel_data):
+    if not rel_data:
+        # departed case
+        cert = key = ca = None
+    else:
+        # changed case
+        unitname = local_unit().replace('/', '_')
+        cert_name = '{0}.server.cert'.format(unitname)
+        key_name = '{0}.server.key'.format(unitname)
+        cert = rel_data.get(cert_name)
+        key = rel_data.get(key_name)
+        ca = rel_data.get('ca')
+        if not cert or not key or not ca:
+            log("tls-certificates client's relation data is not fully available. Rel data: {}".format(rel_data))
+            cert = key = ca = None
+
+    changed = update_certificates(module, cert, key, ca)
+    if not changed:
+        log("Certificates were not changed.")
+        return False
+
+    log("Certificates have changed. Rewrite configs and rerun services.")
+    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
+    config.save()
+    return True
+
+
+def update_certificates(module, cert, key, ca):
     # NOTE: store files in default paths cause no way to pass this path to
     # some of components (sandesh)
-    files = {"/etc/contrail/ssl/certs/server.pem": (cert, 0o644),
-             "/etc/contrail/ssl/private/server-privkey.pem": (key, 0o640),
-             "/etc/contrail/ssl/certs/ca-cert.pem": (ca, 0o644)}
+    certs_path = "/etc/contrail/ssl/{}".format(module)
+    files = {certs_path + "/certs/server.pem": (cert, 0o644),
+             certs_path + "/private/server-privkey.pem": (key, 0o640),
+             certs_path + "/certs/ca-cert.pem": (ca, 0o644)}
     changed = False
     for cfile in files:
         data = files[cfile][0]
@@ -170,13 +227,13 @@ def update_certificates(cert, key, ca):
         changed |= (old_hash != file_hash(cfile))
     # apply strange permissions to certs to allow containers to read them
     # group 1011 is a hardcoded group id for internal contrail purposes
-    if os.path.exists("/etc/contrail/ssl/certs"):
-        os.chmod("/etc/contrail/ssl/certs", 0o755)
-    if os.path.exists("/etc/contrail/ssl/private"):
-        os.chmod("/etc/contrail/ssl/private", 0o750)
-        os.chown("/etc/contrail/ssl/private", 0, 1011)
+    if os.path.exists(certs_path + "/certs"):
+        os.chmod(certs_path + "/certs", 0o755)
+    if os.path.exists(certs_path + "/private"):
+        os.chmod(certs_path + "/private", 0o750)
+        os.chown(certs_path + "/private", 0, 1011)
     if key:
-        os.chown("/etc/contrail/ssl/private/server-privkey.pem", 0, 1011)
+        os.chown(certs_path + "/private/server-privkey.pem", 0, 1011)
 
     return changed
 

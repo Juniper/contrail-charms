@@ -6,9 +6,16 @@ description: |
 series:
   - xenial
   - bionic
+subordinate: true
 peers:
   kubernetes-master-cluster:
     interface: contrail-kubernetes-master-cluster
+provides:
+  contrail-kubernetes-config:
+    interface: contrail-kubernetes-config
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
 requires:
   contrail-controller:
     interface: contrail-controller
@@ -16,10 +23,6 @@ requires:
   kube-api-endpoint:
     interface: http
     scope: container
-provides:
-  contrail-kubernetes-config:
-    interface: contrail-kubernetes-config
-  nrpe-external-master:
-    interface: nrpe-external-master
-    scope: container
-subordinate: true
+  tls-certificates:
+    interface: tls-certificates
+    optional: true

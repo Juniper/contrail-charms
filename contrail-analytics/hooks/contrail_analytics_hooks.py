@@ -85,7 +85,6 @@ def contrail_analytics_changed():
     changed |= _value_changed(data, "auth-mode", "auth_mode")
     changed |= _value_changed(data, "auth-info", "auth_info")
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
-    changed |= _value_changed(data, "ssl-enabled", "ssl_enabled")
     changed |= _value_changed(data, "rabbitmq_hosts", "rabbitmq_hosts")
     config.save()
     # TODO: handle changing of all values
@@ -101,7 +100,7 @@ def contrail_analytics_departed():
                   for unit in related_units(rid)]
     if not units:
         for key in ["api_vip", "auth_info", "auth_mode", "orchestrator_info",
-                    "ssl_enabled", "rabbitmq_hosts"]:
+                    "rabbitmq_hosts"]:
             config.pop(key, None)
     config.save()
     utils.update_charm_status()
@@ -131,6 +130,24 @@ def analytics_cluster_joined():
     relation_set(relation_settings=settings)
 
     utils.update_charm_status()
+
+
+@hooks.hook('tls-certificates-relation-joined')
+def tls_certificates_relation_joined():
+    settings = common_utils.get_tls_settings(common_utils.get_ip())
+    relation_set(relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    if common_utils.tls_changed(utils.MODULE, relation_get()):
+        utils.update_charm_status()
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    if common_utils.tls_changed(utils.MODULE, None):
+        utils.update_charm_status()
 
 
 @hooks.hook("update-status")

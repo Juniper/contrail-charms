@@ -38,3 +38,12 @@ Istead of attaching resource with docker image charm can accept image from remot
 docker-registry should be specified if the registry is only accessible via http protocol (insecure registry).
 docker-user / docker-password can be specified if registry requires authentification.
 And image-name / image-tag are the parameters for the image itself.
+
+SSL
+---
+
+This charm supports relation to easyrsa charm to obtain certificates for XMPP and Sandesh connections:
+
+    juju add-relation contrail-analyticsdb easyrsa
+
+Please note that in this case all charms must be related to easyrsa. Components require CA certificate for communication.

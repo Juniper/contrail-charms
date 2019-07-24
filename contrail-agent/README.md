@@ -84,3 +84,12 @@ In this case relation must be set to Kubernetes Worker instead of the nova-compu
 ```
 juju add-relation contrail-agent:juju-info kubernetes-worker:juju-info
 ```
+
+SSL
+---
+
+This charm supports relation to easyrsa charm to obtain certificates for XMPP and Sandesh connections:
+
+    juju add-relation contrail-agent easyrsa
+
+Please note that in this case all charms must be related to easyrsa. Components require CA certificate for communication.

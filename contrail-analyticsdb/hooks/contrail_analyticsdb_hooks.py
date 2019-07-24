@@ -76,7 +76,6 @@ def analyticsdb_changed():
     changed = False
     changed |= _value_changed(data, "auth-info", "auth_info")
     changed |= _value_changed(data, "orchestrator-info", "orchestrator_info")
-    changed |= _value_changed(data, "ssl-enabled", "ssl_enabled")
     # TODO: handle changing of all values
     # TODO: set error if orchestrator is changing and container was started
     if changed:
@@ -88,7 +87,7 @@ def analyticsdb_departed():
     units = [unit for rid in relation_ids("contrail-controller")
                   for unit in related_units(rid)]
     if not units:
-        for key in ["auth_info", "orchestrator_info", "ssl_enabled"]:
+        for key in ["auth_info", "orchestrator_info"]:
             config.pop(key, None)
     utils.update_charm_status()
 
@@ -97,6 +96,24 @@ def analyticsdb_departed():
 def analyticsdb_cluster_joined():
     settings = {'private-address': common_utils.get_ip()}
     relation_set(relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-joined')
+def tls_certificates_relation_joined():
+    settings = common_utils.get_tls_settings(common_utils.get_ip())
+    relation_set(relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    if common_utils.tls_changed(utils.MODULE, relation_get()):
+        utils.update_charm_status()
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    if common_utils.tls_changed(utils.MODULE, None):
+        utils.update_charm_status()
 
 
 @hooks.hook("update-status")

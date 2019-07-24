@@ -20,3 +20,6 @@ provides:
 requires:
   contrail-analyticsdb:
     interface: contrail-analyticsdb
+  tls-certificates:
+    interface: tls-certificates
+    optional: true

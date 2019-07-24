@@ -102,6 +102,7 @@ def _get_iface_gateway_ip(iface):
 
 def get_context():
     ctx = {}
+    ctx["module"] = MODULE
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["container_registry"] = config.get("docker-registry")
@@ -257,18 +258,6 @@ def fix_libvirt():
 
     service_restart("apparmor")
     check_call(["/etc/init.d/apparmor",  "reload"])
-
-
-def tls_changed(cert, key, ca):
-    changed = common_utils.update_certificates(cert, key, ca)
-    if not changed:
-        log("Certificates were not changed.")
-        return
-
-    log("Certificates have changed. Rewrite configs and rerun services.")
-    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
-    config.save()
-    update_charm_status()
 
 
 def get_vhost_ip():

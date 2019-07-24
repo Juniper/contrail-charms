@@ -55,3 +55,12 @@ load balanced:
 For this http connection there are two modes - http and https. Both modes configure haproxy in http mode (termination). Mode https additionaly configure haproxy to use SSL for frontend. By default http mode is used. To confugire haproxy in https mode you can run:
 
     juju config contrail-analytics haproxy-http-mode=https
+
+SSL
+---
+
+This charm supports relation to easyrsa charm to obtain certificates for XMPP and Sandesh connections:
+
+    juju add-relation contrail-analytics easyrsa
+
+Please note that in this case all charms must be related to easyrsa. Components require CA certificate for communication.

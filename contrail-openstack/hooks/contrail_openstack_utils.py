@@ -198,6 +198,7 @@ def get_context():
                           for rid in relation_ids("contrail-controller")
                           for unit in related_units(rid)]
     ctx["api_port"] = config.get("api_port")
+    # TODO: think about ssl here
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     log("CTX: " + str(ctx))
 

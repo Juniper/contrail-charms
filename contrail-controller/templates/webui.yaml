@@ -12,7 +12,7 @@ services:
     network_mode: "host"
     volumes:
       - /usr/bin:/host/usr/bin
-      - /etc/contrail/ssl:/etc/contrail/ssl
+      - /etc/contrail/ssl/{{ module }}:/etc/contrail/ssl
       - /etc/sysctl.d:/etc/sysctl.d
       - /etc/hosts:/etc/hosts
       - /var/log/contrail:/var/log/contrail

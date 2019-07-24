@@ -132,6 +132,7 @@ def analyticsdb_ctx():
 
 def get_context():
     ctx = {}
+    ctx["module"] = MODULE
     ctx["log_level"] = config.get("log-level", "SYS_NOTICE")
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["container_registry"] = config.get("docker-registry")

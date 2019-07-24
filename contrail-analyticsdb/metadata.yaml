@@ -15,4 +15,8 @@ provides:
   nrpe-external-master:
     interface: nrpe-external-master
     scope: container
+requires:
+  tls-certificates:
+    interface: tls-certificates
+    optional: true
 

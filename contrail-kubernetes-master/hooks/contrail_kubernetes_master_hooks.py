@@ -184,6 +184,24 @@ def _get_orchestrator_info():
     return {"orchestrator-info": json.dumps(info)}
 
 
+@hooks.hook('tls-certificates-relation-joined')
+def tls_certificates_relation_joined():
+    settings = common_utils.get_tls_settings(common_utils.get_ip())
+    relation_set(relation_settings=settings)
+
+
+@hooks.hook('tls-certificates-relation-changed')
+def tls_certificates_relation_changed():
+    if common_utils.tls_changed(utils.MODULE, relation_get()):
+        utils.update_charm_status()
+
+
+@hooks.hook('tls-certificates-relation-departed')
+def tls_certificates_relation_departed():
+    if common_utils.tls_changed(utils.MODULE, None):
+        utils.update_charm_status()
+
+
 @hooks.hook("upgrade-charm")
 def upgrade_charm():
     utils.update_charm_status()
