@@ -100,6 +100,8 @@ Manual installation
     ```
     juju deploy cs:~containers/xenial/easyrsa --to 0
     juju add-relation easyrsa contrail-controller
+    juju add-relation easyrsa contrail-analytics
+    juju add-relation easyrsa contrail-analyticsdb
     juju add-relation easyrsa contrail-agent
     ```
 

@@ -23,14 +23,14 @@ Manual installation
 
     ```
     juju deploy cs:xenial/ntp ntp
-    
+
     juju deploy cs:~containers/easyrsa easyrsa --to lxd:0
-    
+
     juju deploy cs:~containers/etcd etcd \
         --resource etcd=3 \
         --resource snapshot=0
     juju set etcd channel="3.2/stable"
-    
+
     juju deploy cs:~containers/kubernetes-master kubernetes-master \
         --resource cdk-addons=0 \
         --resource kube-apiserver=0 \
@@ -46,7 +46,7 @@ Manual installation
         docker_runtime_repo="deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable" \
         docker_runtime_key_url="https://download.docker.com/linux/ubuntu/gpg" \
         docker_runtime_package="docker-ce"
-    
+
     juju deploy cs:~containers/kubernetes-worker kubernetes-worker \
         --resource kube-proxy="0" \
         --resource kubectl="0" \
@@ -68,19 +68,18 @@ Manual installation
 
     ```
     juju deploy contrail-analytics contrail-analytics
-    
+
     juju deploy contrail-analyticsdb contrail-analyticsdb
     juju set contrail-analyticsdb cassandra-minimum-diskgb="4" cassandra-jvm-extra-opts="-Xms1g -Xmx2g"
-    
+
     juju deploy contrail-controller contrail-controller
     juju set contrail-controller cassandra-minimum-diskgb="4" cassandra-jvm-extra-opts="-Xms1g -Xmx2g" auth-mode="no-auth"
-    
+
     juju deploy contrail-kubernetes-master contrail-kubernetes-master
-    
+
     juju deploy contrail-kubernetes-node contrail-kubernetes-node
-    
+
     juju deploy contrail-agent contrail-agent
-    
     ```
 
 4. Expose applications to be publicly available.
@@ -102,6 +101,9 @@ Manual installation
 
     ```
     juju add-relation easyrsa contrail-controller
+    juju add-relation easyrsa contrail-analytics
+    juju add-relation easyrsa contrail-analyticsdb
+    juju add-relation easyrsa contrail-kubernetes-master
     juju add-relation easyrsa contrail-agent
     ```
 
@@ -113,14 +115,14 @@ Manual installation
     juju add-relation "contrail-analytics" "contrail-analyticsdb"
     juju add-relation "contrail-agent" "contrail-controller"
     juju add-relation "contrail-controller" "ntp"
-    
+
     juju add-relation "kubernetes-master:kube-api-endpoint" "kubernetes-worker:kube-api-endpoint"
     juju add-relation "kubernetes-master:kube-control" "kubernetes-worker:kube-control"
     juju add-relation "kubernetes-master:certificates" "easyrsa:client"
     juju add-relation "kubernetes-master:etcd" "etcd:db"
     juju add-relation "kubernetes-worker:certificates" "easyrsa:client"
     juju add-relation "etcd:certificates" "easyrsa:client"
-    
+
     juju add-relation "contrail-kubernetes-node:cni" "kubernetes-master:cni"
     juju add-relation "contrail-kubernetes-node:cni" "kubernetes-worker:cni"
     juju add-relation "contrail-kubernetes-master:contrail-controller" "contrail-controller:contrail-controller"
