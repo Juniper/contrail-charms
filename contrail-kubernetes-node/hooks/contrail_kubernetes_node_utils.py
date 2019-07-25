@@ -9,7 +9,7 @@ import docker_utils
 
 config = config()
 
-
+MODULE = "kubernetes-node"
 BASE_CONFIGS_PATH = "/etc/contrail"
 
 CONFIGS_PATH = BASE_CONFIGS_PATH + "/contrail-kubernetes-node"
