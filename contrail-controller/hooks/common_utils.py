@@ -213,19 +213,32 @@ def tls_changed(module, rel_data):
     return True
 
 
+def _try_os(func, *args, **kwargs):
+    try:
+        func(*args, **kwargs)
+    except Exception:
+        pass
+
+
 def update_certificates(module, cert, key, ca):
-    # NOTE: store files in default paths cause no way to pass this path to
-    # some of components (sandesh)
     certs_path = "/etc/contrail/ssl/{}".format(module)
-    files = {certs_path + "/certs/server.pem": (cert, 0o644),
-             certs_path + "/private/server-privkey.pem": (key, 0o640),
-             certs_path + "/certs/ca-cert.pem": (ca, 0o644)}
+    files = {"/certs/server.pem": (cert, 0o644),
+             "/private/server-privkey.pem": (key, 0o640),
+             "/certs/ca-cert.pem": (ca, 0o644)}
+    # create common directories to create symlink
+    # this is needed for contrail-status
+    _try_os(os.makedirs, "/etc/contrail/ssl/certs")
+    _try_os(os.makedirs, "/etc/contrail/ssl/private")
     changed = False
-    for cfile in files:
+    for fkey in files:
+        cfile = certs_path + fkey
         data = files[cfile][0]
         old_hash = file_hash(cfile)
         save_file(cfile, data, perms=files[cfile][1])
         changed |= (old_hash != file_hash(cfile))
+        # create symlink to common place
+        _try_os(os.remove, "/etc/contrail/ssl" + fkey)
+        _try_os(os.symlink, certs_path + cfile, "/etc/contrail/ssl" + fkey)
     # apply strange permissions to certs to allow containers to read them
     # group 1011 is a hardcoded group id for internal contrail purposes
     if os.path.exists(certs_path + "/certs"):
@@ -236,6 +249,7 @@ def update_certificates(module, cert, key, ca):
     if key:
         os.chown(certs_path + "/private/server-privkey.pem", 0, 1011)
 
+   
     return changed
 
 
