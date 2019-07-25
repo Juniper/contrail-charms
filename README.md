@@ -104,6 +104,32 @@ git clone https://github.com/Juniper/contrail-charms -b R5
 6. You can check the status of your deployment using `juju status` command.
 [Unit status. Juju documentation.](https://docs.jujucharms.com/2.4/en/reference-status)
 
+
+Known issues
+------------
+
+1. If neutron-api or heat are deployed into lxd then default lxd profile should be fixed to allow to run docker containers inside:
+
+Create file lxd-default.yaml with content (please check your current profile to not overwrite current settings).
+```
+config:
+  environment.http_proxy: ""
+  user.network_mode: ""
+  linux.kernel_modules: overlay, nf_nat
+  security.nesting: "true"
+  security.privileged: "true"
+description: Default Juju LXD profile
+devices:
+  aadisable:
+    path: /sys/module/apparmor/parameters/enabled
+    source: /dev/null
+    type: disk
+name: default
+used_by: []
+```
+And apply it - `cat ./lxd-default.yaml | sudo lxc profile edit default`
+
+
 Configuration
 -------------
 
