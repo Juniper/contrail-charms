@@ -238,7 +238,7 @@ def update_certificates(module, cert, key, ca):
         changed |= (old_hash != file_hash(cfile))
         # create symlink to common place
         _try_os(os.remove, "/etc/contrail/ssl" + fkey)
-        _try_os(os.symlink, certs_path + cfile, "/etc/contrail/ssl" + fkey)
+        _try_os(os.symlink, cfile, "/etc/contrail/ssl" + fkey)
     # apply strange permissions to certs to allow containers to read them
     # group 1011 is a hardcoded group id for internal contrail purposes
     if os.path.exists(certs_path + "/certs"):
@@ -249,7 +249,6 @@ def update_certificates(module, cert, key, ca):
     if key:
         os.chown(certs_path + "/private/server-privkey.pem", 0, 1011)
 
-   
     return changed
 
 
