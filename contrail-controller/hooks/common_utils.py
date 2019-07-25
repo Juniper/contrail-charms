@@ -232,9 +232,9 @@ def update_certificates(module, cert, key, ca):
     changed = False
     for fkey in files:
         cfile = certs_path + fkey
-        data = files[cfile][0]
+        data = files[fkey][0]
         old_hash = file_hash(cfile)
-        save_file(cfile, data, perms=files[cfile][1])
+        save_file(cfile, data, perms=files[fkey][1])
         changed |= (old_hash != file_hash(cfile))
         # create symlink to common place
         _try_os(os.remove, "/etc/contrail/ssl" + fkey)
