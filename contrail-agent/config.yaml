@@ -9,7 +9,7 @@ options:
     default: auto
     description: |
       Specify the gateway for vhost0, either an IPv4 address or keyword 'auto'.
-      'auto' will set gateway automatically based on host's existing routes.
+      'auto' will set gateway automatically.
   dpdk:
     type: boolean
     default: false

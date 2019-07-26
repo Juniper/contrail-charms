@@ -117,8 +117,8 @@ def vrouter_plugin_changed():
     plugin_ip = data.get("private-address")
     plugin_ready = data.get("ready", False)
     if plugin_ready:
-        plugin_ips = json.loads(config.get("plugin-ips", "{}"))
-        plugin_ips[plugin_ip] = json.loads(data.get("settings", "{}"))
+        plugin_ips = common_utils.json_loads(config.get("plugin-ips"), dict())
+        plugin_ips[plugin_ip] = common_utils.json_loads(data.get("settings"), dict())
         config["plugin-ips"] = json.dumps(plugin_ips)
         config.save()
     utils.update_charm_status()
