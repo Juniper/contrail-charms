@@ -46,8 +46,6 @@ services:
   easyrsa:
     charm: cs:~containers/easyrsa
     num_units: 1
-    resources:
-      easyrsa: 5
     to:
     - '1'
 
@@ -56,9 +54,6 @@ services:
     num_units: 1
     options:
       channel: 3.2/stable
-    resources:
-      etcd: 3
-      snapshot: 0
     to:
     - '0'
 
@@ -69,20 +64,10 @@ services:
     options:
       channel: 1.14/stable
       service-cidr: '10.96.0.0/12'
-      enable-dashboard-addons: false
-      enable-metrics: false
-      dns-provider: 'none'
       docker_runtime: 'custom'
       docker_runtime_repo: 'deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable'
       docker_runtime_key_url: 'https://download.docker.com/linux/ubuntu/gpg'
       docker_runtime_package: 'docker-ce'
-    resources:
-      cdk-addons: 0
-      kube-apiserver: 0
-      kube-controller-manager: 0
-      kube-proxy: 0
-      kube-scheduler: 0
-      kubectl: 0
     to:
     - '0'
 
@@ -92,48 +77,28 @@ services:
     num_units: 1
     options:
       channel: 1.14/stable
-      ingress: false
       docker_runtime: 'custom'
       docker_runtime_repo: 'deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable'
       docker_runtime_key_url: 'https://download.docker.com/linux/ubuntu/gpg'
       docker_runtime_package: 'docker-ce'
-    resources:
-      cni-amd64: 154
-      cni-arm64: 146
-      cni-s390x: 152
-      kube-proxy: 0
-      kubectl: 0
-      kubelet: 0
     to:
     - '0'
 
 relations:
 
 # contrail-kubernetes
-
-- - contrail-kubernetes-node:cni
-  - kubernetes-master:cni
-- - contrail-kubernetes-node:cni
-  - kubernetes-worker:cni
-- - contrail-kubernetes-master:kube-api-endpoint
-  - kubernetes-master:kube-api-endpoint
-- - contrail-kubernetes-master:contrail-kubernetes-config
-  - contrail-kubernetes-node:contrail-kubernetes-config
+- [ contrail-kubernetes-node:cni, kubernetes-master:cni ]
+- [ contrail-kubernetes-node:cni, kubernetes-worker:cni ]
+- [ contrail-kubernetes-master:kube-api-endpoint, kubernetes-master:kube-api-endpoint ]
+- [ contrail-kubernetes-master:contrail-kubernetes-config, contrail-kubernetes-node:contrail-kubernetes-config ]
 
 # kubernetes
-
-- - kubernetes-master:kube-api-endpoint
-  - kubernetes-worker:kube-api-endpoint
-- - kubernetes-master:kube-control
-  - kubernetes-worker:kube-control
-- - kubernetes-master:certificates
-  - easyrsa:client
-- - kubernetes-master:etcd
-  - etcd:db
-- - kubernetes-worker:certificates
-  - easyrsa:client
-- - etcd:certificates
-  - easyrsa:client
+- [ kubernetes-master:kube-api-endpoint, kubernetes-worker:kube-api-endpoint ]
+- [ kubernetes-master:kube-control, kubernetes-worker:kube-control ]
+- [ kubernetes-master:certificates, easyrsa:client ]
+- [ kubernetes-master:etcd, etcd:db ]
+- [ kubernetes-worker:certificates, easyrsa:client ]
+- [ etcd:certificates, easyrsa:client ]
 
 machines:
   "0":
