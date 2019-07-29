@@ -96,7 +96,7 @@ def contrail_analytics_changed():
 
 @hooks.hook("contrail-analytics-relation-departed")
 def contrail_analytics_departed():
-    units = [unit for rid in relation_ids("contrail-controller")
+    units = [unit for rid in relation_ids("contrail-analytics")
                   for unit in related_units(rid)]
     if not units:
         for key in ["api_vip", "auth_info", "auth_mode", "orchestrator_info",
