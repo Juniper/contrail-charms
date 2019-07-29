@@ -107,7 +107,7 @@ Manual installation
 
 7. HA configuration (optional).
 
-    If you are using several controllers, we suggest the following HA solution using haproxy and keepalived.
+    If you are using several controllers and want to expose just one IP(VIP) for config API or analytics API to client then we suggest the following HA solution using haproxy and keepalived.
 
     Deploy haproxy and keepalived services. Haproxy is deployed on the machines with contrail-controllers.
     Keepalived is a subordinate charm to haproxy and does not require `to` option.
