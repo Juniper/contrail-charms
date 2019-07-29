@@ -84,9 +84,12 @@ def analyticsdb_changed():
 
 @hooks.hook("contrail-analyticsdb-relation-departed")
 def analyticsdb_departed():
-    units = [unit for rid in relation_ids("contrail-controller")
-                  for unit in related_units(rid)]
-    if not units:
+    count = 0
+    for rid in relation_ids("contrail-analyticsdb"):
+        for unit in related_units(rid):
+            if relation_get("unit-type", unit, rid) == "controller":
+                count += 1
+    if count == 0:
         for key in ["auth_info", "orchestrator_info"]:
             config.pop(key, None)
     utils.update_charm_status()
