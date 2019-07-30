@@ -11,7 +11,7 @@ fi
 
 charm login
 team="juniper-os-software"
-id="~$team/$bundle"
+id="~$team/bundle/$bundle"
 
 res=`charm push "$my_dir/../examples/$bundle" cs:${id}`
 echo "$res"
