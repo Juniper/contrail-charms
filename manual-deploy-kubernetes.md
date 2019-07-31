@@ -127,6 +127,7 @@ Manual installation
     juju add-relation "contrail-kubernetes-node:cni" "kubernetes-worker:cni"
     juju add-relation "contrail-kubernetes-master:contrail-controller" "contrail-controller:contrail-controller"
     juju add-relation "contrail-kubernetes-master:kube-api-endpoint" "kubernetes-master:kube-api-endpoint"
+    juju add-relation "contrail-agent:juju-info" "kubernetes-master:juju-info"
     juju add-relation "contrail-agent:juju-info" "kubernetes-worker:juju-info"
     juju add-relation "contrail-kubernetes-master:contrail-kubernetes-config" "contrail-kubernetes-node:contrail-kubernetes-config"
     ```
