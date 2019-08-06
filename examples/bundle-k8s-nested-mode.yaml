@@ -47,7 +47,7 @@ services:
     charm: cs:~containers/easyrsa
     num_units: 1
     to:
-    - '1'
+    - '0'
 
   etcd:
     charm: cs:~containers/etcd
@@ -82,7 +82,7 @@ services:
       docker_runtime_key_url: 'https://download.docker.com/linux/ubuntu/gpg'
       docker_runtime_package: 'docker-ce'
     to:
-    - '0'
+    - '5'
 
 relations:
 
@@ -104,6 +104,6 @@ machines:
   "0":
     series: bionic
     constraints: mem=4G cores=1 root-disk=10G
-  "1":
+  "5":
     series: bionic
     constraints: mem=1G cores=1 root-disk=10G
