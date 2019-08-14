@@ -33,11 +33,13 @@ Nested mode installation
 [Example of bundle.yaml file](../examples/contrail-bundle-k8s-nested-mode.yaml) to install charm in nested mode.
 
 Prerequisite:
+
 - Virtual machines in an Openstack cluster must be created with connectivity to the Internet and a underlay network with Contrail components.
 - The link-local services for vRouter Agent should be created in Contrail (Service IP: 10.10.10.5, Service Port: 9091, Fabric IP: 127.0.0.1, Fabric Port: 9091). Note: Here 10.10.10.5 is the Service IP that was chosen by user. This can be any unused IP in the cluster.
 
 Notes:
-- The Project name and the network name of charm config is same as Openstack project name and Openstack network name (parameters cluster_project and cluster_network)
+
+- The Project name and the network name of charm config should be the same as Openstack project name and Openstack network name (parameters cluster_project and cluster_network)
 - The service_subnets config variable is same as the service-cidr kubererntes-master config variable
 - KUBERNESTES_NESTED_VROUTER_VIP in the nested_mode_config variable is same as Service IP of link-local services
 - It is not recommended to deploy charm in nested-mode in the AWS cloud since AWS uses slow qemu virtualization

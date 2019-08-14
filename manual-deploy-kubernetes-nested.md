@@ -83,7 +83,8 @@ contrail-kubernetes-master:
         "KEYSTONE_AUTH_PUBLIC_PORT":"5000",
         "KEYSTONE_AUTH_REGION_NAME": "RegionOne",
         "KEYSTONE_AUTH_INSECURE": "True",
-        "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5"
+        "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5",
+        "AUTH_MODE": "keystone"
         }
 ```
 
