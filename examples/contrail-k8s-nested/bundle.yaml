@@ -7,6 +7,7 @@
 #   K8s-cni-to-agent   10.10.10.5   9091           127.0.0.1   9091
 #
 # NOTE: Here 10.10.10.5 is the Service IP that was chosen by user. This can be any unused IP in the cluster
+# NOTE: Please be accurate and fill all parameters from the underlay cloud below correctly.
 
 series: bionic
 services:
@@ -24,6 +25,7 @@ services:
       nested_mode_config: |
         {
         "CONTROLLER_NODES": "10.0.12.20",
+        "AUTH_MODE": "keystone",
         "KEYSTONE_AUTH_ADMIN_TENANT": "admin",
         "KEYSTONE_AUTH_ADMIN_USER": "admin",
         "KEYSTONE_AUTH_ADMIN_PASSWORD": "password",
@@ -33,8 +35,7 @@ services:
         "KEYSTONE_AUTH_PUBLIC_PORT":"5000",
         "KEYSTONE_AUTH_REGION_NAME": "RegionOne",
         "KEYSTONE_AUTH_INSECURE": "True",
-        "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5",
-        "AUTH_MODE": "keystone"
+        "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5"
         }
 
   contrail-kubernetes-node:
@@ -64,6 +65,9 @@ services:
     options:
       channel: 1.14/stable
       service-cidr: '10.96.0.0/12'
+      enable-dashboard-addons: false
+      enable-metrics: false
+      dns-provider: 'none'
       docker_runtime: 'custom'
       docker_runtime_repo: 'deb [arch={ARCH}] https://download.docker.com/linux/ubuntu {CODE} stable'
       docker_runtime_key_url: 'https://download.docker.com/linux/ubuntu/gpg'
@@ -102,7 +106,7 @@ relations:
 machines:
   "0":
     series: bionic
-    constraints: mem=4G cores=1 root-disk=10G
+    constraints: mem=4G cores=2 root-disk=20G
   "5":
     series: bionic
-    constraints: mem=1G cores=1 root-disk=10G
+    constraints: mem=1G cores=2 root-disk=20G

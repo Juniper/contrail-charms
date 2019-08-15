@@ -74,6 +74,7 @@ contrail-kubernetes-master:
     nested_mode_config: |
         {
         "CONTROLLER_NODES": "10.0.12.20",
+        "AUTH_MODE": "keystone",
         "KEYSTONE_AUTH_ADMIN_TENANT": "admin",
         "KEYSTONE_AUTH_ADMIN_USER": "admin",
         "KEYSTONE_AUTH_ADMIN_PASSWORD": "password",
@@ -83,8 +84,7 @@ contrail-kubernetes-master:
         "KEYSTONE_AUTH_PUBLIC_PORT":"5000",
         "KEYSTONE_AUTH_REGION_NAME": "RegionOne",
         "KEYSTONE_AUTH_INSECURE": "True",
-        "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5",
-        "AUTH_MODE": "keystone"
+        "KUBERNESTES_NESTED_VROUTER_VIP": "10.10.10.5"
         }
 ```
 
