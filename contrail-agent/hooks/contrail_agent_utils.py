@@ -13,6 +13,7 @@ from charmhelpers.core.hookenv import (
     relation_ids,
     status_set,
     unit_get,
+    WARNING,
 )
 
 from charmhelpers.core.host import (
@@ -87,6 +88,18 @@ def _get_default_gateway_iface():
     return data[data.index("dev") + 1]
 
 
+def _get_iface_gateway_ip(iface):
+    ifaces = [iface, "vhost0"]
+    for line in check_output(["route", "-n"]).splitlines()[2:]:
+        l = line.split()
+        if "G" in l[3] and l[7] in ifaces:
+            log("Found gateway {} for interface {}".format(l[1], iface))
+            return l[1]
+    log("vrouter-gateway set to 'auto' but gateway could not be determined "
+        "from routing table for interface {}".format(iface), level=WARNING)
+    return None
+
+
 def get_context():
     ctx = {}
     ctx["module"] = MODULE
@@ -97,10 +110,12 @@ def get_context():
     ctx["sriov_physical_interface"] = config.get("sriov-physical-interface")
     ctx["sriov_numvfs"] = config.get("sriov-numvfs")
 
-    ctx["physical_interface"] = config.get("physical-interface")
+    iface = config.get("physical-interface")
+    ctx["physical_interface"] = iface
     gateway_ip = config.get("vhost-gateway")
-    if gateway_ip and gateway_ip != "auto":
-        ctx["vrouter_gateway"] = gateway_ip
+    if gateway_ip == "auto":
+         gateway_ip = _get_iface_gateway_ip(iface)
+    ctx["vrouter_gateway"] = gateway_ip if gateway_ip else ''
 
     ctx["agent_mode"] = "dpdk" if config["dpdk"] else "kernel"
     if config["dpdk"]:
