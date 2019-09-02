@@ -14,14 +14,14 @@ Manual installation
 |--|--|--|--|--|
 | K8s-cni-to-agent | 10.10.10.5 | 9091 | 127.0.0.1 | 9091 |
 
-2. Make sure that you didn't forget to create the controller with `juju bootstrap` command. You can use any cloud provide that you want.
+2. Make sure that you didn't forget to create the controller with `juju bootstrap` command. You can use openstack or manual cloud provider.
 
 3. Create machines for Contrail, Kubernetes master, Kubernetes workers:
 
 Configure machines for memory, cores and disk sizes. The following constraints are given for example as minimal requirments.
 
 ```bash
-juju add-machine --constraints mem=32G cores=8 root-disk=150G --series=xenial # for all-in-one machine
+juju add-machine --constraints mem=8G cores=2 root-disk=50G --series=xenial # for all-in-one machine
 ```
 
 Please refer to Juju documentation how to add machines in the cloud that you chose.
