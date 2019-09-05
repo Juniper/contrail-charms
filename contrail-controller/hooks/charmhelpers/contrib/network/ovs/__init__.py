@@ -43,6 +43,46 @@ iface {linuxbridge_port} inet manual
 MAX_KERNEL_INTERFACE_NAME_LEN = 15
 
 
+def get_bridges():
+    """Return list of the bridges on the default openvswitch
+
+    :returns: List of bridge names
+    :rtype: List[str]
+    :raises: subprocess.CalledProcessError if ovs-vsctl fails
+    """
+    cmd = ["ovs-vsctl", "list-br"]
+    lines = subprocess.check_output(cmd).decode('utf-8').split("\n")
+    maybe_bridges = [l.strip() for l in lines]
+    return [b for b in maybe_bridges if b]
+
+
+def get_bridge_ports(name):
+    """Return a list the ports on a named bridge
+
+    :param name: the name of the bridge to list
+    :type name: str
+    :returns: List of ports on the named bridge
+    :rtype: List[str]
+    :raises: subprocess.CalledProcessError if the ovs-vsctl command fails. If
+        the named bridge doesn't exist, then the exception will be raised.
+    """
+    cmd = ["ovs-vsctl", "--", "list-ports", name]
+    lines = subprocess.check_output(cmd).decode('utf-8').split("\n")
+    maybe_ports = [l.strip() for l in lines]
+    return [p for p in maybe_ports if p]
+
+
+def get_bridges_and_ports_map():
+    """Return dictionary of bridge to ports for the default openvswitch
+
+    :returns: a mapping of bridge name to a list of ports.
+    :rtype: Dict[str, List[str]]
+    :raises: subprocess.CalledProcessError if any of the underlying ovs-vsctl
+        command fail.
+    """
+    return {b: get_bridge_ports(b) for b in get_bridges()}
+
+
 def add_bridge(name, datapath_type=None):
     ''' Add the named bridge to openvswitch '''
     log('Creating bridge {}'.format(name))
@@ -217,19 +257,35 @@ def full_restart():
         service('force-reload-kmod', 'openvswitch-switch')
 
 
-def enable_ipfix(bridge, target):
-    '''Enable IPfix on bridge to target.
+def enable_ipfix(bridge, target,
+                 cache_active_timeout=60,
+                 cache_max_flows=128,
+                 sampling=64):
+    '''Enable IPFIX on bridge to target.
     :param bridge: Bridge to monitor
-    :param target: IPfix remote endpoint
+    :param target: IPFIX remote endpoint
+    :param cache_active_timeout: The maximum period in seconds for
+                                 which an IPFIX flow record is cached
+                                 and aggregated before being sent
+    :param cache_max_flows: The maximum number of IPFIX flow records
+                            that can be cached at a time
+    :param sampling: The rate at which packets should be sampled and
+                     sent to each target collector
     '''
-    cmd = ['ovs-vsctl', 'set', 'Bridge', bridge, 'ipfix=@i', '--',
-           '--id=@i', 'create', 'IPFIX', 'targets="{}"'.format(target)]
+    cmd = [
+        'ovs-vsctl', 'set', 'Bridge', bridge, 'ipfix=@i', '--',
+        '--id=@i', 'create', 'IPFIX',
+        'targets="{}"'.format(target),
+        'sampling={}'.format(sampling),
+        'cache_active_timeout={}'.format(cache_active_timeout),
+        'cache_max_flows={}'.format(cache_max_flows),
+    ]
     log('Enabling IPfix on {}.'.format(bridge))
     subprocess.check_call(cmd)
 
 
 def disable_ipfix(bridge):
-    '''Diable IPfix on target bridge.
+    '''Diable IPFIX on target bridge.
     :param bridge: Bridge to modify
     '''
     cmd = ['ovs-vsctl', 'clear', 'Bridge', bridge, 'ipfix']
