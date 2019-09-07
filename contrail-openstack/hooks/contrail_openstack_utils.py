@@ -40,6 +40,7 @@ PACKAGE_CODENAMES = {
         '16': 'pike',
         '17': 'queens',
         '18': 'rocky',
+        '19': 'stein',
     },
     'neutron': {
         '7': 'liberty',
@@ -49,6 +50,7 @@ PACKAGE_CODENAMES = {
         '11': 'pike',
         '12': 'queens',
         '13': 'rocky',
+        '14': 'stein',
     },
     'heat': {
         '5': 'liberty',
@@ -58,6 +60,7 @@ PACKAGE_CODENAMES = {
         '9': 'pike',
         '10': 'queens',
         '11': 'rocky',
+        '12': 'stein',
     },
 }
 
