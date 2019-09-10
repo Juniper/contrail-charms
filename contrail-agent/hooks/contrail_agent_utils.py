@@ -127,9 +127,12 @@ def get_context():
     info = common_utils.json_loads(config.get("orchestrator_info"), dict())
     ctx.update(info)
 
-    ips = [relation_get("private-address", unit, rid)
-           for rid in relation_ids("contrail-controller")
-           for unit in related_units(rid)]
+    ips = list()
+    for rid in relation_ids("contrail-controller"):
+        for unit in related_units(rid):
+           ip = relation_get("private-address", unit, rid)
+           if ip:
+               ips.append(ip)
     ctx["controller_servers"] = ips
     ips = common_utils.json_loads(config.get("analytics_servers"), list())
     ctx["analytics_servers"] = ips

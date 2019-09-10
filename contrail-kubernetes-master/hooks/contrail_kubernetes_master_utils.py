@@ -92,18 +92,23 @@ def get_context():
     ctx["contrail_version_tag"] = config.get("image-tag")
 
     # self IP-s
-    kubemanager_ip_list = [
-        relation_get("private-address", unit, rid)
-        for rid in relation_ids("kubernetes-master-cluster")
-        for unit in related_units(rid)]
+    kubemanager_ip_list = list()
+    for rid in relation_ids("kubernetes-master-cluster"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            if ip:
+                kubemanager_ip_list.append(ip)
     # add it's own ip address
     kubemanager_ip_list.append(common_utils.get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     ctx["kubemanager_servers"] = sorted(kubemanager_ip_list, key=sort_key)
     # get contrail configuration from relation
-    ips = [relation_get("private-address", unit, rid)
-            for rid in relation_ids("contrail-controller")
-            for unit in related_units(rid)]
+    ips = list()
+    for rid in relation_ids("contrail-controller"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            if ip:
+                ips.append(ip)
     ctx["controller_servers"] = ips
     ips = common_utils.json_loads(config.get("analytics_servers"), list())
     ctx["analytics_servers"] = ips

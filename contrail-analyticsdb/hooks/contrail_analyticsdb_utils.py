@@ -62,6 +62,8 @@ def servers_ctx():
         for unit in related_units(rid):
             utype = relation_get("unit-type", unit, rid)
             ip = relation_get("private-address", unit, rid)
+            if not ip:
+                continue
             if utype == "controller":
                 controller_ip_list.append(ip)
             if utype == "analytics":
@@ -77,10 +79,12 @@ def servers_ctx():
 
 def analyticsdb_ctx():
     """Get the ipaddres of all analyticsdb nodes"""
-    analyticsdb_ip_list = [
-        relation_get("private-address", unit, rid)
-        for rid in relation_ids("analyticsdb-cluster")
-        for unit in related_units(rid)]
+    analyticsdb_ip_list = list()
+    for rid in relation_ids("analyticsdb-cluster"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            if ip:
+                analyticsdb_ip_list.append(ip)
     # add it's own ip address
     analyticsdb_ip_list.append(common_utils.get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]

@@ -94,7 +94,8 @@ def controller_ctx():
             utype = relation_get('unit-type', unit, rid)
             if utype == "controller":
                 ip = relation_get("private-address", unit, rid)
-                controller_ip_list.append(ip)
+                if ip:
+                    controller_ip_list.append(ip)
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
     return {
@@ -109,7 +110,8 @@ def analytics_ctx():
     for rid in relation_ids("analytics-cluster"):
         for unit in related_units(rid):
             ip = relation_get("private-address", unit, rid)
-            analytics_ip_list.append(ip)
+            if ip:
+                analytics_ip_list.append(ip)
     # add it's own ip address
     analytics_ip_list.append(common_utils.get_ip())
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
@@ -123,7 +125,8 @@ def analyticsdb_ctx():
     for rid in relation_ids("contrail-analyticsdb"):
         for unit in related_units(rid):
             ip = relation_get("private-address", unit, rid)
-            analyticsdb_ip_list.append(ip)
+            if ip:
+                analyticsdb_ip_list.append(ip)
 
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analyticsdb_ip_list = sorted(analyticsdb_ip_list, key=sort_key)

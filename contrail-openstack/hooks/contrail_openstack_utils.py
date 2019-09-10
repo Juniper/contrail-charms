@@ -197,9 +197,12 @@ def _is_related_to(rel_name):
 
 def get_context():
     ctx = {}
-    ctx["api_servers"] = [relation_get("private-address", unit, rid)
-                          for rid in relation_ids("contrail-controller")
-                          for unit in related_units(rid)]
+    ctx["api_servers"] = list()
+    for rid in relation_ids("contrail-controller"):
+        for unit in related_units(rid):
+            ip = relation_get("private-address", unit, rid)
+            if ip:
+                ctx["api_servers"].append(ip)
     ctx["api_port"] = config.get("api_port")
     # TODO: think about ssl here
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)

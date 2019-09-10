@@ -93,7 +93,8 @@ def get_analytics_list():
     for rid in relation_ids("contrail-analytics"):
         for unit in related_units(rid):
             ip = relation_get("private-address", unit, rid)
-            analytics_ip_list.append(ip)
+            if ip:
+                analytics_ip_list.append(ip)
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
     return analytics_ip_list
