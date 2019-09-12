@@ -35,12 +35,12 @@ def get_ip():
     if network:
         # try to get ip from CIDR
         try:
-            return get_address_in_network(network)
+            ip = get_address_in_network(network, fatal=True)
         except Exception:
             pass
         # try to get ip from interface name
         try:
-            return get_iface_addr(network)[0]
+            return get_iface_addr(network, fatal=True)[0]
         except Exception:
             pass
 
