@@ -142,7 +142,9 @@ def get_context():
         my_ip = unit_get("private-address")
         if my_ip in plugin_ips:
             ctx["plugin_settings"] = plugin_ips[my_ip]
-    ctx["hostname"] = socket.getfqdn()
+    ctx["hostname"] = socket.getfqdn(get_vhost_ip())
+    if ctx["hostname"] == get_vhost_ip():
+        ctx["hostname"] = socket.getfqdn()
 
     log("CTX: " + str(ctx))
 
