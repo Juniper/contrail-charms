@@ -36,6 +36,7 @@ def get_ip():
         # try to get ip from CIDR
         try:
             ip = get_address_in_network(network, fatal=True)
+            return ip
         except Exception:
             pass
         # try to get ip from interface name

@@ -263,6 +263,7 @@ def contrail_controller_joined():
         update_southbound_relations(rid=relation_id())
 
 
+
 @hooks.hook("contrail-controller-relation-changed")
 def contrail_controller_changed():
     data = relation_get()
