@@ -141,6 +141,7 @@ def get_context():
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
+    ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
 
     ctx.update(controller_ctx())
     ctx.update(analytics_ctx())

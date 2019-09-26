@@ -140,6 +140,8 @@ def get_context():
         # TODO: create  KUBERNETES_NESTED_VROUTER_VIP link-local services in Contrail via config API
         ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
 
+    ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
+
     log("CTX: {}".format(ctx))
     return ctx
 

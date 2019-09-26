@@ -61,6 +61,9 @@ def config_changed():
     if config.changed("kubernetes_api_hostname") or config.changed("kubernetes_api_secure_port"):
         _notify_controller()
 
+    config["config_analytics_ssl_available"] = common_utils.is_config_analytics_ssl_available()
+    config.save()
+
     docker_utils.config_changed()
     utils.update_charm_status()
 

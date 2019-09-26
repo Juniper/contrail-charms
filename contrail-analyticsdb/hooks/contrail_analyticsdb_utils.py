@@ -101,6 +101,7 @@ def get_context():
     ctx["jvm_extra_opts"] = config.get("cassandra-jvm-extra-opts")
     ctx["container_registry"] = config.get("docker-registry")
     ctx["contrail_version_tag"] = config.get("image-tag")
+    ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
 
     ctx.update(servers_ctx())

@@ -52,6 +52,9 @@ def config_changed():
             for rid in relation_ids(rname):
                 relation_set(relation_id=rid, relation_settings=settings)
 
+    config["config_analytics_ssl_available"] = common_utils.is_config_analytics_ssl_available()
+    config.save()
+
     docker_utils.config_changed()
     utils.update_charm_status()
 
@@ -171,17 +174,23 @@ def _http_services(vip):
     addr = common_utils.get_ip()
 
     mode = config.get("haproxy-http-mode", "http")
+    config_analytics_ssl_available = config.get("config_analytics_ssl_available", False)
+    if config_analytics_ssl_available:
+        servers = [[name, addr, 8081, "check inter 2000 rise 2 fall 3 ssl verify none"]]
+    else:
+        servers = [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
+
     result = [{
         "service_name": "contrail-analytics-api",
         "service_host": vip,
         "service_port": 8081,
-        "servers": [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]}]
+        "servers": servers }]
     if mode == 'http':
         result[0]['service_options'] = [
             "timeout client 3m",
             "option nolinger",
             "timeout server 3m",
-            "balance roundrobin"]
+            "balance source"]
     else:
         result[0]['service_options'] = [
             "timeout client 86400000",

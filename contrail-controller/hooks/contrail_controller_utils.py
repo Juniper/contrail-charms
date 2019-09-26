@@ -116,6 +116,7 @@ def get_context():
     ctx.update(common_utils.json_loads(config.get("orchestrator_info"), dict()))
 
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
+    ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
 
     ips = common_utils.json_loads(leader_get("controller_ip_list"), list())
     ctx["controller_servers"] = ips

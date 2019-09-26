@@ -146,6 +146,7 @@ def get_context():
     if ctx["hostname"] == get_vhost_ip():
         ctx["hostname"] = socket.getfqdn()
 
+    ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
     log("CTX: " + str(ctx))
 
     ctx.update(common_utils.json_loads(config.get("auth_info"), dict()))

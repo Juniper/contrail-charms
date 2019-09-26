@@ -213,6 +213,9 @@ def config_changed():
             for ip, hostname in rabbitmq_hosts:
                 utils.update_hosts_file(ip, hostname, remove_hostname=True)
 
+    config["config_analytics_ssl_available"] = common_utils.is_config_analytics_ssl_available()
+    config.save()
+
     docker_utils.config_changed()
     utils.update_charm_status()
     _notify_haproxy_services()
@@ -370,18 +373,25 @@ def _http_services(vip):
     addr = common_utils.get_ip()
 
     mode = config.get("haproxy-http-mode", "http")
+
+    config_analytics_ssl_available = config.get("config_analytics_ssl_available", False)
+    if config_analytics_ssl_available:
+        servers = [[name, addr, 8081, "check inter 2000 rise 2 fall 3 ssl verify none"]]
+    else:
+        servers = [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
+
     result = [
         {"service_name": "contrail-api",
          "service_host": vip,
          "service_port": 8082,
-         "servers": [[name, addr, 8082, "check inter 2000 rise 2 fall 3"]]}
+         "servers": servers}
     ]
     if mode == 'http':
         result[0]['service_options'] = [
             "timeout client 3m",
             "option nolinger",
             "timeout server 3m",
-            "balance roundrobin"]
+            "balance source"]
     else:
         result[0]['service_options'] = [
             "timeout client 86400000",
@@ -421,7 +431,7 @@ def _https_services_tcp(vip):
             "timeout client 86400000",
             "mode tcp",
             "option tcplog",
-            "balance roundrobin",
+            "balance source",
             "cookie SERVERID insert indirect nocache",
             "timeout server 30000",
             "timeout connect 4000",
