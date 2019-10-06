@@ -206,8 +206,7 @@ def update_charm_status():
         BASE_CONFIGS_PATH + "/common_vrouter.env", ctx)
     changed |= common_utils.render_and_log("vrouter.yaml",
         CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed:
-        docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml", changed)
 
     # local file for vif utility
     common_utils.render_and_log("contrail-vrouter-agent.conf",

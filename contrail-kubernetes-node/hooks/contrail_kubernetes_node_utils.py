@@ -49,7 +49,6 @@ def update_charm_status():
         BASE_CONFIGS_PATH + "/common_cni.env", ctx)
     changed |= common_utils.render_and_log("/contrail-cni.yaml",
         CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed:
-        docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml", changed)
 
     status_set("active", "Unit is ready")

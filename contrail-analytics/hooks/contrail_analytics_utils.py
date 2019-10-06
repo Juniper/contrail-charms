@@ -193,26 +193,22 @@ def update_charm_status():
 
     changed |= common_utils.render_and_log(cver + "/analytics.yaml",
         ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed:
-        docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(ANALYTICS_CONFIGS_PATH + "/docker-compose.yaml", changed)
 
     if cver == '5.1':
         changed |= common_utils.render_and_log(cver + "/analytics-alarm.yaml",
             ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-        if changed:
-            docker_utils.compose_run(ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml")
+        docker_utils.compose_run(ANALYTICS_ALARM_CONFIGS_PATH + "/docker-compose.yaml", changed)
 
         changed |= common_utils.render_and_log(cver + "/analytics-snmp.yaml",
             ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-        if changed:
-            docker_utils.compose_run(ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml")
+        docker_utils.compose_run(ANALYTICS_SNMP_CONFIGS_PATH + "/docker-compose.yaml", changed)
 
     # redis is a common service that needs own synchronized env
     changed = common_utils.render_and_log("redis.env",
         BASE_CONFIGS_PATH + "/redis.env", ctx)
     changed |= common_utils.render_and_log("redis.yaml",
         REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed:
-        docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml", changed)
 
     common_utils.update_services_status(MODULE, SERVICES[cver])

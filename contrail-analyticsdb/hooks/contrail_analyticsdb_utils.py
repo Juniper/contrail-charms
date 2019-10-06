@@ -152,7 +152,6 @@ def update_charm_status():
         BASE_CONFIGS_PATH + "/common_analyticsdb.env", ctx)
     changed |= common_utils.render_and_log(cver + "/analytics-database.yaml",
         CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed:
-        docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIGS_PATH + "/docker-compose.yaml", changed)
 
     common_utils.update_services_status(MODULE, SERVICES[cver])

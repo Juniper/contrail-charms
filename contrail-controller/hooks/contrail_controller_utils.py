@@ -163,33 +163,28 @@ def update_charm_status():
 
     service_changed = common_utils.render_and_log("config-api.yaml",
         CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed or service_changed:
-        docker_utils.compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIG_API_CONFIGS_PATH + "/docker-compose.yaml", changed or service_changed)
 
     service_changed = common_utils.render_and_log("config-database.yaml",
         CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed or service_changed:
-        docker_utils.compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONFIG_DATABASE_CONFIGS_PATH + "/docker-compose.yaml", changed or service_changed)
 
     service_changed = common_utils.render_and_log("control.yaml",
         CONTROL_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed or service_changed:
-        docker_utils.compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(CONTROL_CONFIGS_PATH + "/docker-compose.yaml", changed or service_changed)
 
     service_changed = common_utils.render_and_log("webui.yaml",
         WEBUI_CONFIGS_PATH + "/docker-compose.yaml", ctx)
     service_changed |= common_utils.render_and_log("web.env",
         BASE_CONFIGS_PATH + "/common_web.env", ctx)
-    if changed or service_changed:
-        docker_utils.compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(WEBUI_CONFIGS_PATH + "/docker-compose.yaml", changed or service_changed)
 
     # redis is a common service that needs own synchronized env
-    changed = common_utils.render_and_log("redis.env",
+    service_changed = common_utils.render_and_log("redis.env",
         BASE_CONFIGS_PATH + "/redis.env", ctx)
-    changed |= common_utils.render_and_log("redis.yaml",
+    service_changed |= common_utils.render_and_log("redis.yaml",
         REDIS_CONFIGS_PATH + "/docker-compose.yaml", ctx)
-    if changed:
-        docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml")
+    docker_utils.compose_run(REDIS_CONFIGS_PATH + "/docker-compose.yaml", changed or service_changed)
 
     common_utils.update_services_status(MODULE, SERVICES)
 

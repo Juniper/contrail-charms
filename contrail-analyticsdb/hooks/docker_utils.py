@@ -3,10 +3,12 @@ import json
 import os
 import platform
 from subprocess import check_call, check_output
+import yaml
 
 from charmhelpers.core.hookenv import (
     config,
     log,
+    DEBUG,
     env_proxy_settings,
 )
 from charmhelpers.core.host import service_restart
@@ -156,8 +158,20 @@ def pull(image, tag):
     check_call([DOCKER_CLI, "pull", get_image_id(image, tag)])
 
 
-def compose_run(path):
-    check_call([DOCKER_COMPOSE_CLI, "-f", path, "up", "-d"])
+def compose_run(path, config_changed):
+    do_update = config_changed
+    if not do_update:
+        # check count of services
+        count = None
+        with open(path, 'r') as fh:
+            data = yaml.load(fh, Loader=yaml.FullLoader)
+            count = len(data['services'])
+        # check is it run or not
+        actual_count = check_output([DOCKER_COMPOSE_CLI, "-f", path, "ps", "-q"]).decode("UTF-8").splitlines()
+        log("Services actual count: {}, required count: {}".format(actual_count, count), level=DEBUG)
+        do_update = actual_count != count
+    if do_update:
+        check_call([DOCKER_COMPOSE_CLI, "-f", path, "up", "-d"])
 
 
 def remove_container_by_image(image):
