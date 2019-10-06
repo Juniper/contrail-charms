@@ -167,7 +167,7 @@ def compose_run(path, config_changed):
             data = yaml.load(fh)
             count = len(data['services'])
         # check is it run or not
-        actual_count = check_output([DOCKER_COMPOSE_CLI, "-f", path, "ps", "-q"]).decode("UTF-8").splitlines()
+        actual_count = len(check_output([DOCKER_COMPOSE_CLI, "-f", path, "ps", "-q"]).decode("UTF-8").splitlines())
         log("Services actual count: {}, required count: {}".format(actual_count, count), level=DEBUG)
         do_update = actual_count != count
     if do_update:
