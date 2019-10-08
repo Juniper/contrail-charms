@@ -53,7 +53,7 @@ def _get_default_ip():
     if hasattr(netifaces, "gateways"):
         iface = netifaces.gateways()["default"][netifaces.AF_INET][1]
     else:
-        data = check_output("ip route | grep ^default", shell=True).split()
+        data = check_output("ip route | grep ^default", shell=True).decode('UTF-8').split()
         iface = data[data.index("dev") + 1]
     return netifaces.ifaddresses(iface)[netifaces.AF_INET][0]["addr"]
 
@@ -93,7 +93,7 @@ def save_file(path, data, perms=0o400):
 
 def update_services_status(module, services):
     try:
-        output = check_output("export CONTRAIL_STATUS_CONTAINER_NAME=contrail-status-{} ; contrail-status".format(module), shell=True)
+        output = check_output("export CONTRAIL_STATUS_CONTAINER_NAME=contrail-status-{} ; contrail-status".format(module), shell=True).decode('UTF-8')
     except Exception as e:
         log("Container is not ready to get contrail-status: " + str(e))
         status_set("waiting", "Waiting services to run in container")
@@ -173,7 +173,7 @@ def get_tls_settings(self_ip):
     control_ip = self_ip
     if control_ip not in sans_ips:
         sans_ips.append(control_ip)
-    res = check_output(['getent', 'hosts', control_ip])
+    res = check_output(['getent', 'hosts', control_ip]).decode('UTF-8')
     control_name = res.split()[1].split('.')[0]
     if control_name not in sans:
         sans.append(control_name)

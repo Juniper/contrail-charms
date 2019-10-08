@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import yaml
@@ -47,7 +47,7 @@ def contrail_kubernetes_config_changed():
     _add_to_config("nested_mode_config")
     nested_mode = relation_get("nested_mode")
     if nested_mode is not None:
-        if isinstance(nested_mode, basestring):
+        if isinstance(nested_mode, str):
             nested_mode = yaml.load(nested_mode)
         config["nested_mode"] = nested_mode
     config.save()

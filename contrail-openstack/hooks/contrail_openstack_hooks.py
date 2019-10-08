@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json
 import sys
@@ -188,9 +188,12 @@ def _get_orchestrator_info():
 
 @hooks.hook("heat-plugin-relation-joined")
 def heat_plugin_joined(rel_id=None):
-    utils.deploy_openstack_code("contrail-openstack-heat-init")
+    plugin_path = utils.deploy_openstack_code("contrail-openstack-heat-init", "heat")
+    plugin_path += "/vnc_api/gen/heat/resources"
 
     plugin_dirs = config.get("heat-plugin-dirs")
+    if plugin_path not in plugin_dirs:
+        plugin_dirs += ',' + plugin_path
     ctx = utils.get_context()
     sections = {
         "clients_contrail": [
@@ -219,14 +222,17 @@ def heat_plugin_joined(rel_id=None):
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
     version = utils.get_openstack_version_codename('neutron')
-    utils.deploy_openstack_code("contrail-openstack-neutron-init", {"OPENSTACK_VERSION": version})
+    plugin_path = utils.deploy_openstack_code(
+        "contrail-openstack-neutron-init", "neutron",
+        {"OPENSTACK_VERSION": version})
 
     # create plugin config
     base = "neutron_plugin_contrail.plugins.opencontrail"
     plugin = base + ".contrail_plugin.NeutronPluginContrailCoreV2"
     service_plugins = base + ".loadbalancer.v2.plugin.LoadBalancerPluginV2"
+    contrail_plugin_extension = plugin_path + "/neutron_plugin_contrail/extensions"
     extensions = [
-        "/usr/lib/python2.7/dist-packages/neutron_plugin_contrail/extensions",
+        contrail_plugin_extension,
         "/usr/lib/python2.7/dist-packages/neutron_lbaas/extensions"]
     conf = {
       "neutron-api": {
@@ -267,7 +273,7 @@ def neutron_api_joined(rel_id=None):
 
 @hooks.hook("nova-compute-relation-joined")
 def nova_compute_joined(rel_id=None):
-    utils.deploy_openstack_code("contrail-openstack-compute-init")
+    utils.deploy_openstack_code("contrail-openstack-compute-init", "nova")
 
     utils.nova_patch()
 

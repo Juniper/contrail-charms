@@ -54,7 +54,7 @@ def kubernetes_token():
     for i in range (10):
         try:
             token_id = check_output(["snap", "run", "kubectl", "get", "sa", "contrail-kubemanager", "-n", "contrail",
-                                "-ogo-template=\"{{(index .secrets 0).name}}\""]).strip('\"')
+                                "-ogo-template=\"{{(index .secrets 0).name}}\""]).decode('UTF-8').strip('\"')
         except Exception as e:
             log("Can't get SA for contrail-kubemanager {}".format(e))
             return None
@@ -65,7 +65,7 @@ def kubernetes_token():
         return None
     try:
         token_64 = check_output(["snap", "run", "kubectl", "get", "secret", token_id, "-n", "contrail",
-                            "-ogo-template=\"{{.data.token}}\""]).strip('\"')
+                            "-ogo-template=\"{{.data.token}}\""]).decode('UTF-8').strip('\"')
         token = base64.b64decode(token_64)
         return token
     except Exception as e:

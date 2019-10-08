@@ -224,15 +224,15 @@ def _save_file(path, data):
         os.remove(path)
 
 
-def deploy_openstack_code(image, env_dict=None):
+def deploy_openstack_code(image, component, env_dict=None):
     tag = config.get('image-tag')
     docker_utils.pull(image, tag)
 
     # remove previous attempt
     docker_utils.remove_container_by_image(image)
 
-    paths = [path for path in sys.path if 'packages' in path]
-    path = paths[-1]
+    path = check_output(['./files/get_component_sys_paths.sh',
+                        component]).decode('UTF-8')
     volumes = [
         # container will copy libraries to /opt/plugin/site-packages
         # that is PYTHONPATH in the system
@@ -247,6 +247,7 @@ def deploy_openstack_code(image, env_dict=None):
         application_version_set(version)
     except CalledProcessError as e:
         log("Couldn't detect installed application version: " + str(e))
+    return path
 
 
 def nova_patch():
@@ -258,8 +259,8 @@ def nova_patch():
         log("this nova version is unsupported: {}".format(version), level=INFO)
         return
 
-    import nova
-    nova_path = os.path.dirname(nova.__file__)
+    nova_path = check_output(['./files/get_component_path.sh',
+                             'nova']).decode('UTF-8')
     pwd = os.getcwd()
     base_cmd = ["/usr/bin/patch", "-p", "2", "-i", pwd + "/files/nova.diff", "-d", nova_path, "-b"]
     try:
@@ -279,7 +280,11 @@ def nova_patch():
 
 def get_openstack_version_codename(dist):
     try:
-        version = pkg_resources.get_distribution(dist).version
+        version = check_output(['./files/get_openstack_version_codename.sh',
+                                dist]).decode('UTF-8')
+        if not version:
+            log("Version of {} couldn't be derived: {}".format(dist, e), level=WARNING)
+            return None
         return PACKAGE_CODENAMES[dist][version.split('.')[0]]
     except Exception as e:
         # nova is not installed

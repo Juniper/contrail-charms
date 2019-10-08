@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json
 import sys
@@ -60,8 +60,8 @@ def leader_elected():
     if not ip_list:
         ip_list = ips.values()
         log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
-        leader_set(controller_ip_list=json.dumps(ip_list),
-                   controller_ips=json.dumps(ips))
+        leader_set(controller_ip_list=json.dumps(list(ip_list)),
+                   controller_ips=json.dumps(list(ips)))
         # TODO: pass this list to all south/north relations
     else:
         current_ip_list = ips.values()

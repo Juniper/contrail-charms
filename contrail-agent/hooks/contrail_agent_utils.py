@@ -84,7 +84,7 @@ def _get_default_gateway_iface():
     if hasattr(netifaces, "gateways"):
         return netifaces.gateways()["default"][netifaces.AF_INET][1]
 
-    data = check_output("ip route | grep ^default", shell=True).split()
+    data = check_output("ip route | grep ^default", shell=True).decode('UTF-8').split()
     return data[data.index("dev") + 1]
 
 
