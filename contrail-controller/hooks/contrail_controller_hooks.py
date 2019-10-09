@@ -61,7 +61,7 @@ def leader_elected():
         ip_list = ips.values()
         log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
         leader_set(controller_ip_list=json.dumps(list(ip_list)),
-                   controller_ips=json.dumps(list(ips)))
+                   controller_ips=json.dumps(ips))
         # TODO: pass this list to all south/north relations
     else:
         current_ip_list = ips.values()
