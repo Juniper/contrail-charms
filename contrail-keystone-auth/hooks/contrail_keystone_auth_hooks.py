@@ -9,7 +9,6 @@ from charmhelpers.core.hookenv import (
     UnregisteredHookError,
     config,
     log,
-    is_leader,
     relation_get,
     relation_ids,
     relation_set,
@@ -51,15 +50,13 @@ def update_relations(rid=None):
 @hooks.hook("config-changed")
 def config_changed():
     _decode_cert("ssl_ca")
-    if is_leader():
-        update_relations()
+    update_relations()
     update_status()
 
 
 @hooks.hook("contrail-auth-relation-joined")
 def contrail_auth_joined():
-    if is_leader():
-        update_relations(rid=relation_id())
+    update_relations(rid=relation_id())
     update_status()
 
 
@@ -93,8 +90,7 @@ def identity_admin_changed():
     else:
         config.pop("auth_info", None)
 
-    if is_leader():
-        update_relations()
+    update_relations()
     update_status()
 
 
@@ -107,8 +103,7 @@ def identity_admin_departed():
         return
     config.pop("auth_info", None)
 
-    if is_leader():
-        update_relations()
+    update_relations()
     update_status()
 
 
