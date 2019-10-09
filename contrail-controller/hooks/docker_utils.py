@@ -117,7 +117,7 @@ def _login():
     if not login or not password:
         return
 
-    auth = base64.b64encode("{}:{}".format(login, password))
+    auth = base64.b64encode("{}:{}".format(login, password).encode()).decode()
     docker_registry = config.get("docker-registry")
     config_path = os.path.join(os.path.expanduser("~"), ".docker/config.json")
     data = _load_json_file(config_path)
