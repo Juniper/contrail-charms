@@ -93,7 +93,8 @@ def _save_json_file(filepath, data):
 def _apply_insecure():
     if not config.get("docker-registry-insecure"):
         return
-    docker_registry = config.get("docker-registry")
+    # NOTE: take just host and port from registry definition
+    docker_registry = config.get("docker-registry").split('/')[0]
 
     log("Re-configure docker daemon")
     dc = _load_json_file("/etc/docker/daemon.json")
