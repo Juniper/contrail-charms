@@ -254,7 +254,7 @@ def update_certificates(module, cert, key, ca):
     return changed
 
 
-def render_and_log(template, conf_file, ctx, perms=0o444):
+def render_and_log(template, conf_file, ctx, perms=0o600):
     """Returns True if configuration has been changed."""
 
     log("Render and store new configuration: " + conf_file)
