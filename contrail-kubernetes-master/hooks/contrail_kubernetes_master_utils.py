@@ -66,7 +66,7 @@ def kubernetes_token():
     try:
         token_64 = check_output(["snap", "run", "kubectl", "get", "secret", token_id, "-n", "contrail",
                             "-ogo-template=\"{{.data.token}}\""]).decode('UTF-8').strip('\"')
-        token = base64.b64decode(token_64)
+        token = base64.b64decode(token_64).decode()
         return token
     except Exception as e:
         log("Can't get secret for token: {}".format(e))

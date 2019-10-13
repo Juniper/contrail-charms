@@ -78,14 +78,14 @@ def decode_cert_from_config(key):
 
 def decode_cert(cert):
     try:
-        return base64.b64decode(cert)
+        return base64.b64decode(cert).decode()
     except Exception as e:
         log("Couldn't decode certificate: {}".format(e), level=ERROR)
     return None
 
 
 def encode_cert(cert):
-    return base64.b64encode(cert)
+    return base64.b64encode(cert.encode())
 
 
 def save_file(path, data, perms=0o400):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from base64 import b64decode
+import base64
 import json
 import sys
 
@@ -27,7 +27,7 @@ def _decode_cert(key):
     if not val:
         return None
     try:
-        return b64decode(val)
+        return base64.b64decode(val).decode()
     except Exception as e:
         log("Couldn't decode certificate from config['{}']: {}".format(
             key, str(e)), level=ERROR)
