@@ -178,9 +178,11 @@ def write_configs():
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
     path = "/etc/contrail/keystone/ssl/ca-cert.pem"
-    _save_file(path, keystone_ssl_ca)
+    common_utils.save_file(path, keystone_ssl_ca)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
+    if ctx.get("ssl_enabled") and "ca_cert_data" in ctx:
+        common_utils.save_file('/etc/neutron/contrail-ca-cert.pem', ctx["ca_cert_data"], perms=0o644)
 
     if neutron:
         render("ContrailPlugin.ini",
@@ -209,8 +211,7 @@ def get_context():
                 ctx["ssl_enabled"] = ssl_enabled
             ca_cert = relation_get("ca-cert", unit, rid)
             if ca_cert:
-                ca_cert_data = common_utils.decode_cert(ca_cert)
-                common_utils.save_file('/etc/neutron/contrail-ca-cert.pem', ca_cert_data, perms=0o644)
+                ctx["ca_cert_data"] = common_utils.decode_cert(ca_cert)
     ctx["api_port"] = config.get("api_port")
     log("CTX: " + str(ctx))
 
@@ -218,16 +219,6 @@ def get_context():
     if auth_info:
         ctx.update(json.loads(auth_info))
     return ctx
-
-
-def _save_file(path, data):
-    if data:
-        fdir = os.path.dirname(path)
-        if not os.path.exists(fdir):
-            os.makedirs(fdir)
-        write_file(path, data, perms=0o444)
-    elif os.path.exists(path):
-        os.remove(path)
 
 
 def deploy_openstack_code(image, component, env_dict=None):

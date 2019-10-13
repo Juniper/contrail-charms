@@ -219,7 +219,7 @@ def tls_changed(module, rel_data):
     log("Certificates have been changed. Rewrite configs and rerun services.")
     if cert is not None and len(cert) > 0:
         config["ssl_enabled"] = True
-        config["ca_cert"] = encode_cert(ca)
+        config["ca_cert"] = ca
     else:
         config["ssl_enabled"] = False
         config.pop("ca_cert", None)
