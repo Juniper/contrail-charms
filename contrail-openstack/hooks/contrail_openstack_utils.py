@@ -181,10 +181,10 @@ def write_configs():
     common_utils.save_file(path, keystone_ssl_ca)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
-    if ctx.get("ssl_enabled") and "ca_cert_data" in ctx:
-        common_utils.save_file('/etc/neutron/contrail-ca-cert.pem', ctx["ca_cert_data"], perms=0o644)
 
     if neutron:
+        if ctx.get("ssl_enabled") and "ca_cert_data" in ctx:
+            common_utils.save_file('/etc/neutron/contrail-ca-cert.pem', ctx["ca_cert_data"], perms=0o644)
         render("ContrailPlugin.ini",
                "/etc/neutron/plugins/opencontrail/ContrailPlugin.ini",
                ctx, "root", "neutron", 0o440)
@@ -211,7 +211,7 @@ def get_context():
                 ctx["ssl_enabled"] = ssl_enabled
             ca_cert = relation_get("ca-cert", unit, rid)
             if ca_cert:
-                ctx["ca_cert_data"] = common_utils.decode_cert(ca_cert)
+                ctx["ca_cert_data"] = ca_cert
     ctx["api_port"] = config.get("api_port")
     log("CTX: " + str(ctx))
 
