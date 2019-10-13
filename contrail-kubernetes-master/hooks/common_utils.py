@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from base64 import b64decode
+import base64
 from socket import gaierror, gethostbyname, gethostname, getfqdn
 from subprocess import CalledProcessError, check_call, check_output
 
@@ -69,16 +69,23 @@ def fix_hostname():
             "/etc/hosts"])
 
 
-def decode_cert(key):
+def decode_cert_from_config(key):
     val = config.get(key)
     if not val:
         return None
+    return decode_cert(val)
+
+
+def decode_cert(cert):
     try:
-        return b64decode(val)
+        return base64.b64decode(cert)
     except Exception as e:
-        log("Couldn't decode certificate from config['{}']: {}".format(
-            key, str(e)), level=ERROR)
+        log("Couldn't decode certificate: {}".format(e), level=ERROR)
     return None
+
+
+def encode_cert(cert):
+    return base64.b64encode(cert)
 
 
 def save_file(path, data, perms=0o400):
@@ -209,8 +216,13 @@ def tls_changed(module, rel_data):
         log("Certificates were not changed.")
         return False
 
-    log("Certificates have changed. Rewrite configs and rerun services.")
-    config["ssl_enabled"] = (cert is not None and len(cert) > 0)
+    log("Certificates have been changed. Rewrite configs and rerun services.")
+    if cert is not None and len(cert) > 0:
+        config["ssl_enabled"] = True
+        config["ca_cert"] = encode_cert(ca)
+    else:
+        config["ssl_enabled"] = False
+        config.pop("ca_cert", None)
     config.save()
     return True
 

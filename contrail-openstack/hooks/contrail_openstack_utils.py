@@ -8,6 +8,7 @@ import pkg_resources
 import requests
 from six.moves.urllib.parse import urlparse
 
+import common_utils
 import docker_utils
 from charmhelpers.core.hookenv import (
     config,
@@ -203,9 +204,14 @@ def get_context():
             ip = relation_get("private-address", unit, rid)
             if ip:
                 ctx["api_servers"].append(ip)
+            ssl_enabled = relation_get("ssl-enabled", unit, rid)
+            if ssl_enabled:
+                ctx["ssl_enabled"] = ssl_enabled
+            ca_cert = relation_get("ca-cert", unit, rid)
+            if ca_cert:
+                ca_cert_data = common_utils.decode_cert(ca_cert)
+                common_utils.save_file('/etc/neutron/contrail-ca-cert.pem', ca_cert_data, perms=0o644)
     ctx["api_port"] = config.get("api_port")
-    # TODO: think about ssl here
-    ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     log("CTX: " + str(ctx))
 
     auth_info = config.get("auth_info")

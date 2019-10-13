@@ -252,7 +252,10 @@ def update_southbound_relations(rid=None):
         "auth-mode": config.get("auth-mode"),
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
-        "agents-info": config.get("agents-info")
+        "agents-info": config.get("agents-info"),
+        "ssl-enabled": config.get("ssl_enabled"),
+        # base64 encoded ca-cert
+        "ca-cert": config.get("ca_cert"),
     }
     for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)
@@ -509,12 +512,14 @@ def tls_certificates_relation_joined():
 @hooks.hook('tls-certificates-relation-changed')
 def tls_certificates_relation_changed():
     if common_utils.tls_changed(utils.MODULE, relation_get()):
+        update_southbound_relations()
         utils.update_charm_status()
 
 
 @hooks.hook('tls-certificates-relation-departed')
 def tls_certificates_relation_departed():
     if common_utils.tls_changed(utils.MODULE, None):
+        update_southbound_relations()
         utils.update_charm_status()
 
 
