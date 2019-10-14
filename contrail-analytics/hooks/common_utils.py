@@ -158,7 +158,7 @@ def apply_keystone_ca(module, ctx):
     save_file(ks_ca_path, ks_ca, 0o444)
     ks_ca_hash_new = file_hash(ks_ca_path)
     if ks_ca:
-        ctx["keystone_ssl_ca_path"] = ks_ca_path
+        ctx["keystone_ssl_ca_path"] = "/etc/contrail/ssl/keystone-ca-cert.pem"
     ca_changed = (ks_ca_hash != ks_ca_hash_new)
     if ca_changed:
         log("Keystone CA cert has been changed: {h1} != {h2}"
