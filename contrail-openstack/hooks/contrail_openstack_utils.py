@@ -178,7 +178,7 @@ def write_configs():
 
     keystone_ssl_ca = ctx.get("keystone_ssl_ca")
     path = "/etc/contrail/keystone/ssl/ca-cert.pem"
-    common_utils.save_file(path, keystone_ssl_ca)
+    common_utils.save_file(path, keystone_ssl_ca, perms=0o444)
     if keystone_ssl_ca:
         ctx["keystone_ssl_ca_path"] = path
 

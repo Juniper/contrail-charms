@@ -157,7 +157,7 @@ def update_charm_status():
         return
     # TODO: what should happens if relation departed?
 
-    changed = common_utils.apply_keystone_ca(ctx)
+    changed = common_utils.apply_keystone_ca(MODULE, ctx)
     changed |= common_utils.render_and_log("config.env",
         BASE_CONFIGS_PATH + "/common_config.env", ctx)
 
