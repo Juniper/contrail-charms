@@ -1,3 +1,6 @@
+WARNING! master branch is copied to R4 branch and will be cleared in January 2020.
+Please use R4 branch to deploy 4.x releases and R5 branch to deploy 5.x releases.
+
 # contrail-charms
 Juju charms for Contrail services.
 
