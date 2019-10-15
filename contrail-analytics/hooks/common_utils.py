@@ -347,7 +347,7 @@ def is_config_analytics_ssl_available():
         ver = int(tag_date[0])
         tag = 'latest' if ver >= 1910 else ''
 
-    if 'latest' in tag:
+    if 'latest' in tag or 'master' in tag:
         return True
 
     return False

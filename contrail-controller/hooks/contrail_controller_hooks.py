@@ -253,7 +253,7 @@ def update_southbound_relations(rid=None):
         "auth-info": config.get("auth_info"),
         "orchestrator-info": config.get("orchestrator_info"),
         "agents-info": config.get("agents-info"),
-        "ssl-enabled": config.get("ssl_enabled"),
+        "ssl-enabled": config.get("ssl_enabled") and config.get("config_analytics_ssl_available"),
         # base64 encoded ca-cert
         "ca-cert": config.get("ca_cert"),
     }
