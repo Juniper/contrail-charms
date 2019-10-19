@@ -37,7 +37,7 @@ def check_contrail_status(services):
 
     try:
         output = subprocess.check_output("export CONTRAIL_STATUS_CONTAINER_NAME=contrail-status-controller-nrpe ; sudo contrail-status", shell=True).decode('UTF-8')
-yum install python36    except subprocess.CalledProcessError as err:
+    except subprocess.CalledProcessError as err:
         message = ('CRITICAL: Could not get contrail-status.'
                    ' return code: {} cmd: {} output: {}'.
                    format(err.returncode, err.cmd, err.output))
