@@ -17,7 +17,7 @@ CRITICAL = 2
 def check_contrail_status(services):
 
     try:
-        output = subprocess.check_output("export CONTRAIL_STATUS_CONTAINER_NAME=contrail-status-agent-nrpe ; sudo contrail-status", shell=True).decode('UTF-8')
+        output = subprocess.check_output("export CONTRAIL_STATUS_CONTAINER_NAME=contrail-status-agent-nrpe ; sudo -E contrail-status", shell=True).decode('UTF-8')
     except subprocess.CalledProcessError as err:
         message = ('CRITICAL: Could not get contrail-status.'
                    ' return code: {} cmd: {} output: {}'.
