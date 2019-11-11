@@ -218,7 +218,7 @@ def get_contrail_version(image, tag, pkg="python-contrail"):
     image_id = get_image_id(image, tag)
     try:
         args = [DOCKER_CLI, "image", "inspect", "--format='{{.Config.Labels.version}}'", image_id]
-        version = check_output(args).decode("UTF-8").rstrip()
+        version = check_output(args).decode("UTF-8").rstrip().strip("'")
         if version != '<no value>':
             return version
     except Exception:
