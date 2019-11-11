@@ -88,7 +88,7 @@ PLUGIN_FILES = {
     },
     "neutron": {
         "{python_path}": ("/opt/contrail/site-packages/", [
-            "/usr/lib/python2.7/site-packages/neutron_plugin_contrail-0.1dev-py2.7.egg-info/"
+            "/usr/lib/python2.7/site-packages/neutron_plugin_contrail-0.1dev-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/neutron_plugin_contrail/",
             "/usr/lib/python2.7/site-packages/contrail_api_client-1912-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/vnc_api/",
