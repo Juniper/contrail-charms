@@ -1,9 +1,12 @@
 import json
 import os
-import sys
+import shutil
 from socket import gethostbyname
 from subprocess import CalledProcessError, check_call, check_output
+import sys
+import uuid
 
+from distutils.dir_util import copy_tree
 import pkg_resources
 import requests
 from six.moves.urllib.parse import urlparse
@@ -63,6 +66,46 @@ PACKAGE_CODENAMES = {
         '11': 'rocky',
         '12': 'stein',
     },
+}
+
+# for each plugin dictionary:
+# key - destination path. must be existing folder.
+# value - source path in container. string or tuple (string, [string,...])
+# if value is string then this path should be present in container as is and content
+#   will be copied into destination folder
+# if value is tuple then we'll try to copy first item. if such path is not present
+#   in container then we'll copy each item of fallback list
+#   python_path is substituted in key's string
+PLUGIN_FILES = {
+    "nova": {
+        "/usr/bin": "/opt/contrail/bin/",
+        "{python_path}": ("/opt/contrail/site-packages/", [
+            "/usr/lib/python2.7/site-packages/nova_contrail_vif-0.1-py2.7.egg-info/",
+            "/usr/lib/python2.7/site-packages/nova_contrail_vif/",
+            "/usr/lib/python2.7/site-packages/vif_plug_contrail_vrouter/",
+            "/usr/lib/python2.7/site-packages/vif_plug_vrouter/",
+        ])
+    },
+    "neutron": {
+        "{python_path}": ("/opt/contrail/site-packages/", [
+            "/usr/lib/python2.7/site-packages/neutron_plugin_contrail-0.1dev-py2.7.egg-info/"
+            "/usr/lib/python2.7/site-packages/neutron_plugin_contrail/",
+            "/usr/lib/python2.7/site-packages/contrail_api_client-1912-py2.7.egg-info/",
+            "/usr/lib/python2.7/site-packages/vnc_api/",
+            "/usr/lib/python2.7/site-packages/contrail_config_common-0.1dev-py2.7.egg-info/",
+            "/usr/lib/python2.7/site-packages/cfgm_common/",
+        ])
+    },
+    "heat": {
+        "{python_path}": ("/opt/contrail/site-packages/", [
+            "/usr/lib/python2.7/site-packages/contrail_heat-0.1dev-py2.7.egg-info/",
+            "/usr/lib/python2.7/site-packages/contrail_heat/",
+            "/usr/lib/python2.7/site-packages/contrail_api_client-1912-py2.7.egg-info/",
+            "/usr/lib/python2.7/site-packages/vnc_api/",
+            "/usr/lib/python2.7/site-packages/contrail_config_common-0.1dev-py2.7.egg-info/",
+            "/usr/lib/python2.7/site-packages/cfgm_common/",
+        ])
+    }
 }
 
 def update_service_ips():
@@ -221,6 +264,11 @@ def get_context():
     return ctx
 
 
+def get_component_sys_paths(component):
+    return check_output(['./files/get_component_sys_paths.sh',
+                        component]).decode('UTF-8')
+
+
 def deploy_openstack_code(image, component, env_dict=None):
     tag = config.get('image-tag')
     docker_utils.pull(image, tag)
@@ -228,23 +276,36 @@ def deploy_openstack_code(image, component, env_dict=None):
     # remove previous attempt
     docker_utils.remove_container_by_image(image)
 
-    path = check_output(['./files/get_component_sys_paths.sh',
-                        component]).decode('UTF-8')
-    volumes = [
-        # container will copy libraries to /opt/plugin/site-packages
-        # that is PYTHONPATH in the system
-        "{}:/opt/plugin/site-packages".format(path),
-        # container will copy tools to /opt/plugin/bin
-        # that is /usr/bin in the system
-        "/usr/bin:/opt/plugin/bin",
-    ]
-    docker_utils.run(image, tag, volumes, env_dict=env_dict)
+    path = get_component_sys_paths(component)
+    files = PLUGIN_FILES[component]
+    name = docker_utils.create(image, tag)
+    try:
+        for item in files:
+            dst = item.format(python_path=path)
+            try:
+                src = files[item]
+                if isinstance(src, tuple):
+                    src = src[0]
+                tmp_folder = os.path.join('/tmp', str(uuid.uuid4()))
+                # docker copies content of src folder if dst folder is not present
+                # and directory itself if dst is present
+                # therefore we copy content from container into tmp and then content of tmp into dst
+                docker_utils.cp(name, src, tmp_folder)
+                copy_tree(tmp_folder, dst)
+                shutil.rmtree(tmp_folder, ignore_errors=True)
+            except Exception:
+                if not isinstance(files[item], tuple):
+                    raise
+                for folder in files[item][1]:
+                    docker_utils.cp(name, folder, dst)
+    finally:
+        docker_utils.remove_container_by_image(image)
+
     try:
         version = docker_utils.get_contrail_version(image, tag)
         application_version_set(version)
     except CalledProcessError as e:
         log("Couldn't detect installed application version: " + str(e))
-    return path
 
 
 def nova_patch():

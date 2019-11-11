@@ -188,9 +188,9 @@ def _get_orchestrator_info():
 
 @hooks.hook("heat-plugin-relation-joined")
 def heat_plugin_joined(rel_id=None):
-    plugin_path = utils.deploy_openstack_code("contrail-openstack-heat-init", "heat")
-    plugin_path += "/vnc_api/gen/heat/resources"
+    utils.deploy_openstack_code("contrail-openstack-heat-init", "heat")
 
+    plugin_path = utils.get_component_sys_paths("heat") + "/vnc_api/gen/heat/resources"
     plugin_dirs = config.get("heat-plugin-dirs")
     if plugin_path not in plugin_dirs:
         plugin_dirs += ',' + plugin_path
@@ -222,11 +222,12 @@ def heat_plugin_joined(rel_id=None):
 @hooks.hook("neutron-api-relation-joined")
 def neutron_api_joined(rel_id=None):
     version = utils.get_openstack_version_codename('neutron')
-    plugin_path = utils.deploy_openstack_code(
+    utils.deploy_openstack_code(
         "contrail-openstack-neutron-init", "neutron",
         {"OPENSTACK_VERSION": version})
 
     # create plugin config
+    plugin_path = utils.get_component_sys_paths("neutron")
     base = "neutron_plugin_contrail.plugins.opencontrail"
     plugin = base + ".contrail_plugin.NeutronPluginContrailCoreV2"
     service_plugins = base + ".loadbalancer.v2.plugin.LoadBalancerPluginV2"
