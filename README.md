@@ -106,6 +106,17 @@ git clone https://github.com/Juniper/contrail-charms
 6. You can check the status of your deployment using `juju status` command.
 [Unit status](https://docs.jujucharms.com/2.4/en/reference-status)
 
+Known issues
+------------
+
+1. If you have analytics node in state 'ContrailConfig missing or incorrect' then you can provision this node manually. You need to ssh into node with controller and enter into contrail-controller container. Then run next command:
+```
+/usr/share/contrail-utils/provision_analytics_node.py --api_server_ip 10.0.10.20 --host_name jc4-cont-1 --host_ip 10.0.10.20 --admin_user admin --admin_password password --admin_tenant_name admin --oper add
+```
+Where api_server_ip is a IP of config-api service. host_name and host_ip are parameters of node with analytics to add.
+
+The same thing is applied for database node with script /usr/share/contrail-utils/provision_database_node.py
+
 Configuration
 -------------
 
