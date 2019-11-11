@@ -216,10 +216,13 @@ def create(image, tag):
 
 def get_contrail_version(image, tag, pkg="python-contrail"):
     image_id = get_image_id(image, tag)
-    args = [DOCKER_CLI, "image", "inspect", "--format='{{.Config.Labels.version}}'", image_id]
-    version = check_output(args).decode("UTF-8").rstrip()
-    if version != '<no value>':
-        return version
+    try:
+        args = [DOCKER_CLI, "image", "inspect", "--format='{{.Config.Labels.version}}'", image_id]
+        version = check_output(args).decode("UTF-8").rstrip()
+        if version != '<no value>':
+            return version
+    except Exception:
+        pass
     return check_output([DOCKER_CLI,
         "run", "--rm", "--entrypoint", "rpm", image_id,
         "-q", "--qf", "%{VERSION}-%{RELEASE}", pkg]).decode("UTF-8").rstrip()
