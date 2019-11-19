@@ -2,8 +2,10 @@ options:
   control-network:
     type: string
     description: |
-      The IP address and netmask of the control network (e.g. 192.168.0.0/24).
-      This network will be used for Contrail endpoints.
+      Network where API services are listening on.
+      The IP address and netmask of the control network (e.g. 192.168.0.0/24) or physical device name.
+      This network will be used for all services in the charm.
+      In Contrail this network is called as API(/MGMT) network.
       If not specified, default network will be used.
   log-level:
     type: string
@@ -87,6 +89,7 @@ options:
       This is a dictionary of configuration variables in JSON format. E.g.
       {
       "CONTROLLER_NODES": "10.0.12.20",
+      "CONTROL_NODES": "10.0.12.20",
       "AUTH_MODE": "keystone",
       "KEYSTONE_AUTH_ADMIN_TENANT": "admin",
       "KEYSTONE_AUTH_ADMIN_USER": "admin",

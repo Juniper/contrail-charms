@@ -31,8 +31,8 @@ from charmhelpers.core.templating import render
 config = config()
 
 
-def get_ip():
-    network = config.get("control-network")
+def get_ip(config_param="control-network", fallback=None):
+    network = config.get(config_param)
     if network:
         # try to get ip from CIDR
         try:
@@ -46,7 +46,7 @@ def get_ip():
         except Exception:
             pass
 
-    return _get_default_ip()
+    return fallback if fallback else _get_default_ip()
 
 
 def _get_default_ip():

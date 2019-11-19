@@ -55,24 +55,29 @@ def install():
 
 @hooks.hook("leader-elected")
 def leader_elected():
-    ip_list = common_utils.json_loads(leader_get("controller_ip_list"), list())
-    ips = utils.get_controller_ips()
-    if not ip_list:
-        ip_list = ips.values()
-        log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
-        leader_set(controller_ip_list=json.dumps(list(ip_list)),
-                   controller_ips=json.dumps(ips))
-        # TODO: pass this list to all south/north relations
-    else:
-        current_ip_list = ips.values()
-        dead_ips = set(ip_list).difference(current_ip_list)
-        new_ips = set(current_ip_list).difference(ip_list)
-        if new_ips:
-            log("There are a new controllers that are not in the list: "
-                + str(new_ips), level=ERROR)
-        if dead_ips:
-            log("There are a dead controllers that are in the list: "
-                + str(dead_ips), level=ERROR)
+    for var_name in [("ip","unit-address","control-network"),
+                     ("data_ip","data-address","data-network")]:
+        ip_list = common_utils.json_loads(leader_get("controller_{}_list".format(var_name[0])), list())
+        ips = utils.get_controller_ips(var_name[1], var_name[2])
+        if not ip_list:
+            ip_list = ips.values()
+            log("{}_LIST: {}    {}S: {}".format(var_name[0].upper(), str(ip_list), var_name[0].upper(), str(ips)))
+            settings = {
+                "controller_{}_list".format(var_name[0]): json.dumps(list(ip_list)),
+                "controller_{}s".format(var_name[0]): json.dumps(ips)
+            }
+            leader_set(settings=settings)
+            # TODO: pass this list to all south/north relations
+        else:
+            current_ip_list = ips.values()
+            dead_ips = set(ip_list).difference(current_ip_list)
+            new_ips = set(current_ip_list).difference(ip_list)
+            if new_ips:
+                log("There are a new controllers that are not in the list: "
+                    + str(new_ips), level=ERROR)
+            if dead_ips:
+                log("There are a dead controllers that are in the list: "
+                    + str(dead_ips), level=ERROR)
 
     utils.update_charm_status()
 
@@ -84,7 +89,11 @@ def leader_settings_changed():
 
 @hooks.hook("controller-cluster-relation-joined")
 def cluster_joined():
-    settings = {"unit-address": common_utils.get_ip()}
+    ip = common_utils.get_ip()
+    settings = {
+        "unit-address": ip,
+        "data-address": common_utils.get_ip(config_param="data-network", fallback=ip)
+    }
 
     if config.get('local-rabbitmq-hostname-resolution'):
         settings.update({
@@ -111,28 +120,30 @@ def cluster_changed():
     data = relation_get()
     log("Peer relation changed with {}: {}".format(
         remote_unit(), data))
-    ip = data.get("unit-address")
 
-    if not ip:
-        log("There is no unit-address in the relation")
+    ip = data.get("unit-address")
+    data_ip = data.get("data-address")
+    if not ip or not data_ip:
+        log("There is no unit-address or data-address in the relation")
         return
 
     if config.get('local-rabbitmq-hostname-resolution'):
         rabbit_hostname = data.get('rabbitmq-hostname')
         if ip and rabbit_hostname:
             utils.update_hosts_file(ip, rabbit_hostname)
-    unit = remote_unit()
 
     if not is_leader():
         return
 
-    _address_changed(unit, ip)
+    unit = remote_unit()
+    _address_changed(unit, ip, 'ip')
+    _address_changed(unit, data_ip, 'data_ip')
     utils.update_charm_status()
 
 
-def _address_changed(unit, ip):
-    ip_list = common_utils.json_loads(leader_get("controller_ip_list"), list())
-    ips = common_utils.json_loads(leader_get("controller_ips"), dict())
+def _address_changed(unit, ip, var_name):
+    ip_list = common_utils.json_loads(leader_get("controller_{}_list".format(var_name)), list())
+    ips = common_utils.json_loads(leader_get("controller_{}s".format(var_name)), dict())
     if ip in ip_list:
         return
     old_ip = ips.get(unit)
@@ -144,9 +155,12 @@ def _address_changed(unit, ip):
         ip_list.append(ip)
         ips[unit] = ip
 
-    log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
-    leader_set(controller_ip_list=json.dumps(ip_list),
-               controller_ips=json.dumps(ips))
+    log("{}_LIST: {}    {}S: {}".format(var_name.upper(), str(ip_list), var_name.upper(), str(ips)))
+    settings = {
+        "controller_{}_list".format(var_name): json.dumps(ip_list),
+        "controller_{}s".format(var_name): json.dumps(ips)
+    }
+    leader_set(settings=settings)
 
 
 @hooks.hook("controller-cluster-relation-departed")
@@ -154,16 +168,21 @@ def cluster_departed():
     if not is_leader():
         return
     unit = remote_unit()
-    ips = common_utils.json_loads(leader_get("controller_ips"), dict())
-    if unit not in ips:
-        return
-    old_ip = ips.pop(unit)
-    ip_list = common_utils.json_loads(leader_get("controller_ip_list"), list())
-    ip_list.remove(old_ip)
+    for var_name in ["ip", "data_ip"]:
+        ips = common_utils.json_loads(leader_get("controller_{}_ips".format(var_name)), dict())
+        if unit not in ips:
+            return
+        old_ip = ips.pop(unit)
+        ip_list = common_utils.json_loads(leader_get("controller_{}_list".format(var_name)), list())
+        ip_list.remove(old_ip)
+        log("{}_LIST: {}    {}S: {}".format(var_name.upper(), str(ip_list), var_name.upper(), str(ips)))
 
-    log("IP_LIST: {}    IPS: {}".format(str(ip_list), str(ips)))
-    leader_set(controller_ip_list=json.dumps(ip_list),
-               controller_ips=json.dumps(ips))
+        settings = {
+            "controller_{}_list".format(var_name): json.dumps(ip_list),
+            "controller_{}s".format(var_name): json.dumps(ips)
+        }
+        leader_set(settings=settings)
+
     utils.update_charm_status()
 
 
@@ -175,20 +194,19 @@ def config_changed():
         raise Exception("Config is invalid. auth-mode must one of: "
                         "rbac, cloud-admin, no-auth.")
 
-    if config.changed("control-network"):
+    if config.changed("control-network") or config.changed("data-network"):
         ip = common_utils.get_ip()
-        settings = {"private-address": ip}
-
+        data_ip = common_utils.get_ip(config_param="data-network", fallback=ip)
+        rel_settings = {"private-address": ip, "data-address": data_ip}
+        cluster_settings = {"unit-address": ip, "data-address": data_ip}
         rnames = ("contrail-controller",
                   "contrail-analytics", "contrail-analyticsdb",
                   "http-services", "https-services")
         for rname in rnames:
             for rid in relation_ids(rname):
-                relation_set(relation_id=rid, relation_settings=settings)
-        settings = {"unit-address": ip}
-
+                relation_set(relation_id=rid, relation_settings=rel_settings)
         if config.get('local-rabbitmq-hostname-resolution'):
-            settings.update({
+            cluster_settings.update({
                 "rabbitmq-hostname": utils.get_contrail_rabbit_hostname(),
             })
             # this will also take care of updating the hostname in case
@@ -197,9 +215,10 @@ def config_changed():
             utils.update_rabbitmq_cluster_hostnames()
 
         for rid in relation_ids("controller-cluster"):
-            relation_set(relation_id=rid, relation_settings=settings)
+            relation_set(relation_id=rid, relation_settings=cluster_settings)
         if is_leader():
-            _address_changed(local_unit(), ip)
+            _address_changed(local_unit(), ip, 'ip')
+            _address_changed(local_unit(), data_ip, 'data_ip')
 
     if config.changed("local-rabbitmq-hostname-resolution"):
         if config.get("local-rabbitmq-hostname-resolution"):
@@ -263,11 +282,15 @@ def update_southbound_relations(rid=None):
 
 @hooks.hook("contrail-controller-relation-joined")
 def contrail_controller_joined():
-    settings = {"private-address": common_utils.get_ip(), "port": 8082}
+    ip = common_utils.get_ip()
+    settings = {
+        "private-address": ip,
+        "data-address": common_utils.get_ip(config_param="data-network", fallback=ip),
+        "port": 8082
+    }
     relation_set(relation_settings=settings)
     if is_leader():
         update_southbound_relations(rid=relation_id())
-
 
 
 @hooks.hook("contrail-controller-relation-changed")
@@ -307,7 +330,9 @@ def contrail_controller_departed():
 
 @hooks.hook("contrail-analytics-relation-joined")
 def analytics_joined():
-    settings = {"private-address": common_utils.get_ip(),
+    ip = common_utils.get_ip()
+    settings = {"private-address": ip,
+                "data-address": common_utils.get_ip(config_param="data-network", fallback=ip),
                 'unit-type': 'controller'}
     relation_set(relation_settings=settings)
     if is_leader():
@@ -326,7 +351,9 @@ def analytics_changed_departed():
 
 @hooks.hook("contrail-analyticsdb-relation-joined")
 def analyticsdb_joined():
-    settings = {"private-address": common_utils.get_ip(),
+    ip = common_utils.get_ip()
+    settings = {"private-address": ip,
+                "data-address": common_utils.get_ip(config_param="data-network", fallback=ip),
                 'unit-type': 'controller'}
     relation_set(relation_settings=settings)
     if is_leader():

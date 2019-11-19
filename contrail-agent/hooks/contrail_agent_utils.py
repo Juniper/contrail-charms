@@ -1,5 +1,6 @@
 import os
 import socket
+import struct
 from subprocess import (
     check_call,
     check_output,
@@ -128,12 +129,17 @@ def get_context():
     ctx.update(info)
 
     ips = list()
+    data_ips = list()
     for rid in relation_ids("contrail-controller"):
         for unit in related_units(rid):
-           ip = relation_get("private-address", unit, rid)
-           if ip:
-               ips.append(ip)
+            ip = relation_get("private-address", unit, rid)
+            if ip:
+                ips.append(ip)
+            data_ip = relation_get("data-address", unit, rid)
+            if data_ip or ip:
+                data_ips.append(data_ip if data_ip else ip)
     ctx["controller_servers"] = ips
+    ctx["control_servers"] = data_ips
     ips = common_utils.json_loads(config.get("analytics_servers"), list())
     ctx["analytics_servers"] = ips
 

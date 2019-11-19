@@ -2,9 +2,18 @@ options:
   control-network:
     type: string
     description: |
-      The IP address and netmask of the control network (e.g. 192.168.0.0/24).
-      This network will be used for Contrail endpoints.
+      Network where API services are listening on.
+      The IP address and netmask of the control network (e.g. 192.168.0.0/24) or physical device name.
+      This network will be used for all services in the charm charm except control/dns.
+      In Contrail this network is called as API(/MGMT) network.
       If not specified, default network will be used.
+  data-network:
+    type: string
+    description: |
+      Network for data traffic of workload and for control traffic between compute nodes and control services.
+      The IP address and netmask of the control network (e.g. 192.168.0.0/24) or physical device name.
+      This network will be used for Contrail endpoints.
+      If not specified then control-network will be used of default network will be used.
   bgp-asn:
     type: string
     default: "64512"

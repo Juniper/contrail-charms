@@ -57,6 +57,7 @@ SERVICES = {
 
 def servers_ctx():
     controller_ip_list = []
+    controller_data_ip_list = []
     analytics_ip_list = []
     for rid in relation_ids("contrail-analyticsdb"):
         for unit in related_units(rid):
@@ -66,14 +67,19 @@ def servers_ctx():
                 continue
             if utype == "controller":
                 controller_ip_list.append(ip)
+                data_ip = relation_get("data-address", unit, rid)
+                if data_ip or ip:
+                    controller_data_ip_list.append(data_ip if data_ip else ip)
             if utype == "analytics":
                 analytics_ip_list.append(ip)
 
     sort_key = lambda ip: struct.unpack("!L", inet_aton(ip))[0]
     controller_ip_list = sorted(controller_ip_list, key=sort_key)
+    controller_data_ip_list = sorted(controller_data_ip_list, key=sort_key)
     analytics_ip_list = sorted(analytics_ip_list, key=sort_key)
     return {
         "controller_servers": controller_ip_list,
+        "control_servers": controller_data_ip_list,
         "analytics_servers": analytics_ip_list}
 
 

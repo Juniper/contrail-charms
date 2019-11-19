@@ -77,14 +77,14 @@ SERVICES = {
 }
 
 
-def get_controller_ips():
+def get_controller_ips(address_type, config_param):
     controller_ips = dict()
     for rid in relation_ids("controller-cluster"):
         for unit in related_units(rid):
-            ip = relation_get("unit-address", unit, rid)
+            ip = relation_get(address_type, unit, rid)
             controller_ips[unit] = ip
     # add it's own ip address
-    controller_ips[local_unit()] = common_utils.get_ip()
+    controller_ips[local_unit()] = common_utils.get_ip(config_param=config_param)
     return controller_ips
 
 
@@ -119,7 +119,9 @@ def get_context():
     ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
 
     ips = common_utils.json_loads(leader_get("controller_ip_list"), list())
+    data_ips = common_utils.json_loads(leader_get("controller_data_ip_list"), list())
     ctx["controller_servers"] = ips
+    ctx["control_servers"] = data_ips
     ctx["analytics_servers"] = get_analytics_list()
     log("CTX: " + str(ctx))
     ctx.update(common_utils.json_loads(config.get("auth_info"), dict()))
