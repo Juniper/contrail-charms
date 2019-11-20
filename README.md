@@ -105,6 +105,24 @@ git clone https://github.com/Juniper/contrail-charms -b R5
 [Unit status. Juju documentation.](https://docs.jujucharms.com/2.4/en/reference-status)
 
 
+Contrail's multi interface setup
+--------------------------------
+CTRL/DATA network - network for data traffic of workload and for control traffic between compute nodes and control services.
+API/MGMT network - network where API services are listening on and for accessing instances.
+
+By default, charms are using the default network for API/MGMT and CTRL/DATA.
+
+To specify API/MGMT network set `control-network` parameter for contrail-controller, contrail-analytics, contrail-analyticsdb and contrail-kubernetes-master if is applicable. It may be the IP address and netmask of the control network or physical device name.
+
+To specify CTRL/DATA network set `data-network` parameter for contrail-controller. It may be the IP address and netmask of the control network or physical device name. If `data-network` isn't specified it will use the same network as `control-network`.
+
+```
+juju config contrail-controller control-network=192.168.0.0/24 data-network=ens4
+juju config contrail-analytics control-network=192.168.0.0/24
+juju config contrail-analyticsdb control-network=192.168.0.0/24
+```
+
+
 Known issues
 ------------
 
