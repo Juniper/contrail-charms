@@ -29,6 +29,8 @@ def get_context():
     if ctx["nested_mode"]:
         ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
 
+    ctx["logging"] = docker_utils.render_logging()
+
     log("CTX: {}".format(ctx))
     return ctx
 

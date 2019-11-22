@@ -153,6 +153,7 @@ def get_context():
         ctx["hostname"] = socket.getfqdn()
 
     ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
+    ctx["logging"] = docker_utils.render_logging()
     log("CTX: " + str(ctx))
 
     ctx.update(common_utils.json_loads(config.get("auth_info"), dict()))

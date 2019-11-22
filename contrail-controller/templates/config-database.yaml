@@ -20,6 +20,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+{{ logging | indent(4,True) }}
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -35,6 +36,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   cassandra:
     image: "{{ container_registry }}/contrail-external-cassandra:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -56,6 +58,7 @@ services:
       - node-init
     network_mode: "host"
     restart: always
+{{ logging | indent(4,True) }}
   zookeeper:
     image: "{{ container_registry }}/contrail-external-zookeeper:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -73,6 +76,7 @@ services:
       - node-init
     network_mode: "host"
     restart: always
+{{ logging | indent(4,True) }}
   rabbitmq:
     image: "{{ container_registry }}/contrail-external-rabbitmq:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -86,3 +90,4 @@ services:
       - node-init
     network_mode: "host"
     restart: always
+{{ logging | indent(4,True) }}

@@ -17,6 +17,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+{{ logging | indent(4,True) }}
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_vrouter.env
@@ -30,6 +31,7 @@ services:
     depends_on:
       - node-init
     restart: on-failure
+{{ logging | indent(4,True) }}
   vrouter-kernel-init:
 {%- if agent_mode == 'dpdk' %}
     image: "{{ container_registry }}/contrail-vrouter-kernel-init-dpdk:{{ contrail_version_tag }}"
@@ -55,6 +57,7 @@ services:
       - node-init
     depends_on:
       - node-init
+{{ logging | indent(4,True) }}
 {%- if agent_mode == 'dpdk' %}
   vrouter-agent-dpdk:
     image: "{{ container_registry }}/contrail-vrouter-agent-dpdk:{{ contrail_version_tag }}"
@@ -75,6 +78,7 @@ services:
       - vrouter-kernel-init
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
 {%- endif %}
   vrouter-agent:
     image: "{{ container_registry }}/contrail-vrouter-agent:{{ contrail_version_tag }}"
@@ -102,3 +106,4 @@ services:
 {%- endif %}
       - node-init
     restart: always
+{{ logging | indent(4,True) }}

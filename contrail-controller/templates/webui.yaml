@@ -19,6 +19,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+{{ logging | indent(4,True) }}
   web:
     image: "{{ container_registry }}/contrail-controller-webui-web:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -30,6 +31,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   job:
     image: "{{ container_registry }}/contrail-controller-webui-job:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -41,3 +43,4 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}

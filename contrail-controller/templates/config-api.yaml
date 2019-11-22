@@ -17,6 +17,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+{{ logging | indent(4,True) }}
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -30,6 +31,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   api:
     image: "{{ container_registry }}/contrail-controller-config-api:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_config.env
@@ -39,6 +41,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   svcmonitor:
     image: "{{ container_registry }}/contrail-controller-config-svcmonitor:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -48,6 +51,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   schema:
     image: "{{ container_registry }}/contrail-controller-config-schema:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -57,6 +61,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   devicemgr:
     image: "{{ container_registry }}/contrail-controller-config-devicemgr:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -66,3 +71,4 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}

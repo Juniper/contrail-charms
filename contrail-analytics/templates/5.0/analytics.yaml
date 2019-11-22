@@ -17,6 +17,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+{{ logging | indent(4,True) }}
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_analytics.env
@@ -30,6 +31,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   api:
     image: "{{ container_registry }}/contrail-analytics-api:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -39,6 +41,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   collector:
     image: "{{ container_registry }}/contrail-analytics-collector:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -48,6 +51,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   query-engine:
     image: "{{ container_registry }}/contrail-analytics-query-engine:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -57,6 +61,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   alarm-gen:
     image: "{{ container_registry }}/contrail-analytics-alarm-gen:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -66,6 +71,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   snmp-collector:
     image: "{{ container_registry }}/contrail-analytics-snmp-collector:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -75,6 +81,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   topology:
     image: "{{ container_registry }}/contrail-analytics-topology:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -84,3 +91,4 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}

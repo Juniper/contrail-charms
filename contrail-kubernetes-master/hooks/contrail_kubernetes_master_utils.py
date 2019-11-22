@@ -146,6 +146,7 @@ def get_context():
         ctx["nested_mode_config"] = common_utils.json_loads(config.get("nested_mode_config"), dict())
 
     ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
+    ctx["logging"] = docker_utils.render_logging()
 
     log("CTX: {}".format(ctx))
     return ctx

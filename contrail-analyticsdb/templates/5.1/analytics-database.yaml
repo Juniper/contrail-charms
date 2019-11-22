@@ -19,6 +19,7 @@ services:
       - /etc/timezone:/etc/timezone
       - /etc/localtime:/etc/localtime
       - /var/crashes:/var/crashes
+{{ logging | indent(4,True) }}
   nodemgr:
     image: "{{ container_registry }}/contrail-nodemgr:{{ contrail_version_tag }}"
     env_file: /etc/contrail/common_analyticsdb.env
@@ -34,6 +35,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   query-engine:
     image: "{{ container_registry }}/contrail-analytics-query-engine:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -43,6 +45,7 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}
   cassandra:
     image: "{{ container_registry }}/contrail-external-cassandra:{{ contrail_version_tag }}"
     network_mode: "host"
@@ -64,3 +67,4 @@ services:
     depends_on:
       - node-init
     restart: always
+{{ logging | indent(4,True) }}

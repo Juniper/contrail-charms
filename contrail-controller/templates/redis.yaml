@@ -5,7 +5,7 @@ services:
     env_file: /etc/contrail/redis.env
     network_mode: "host"
     restart: always
-
+{{ logging | indent(4,True) }}
 {%- if ssl_enabled and config_analytics_ssl_available %}
   stunnel:
     image: "{{ container_registry }}/contrail-external-stunnel:{{ contrail_version_tag }}"
@@ -14,4 +14,5 @@ services:
     restart: always
     volumes:
      - /etc/contrail/ssl:/etc/contrail/ssl
+{{ logging | indent(4,True) }}
 {%- endif %}

@@ -62,6 +62,17 @@ options:
     type: string
     description: |
       Password to the docker registry.
+  docker-log-driver:
+    type: string
+    default: json-file
+    description: |
+      A logging driver for the service’s containers.
+  docker-log-options:
+    type: string
+    default: "max-size=20m max-file=5"
+    description: |
+      Logging options for the logging driver. Logging options available depend
+      on which logging driver you use.
   image-tag:
     type: string
     default: latest

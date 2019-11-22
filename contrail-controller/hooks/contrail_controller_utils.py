@@ -117,6 +117,7 @@ def get_context():
 
     ctx["ssl_enabled"] = config.get("ssl_enabled", False)
     ctx["config_analytics_ssl_available"] = config.get("config_analytics_ssl_available", False)
+    ctx["logging"] = docker_utils.render_logging()
 
     ips = common_utils.json_loads(leader_get("controller_ip_list"), list())
     data_ips = common_utils.json_loads(leader_get("controller_data_ip_list"), list())

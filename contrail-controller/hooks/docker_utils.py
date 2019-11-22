@@ -202,6 +202,13 @@ def run(image, tag, volumes, remove=False, env_dict=None):
     if env_dict:
         for key in env_dict:
             args.extend(["-e", "{}={}".format(key, env_dict[key])])
+    log_driver = config.get("docker-log-driver")
+    if log_driver:
+        args.extend(["--log-driver", log_driver])
+    log_options = config.get("docker-log-options")
+    if log_options:
+        for opt in log_options.split():
+            args.extend(["--log-opt", opt])
     args.extend([image_id])
     check_call(args)
 
@@ -249,3 +256,23 @@ def _render_config():
     render('docker-proxy.conf', '/etc/systemd/system/docker.service.d/docker-proxy.conf', config)
     check_call(['systemctl', 'daemon-reload'])
     service_restart('docker')
+
+
+def render_logging():
+    driver = config.get("docker-log-driver")
+    options = config.get("docker-log-options", '').split()
+    if not driver and not options:
+        return ''
+    logging = 'logging:\n'
+    if driver:
+        logging += "  driver: {}\n".format(driver)
+    if options:
+        logging += "  options:\n"
+        # yaml is created manually because of redis.yaml that is created by 
+        # controller and analytics and should be exactly the same to avoid 
+        # config_changed hooks starting
+        options.sort()
+        for opt in options:
+            option = opt.split('=')
+            logging += '    {}: "{}"\n'.format(option[0], option[1])
+    return logging
