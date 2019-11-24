@@ -39,16 +39,20 @@ def install():
 
 @hooks.hook("config-changed")
 def config_changed():
+    notify_nova = False
     changed = docker_utils.config_changed()
-    if changed:
-        _notify_nova()
+    if changed or config.changed("image-tag"):
+        notify_nova = True
         _notify_neutron()
         _notify_heat()
 
     if is_leader():
         _configure_metadata_shared_secret()
-        _notify_nova()
+        notify_nova = True
         _notify_controller()
+
+    if notify_nova:
+        _notify_nova()
 
 
 @hooks.hook("leader-elected")

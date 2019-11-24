@@ -240,7 +240,7 @@ def config_changed():
     if config.changed("http_proxy") or config.changed("https_proxy") or config.changed("no_proxy"):
         _render_config()
         changed = True
-    if config.changed("docker-registry"):
+    if config.changed("docker-registry") or config.changed("docker-registry-insecure"):
         _apply_insecure()
         changed = True
     if config.changed("docker-user") or config.changed("docker-password"):
