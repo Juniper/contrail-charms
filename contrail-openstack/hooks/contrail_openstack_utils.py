@@ -90,9 +90,7 @@ PLUGIN_FILES = {
         "{python_path}": ("/opt/contrail/site-packages/", [
             "/usr/lib/python2.7/site-packages/neutron_plugin_contrail-0.1dev-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/neutron_plugin_contrail/",
-            "/usr/lib/python2.7/site-packages/contrail_api_client-1912-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/vnc_api/",
-            "/usr/lib/python2.7/site-packages/contrail_config_common-0.1dev-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/cfgm_common/",
         ])
     },
@@ -100,9 +98,7 @@ PLUGIN_FILES = {
         "{python_path}": ("/opt/contrail/site-packages/", [
             "/usr/lib/python2.7/site-packages/contrail_heat-0.1dev-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/contrail_heat/",
-            "/usr/lib/python2.7/site-packages/contrail_api_client-1912-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/vnc_api/",
-            "/usr/lib/python2.7/site-packages/contrail_config_common-0.1dev-py2.7.egg-info/",
             "/usr/lib/python2.7/site-packages/cfgm_common/",
         ])
     }
@@ -297,7 +293,10 @@ def deploy_openstack_code(image, component, env_dict=None):
                 if not isinstance(files[item], tuple):
                     raise
                 for folder in files[item][1]:
-                    docker_utils.cp(name, folder, dst)
+                    try:
+                        docker_utils.cp(name, folder, dst)
+                    except Exception:
+                        pass
     finally:
         docker_utils.remove_container_by_image(image)
 
