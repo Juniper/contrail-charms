@@ -169,7 +169,7 @@ def cluster_departed():
         return
     unit = remote_unit()
     for var_name in ["ip", "data_ip"]:
-        ips = common_utils.json_loads(leader_get("controller_{}_ips".format(var_name)), dict())
+        ips = common_utils.json_loads(leader_get("controller_{}s".format(var_name)), dict())
         if unit not in ips:
             return
         old_ip = ips.pop(unit)
