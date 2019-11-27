@@ -406,9 +406,9 @@ def _http_services(vip):
 
     config_analytics_ssl_available = config.get("config_analytics_ssl_available", False)
     if config_analytics_ssl_available:
-        servers = [[name, addr, 8081, "check inter 2000 rise 2 fall 3 ssl verify none"]]
+        servers = [[name, addr, 8082, "check inter 2000 rise 2 fall 3 ssl verify none"]]
     else:
-        servers = [[name, addr, 8081, "check inter 2000 rise 2 fall 3"]]
+        servers = [[name, addr, 8082, "check inter 2000 rise 2 fall 3"]]
 
     result = [
         {"service_name": "contrail-api",
