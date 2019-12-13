@@ -236,9 +236,11 @@ def neutron_api_joined(rel_id=None):
     plugin = base + ".contrail_plugin.NeutronPluginContrailCoreV2"
     service_plugins = base + ".loadbalancer.v2.plugin.LoadBalancerPluginV2"
     contrail_plugin_extension = plugin_path + "/neutron_plugin_contrail/extensions"
+    neutron_lbaas_extensions = plugin_path + "/neutron_lbaas/extensions"
     extensions = [
         contrail_plugin_extension,
-        "/usr/lib/python2.7/dist-packages/neutron_lbaas/extensions"]
+        neutron_lbaas_extensions
+        ]
     conf = {
       "neutron-api": {
         "/etc/neutron/neutron.conf": {
