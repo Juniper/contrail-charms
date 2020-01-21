@@ -276,6 +276,11 @@ def update_southbound_relations(rid=None):
         # base64 encoded ca-cert
         "ca-cert": config.get("ca_cert"),
     }
+
+    settings.update(utils.get_cassandra_connection_details())
+    settings.update(utils.get_rabbitmq_connection_details())
+    settings.update(utils.get_zookeeper_connection_details())
+
     for rid in ([rid] if rid else relation_ids("contrail-controller")):
         relation_set(relation_id=rid, relation_settings=settings)
 
@@ -377,7 +382,7 @@ def contrail_auth_changed():
 @hooks.hook("contrail-auth-relation-departed")
 def contrail_auth_departed():
     units = [unit for rid in relation_ids("contrail-auth")
-                  for unit in related_units(rid)]
+             for unit in related_units(rid)]
     if units:
         return
     config.pop("auth_info", None)
@@ -553,6 +558,17 @@ def tls_certificates_relation_departed():
 @hooks.hook('nrpe-external-master-relation-changed')
 def nrpe_external_master_relation_changed():
     update_nrpe_config()
+
+
+@hooks.hook('contrail-issu-relation-changed')
+def contrail_issu_relation_changed():
+    ctx = {'old': relation_get()}
+    ctx["new"] = utils.get_cassandra_connection_details()
+    ctx["new"].update(utils.get_rabbitmq_connection_details())
+    ctx["new"].update(utils.get_zookeeper_connection_details())
+
+    common_utils.render_and_log("issu.conf", utils.BASE_CONFIGS_PATH + "/issu.conf", ctx)
+    # TODO run docker
 
 
 def update_nrpe_config():

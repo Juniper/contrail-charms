@@ -322,3 +322,27 @@ def update_rabbitmq_cluster_hostnames():
     """Updates /etc/hosts with rabbitmq cluster node hostnames"""
     ip = common_utils.get_ip()
     update_hosts_file(ip, get_contrail_rabbit_hostname())
+
+
+def get_cassandra_connection_details():
+    ips = get_controller_ips("unit-address", "control-network")
+    return {
+        "cassandra_address_list": ips,
+    }
+
+
+def get_zookeeper_connection_details():
+    ips = get_controller_ips("unit-address", "control-network")
+    return {
+        "zookeeper_address_list": ips,
+    }
+
+
+def get_rabbitmq_connection_details():
+    ips = get_controller_ips("unit-address", "control-network")
+    return {
+        "rabbit_q_name": "vnc-config.issu-queue",
+        "rabbit_vhost": "contrail",
+        "rabbit_port": "5673",
+        "rabbit_address_list": ips,
+    }

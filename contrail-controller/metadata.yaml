@@ -29,3 +29,6 @@ requires:
   tls-certificates:
     interface: tls-certificates
     optional: true
+  contrail-issu:
+    interface: contrail-controller
+    optional: true
