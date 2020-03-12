@@ -1,1 +1,1 @@
-Content was moved to github.com/tungstenfabric/tf-charms to branch master
+Content was moved to https://github.com/tungstenfabric/tf-charms to branch master
